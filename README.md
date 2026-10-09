@@ -249,6 +249,10 @@ literature:
 
 ## 📐 Physics implemented
 
+A full derivation of every equation in `vawt_core.py`, with source-paper
+references, is in [`docs/derivation.md`](docs/derivation.md).
+
+
 - **Induction**: double-multiple-streamtube (Paraschivoiu 1981), with the
   Sharpe-Glauert empirical branch for high loading.
 - **Dynamic stall**: MIT / Noll-Ham increment on the static polar (Pawsey
