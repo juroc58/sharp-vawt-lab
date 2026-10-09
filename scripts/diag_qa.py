@@ -7,7 +7,7 @@ evaluation that captures Qa per timestep.
 """
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = HERE
+ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
 import numpy as np
