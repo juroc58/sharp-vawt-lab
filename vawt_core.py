@@ -613,8 +613,16 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        self.f_ar = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))        # a0 = 2*pi thin-airfoil slope
-        self.ind_k = 1.0 / (PI * aero.e_osw * AR)
+        # 3D finite-span correction.  The classic formula 1/(1 + 2/(e*AR))
+        # is derived for an elliptical finite wing, where the entire span
+        # loses lift.  A VAWT blade only loses lift in the last ~10-15 % of
+        # span near each tip, so the midspan correction should be close to
+        # 1.  We cap the reduction at 15 % and the induced-drag coefficient
+        # at 0.02 to keep the correction physically bounded.
+        f_ar_raw  = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))
+        ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
+        self.f_ar  = max(0.85, f_ar_raw)
+        self.ind_k = min(0.02, ind_k_raw)
         self.c_scale = min(1.0, (geo.c / geo.R) / 0.418)                # Adams constants were fitted at c/r=0.418
         self.freq_ratio = 1.0 / self.fn_ratio if self.fn_ratio > 0 else float("inf")
 

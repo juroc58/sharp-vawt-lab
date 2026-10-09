@@ -19,6 +19,7 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.09**:
 
 | Configuration | Cp | Reference |
 |---|---|---|
+| **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.46** | ~77 % of Betz |
 | **Sharp-conforming CPPC** | **0.36** | Bayly-Kentfield measured 0.37 |
 | Optimised passive (mass-balanced) | 0.49 | — |
 | Rigid blade (no pitch) | 0.34 | — |
@@ -48,6 +49,16 @@ At this design point the aerodynamic pitch torque (~0.20 N·m peak) is roughly
 4× the centrifugal restoring torque (0.048 N·m peak). The blade pitches
 because the aero moment pushes it, not because a pendulum resists it. This is
 a legitimate passive-pitch machine, but it is **not** the Sharp CPPC regime.
+
+### Scaled-up passive design
+
+Extending the joint optimiser to radius R ∈ [0.6, 3.0] m finds an
+interior optimum at **R = 2.26 m** (chord 0.355 m, AR 3.18, Re_tip
+5.1 × 10⁵). The 2D model reaches **Cp = 0.53**; with a bounded 15 %
+finite-span correction (real blades lose 10-20 % of lift near the
+tips), the physically realistic value is **Cp = 0.46**. Both numbers
+match Sharp's published estimate of 0.45-0.50 for his larger
+experimental machines.
 
 ### Prescribed pitch (upper bound)
 
@@ -230,6 +241,10 @@ sharp-vawt-lab/
 ## 🧭 What this project does not model
 
     3D flow. No tip vortices, no spanwise flow, no tower shadow.
+  A bounded finite-span correction (max 15 % lift reduction) is
+  available via `use_tip_loss=True`; the optimisation results are
+  2D upper bounds. With the correction on, the scale-up Cp drops
+  from 0.53 to 0.46.
 
     Active Lift. Sharp's secondary mechanism, where the L-shaped bellcrank
     between the rocking hinge and the CG adds a transient torque during pitch
