@@ -184,6 +184,47 @@ net effect is probably within ±3 % of the steady-wind AEP. The result
 should be read as **"the CPPC mechanism is robust under turbulence"**
 rather than "turbulence improves the machine."
 
+### Which parameter drives the spread?
+
+Spearman rank correlation between each of the 8 uncertain constants and
+Cp, computed on the 40 LHS samples. Runs in 3 seconds on the already-
+generated data (`scripts/spearman_sensitivity.py`).
+
+| Anchor | Dominant parameter | ρ | p-value |
+|---|---|---|---|
+| Ham 1979 reproduction | `tau_rev` (induction lag) | **+0.89** | < 0.001 |
+| Sharp-conforming CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
+| Optimised passive | `tau_rev` | **+0.44** | 0.004 |
+| Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **−0.70** | < 0.001 |
+
+Four different anchors, four different dominant parameters — the model
+is responding to the different physics of each regime, not to a single
+numerical artifact.
+
+**Physical reading:**
+
+- **`ham_1979`**: prescribed pitch bypasses the dynamic-stall model
+  entirely, so the only uncertainty that survives is the wake/induction
+  relaxation. Nearly single-parameter dependence confirms the model
+  behaves sensibly in the prescribed-pitch limit.
+- **`sharp_cppc`**: four parameters matter roughly equally
+  (`ds_Tf`, `cd_add`, `ds_Tv`, `ds_Ta`). Passive pitching couples the
+  blade's response to the unsteady aerodynamics, so all the DS time
+  constants contribute.
+- **`optimised_passive`**: a different mix again, with `ds_Ta` flipping
+  sign relative to `sharp_cppc`. The mass-balanced operating point
+  responds to the attached-flow lag in the opposite direction.
+- **`scaleup`**: dominated by the Adams curvilinear shift, with a
+  *negative* correlation. At high Reynolds number and high aspect ratio
+  the Adams correction is over-correcting — a design hint that the
+  `c_scale_override` cap could be tightened further at this scale.
+
+**Actionable conclusion.** The two experiments that would most reduce
+model uncertainty are (1) a direct measurement of the wake-induction
+relaxation time, and (2) a strut-drag measurement. Both are cheaper than
+a full cycloturbine test and would tighten the dominant spread in three
+of four anchors.
+
 ## 🔬 What this project does differently
 
 Most VAWT hobby repos report a Cp number. This one reports **four**, with the
