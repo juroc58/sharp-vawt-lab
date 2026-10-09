@@ -196,7 +196,7 @@ $$
 
 $$
 \Delta C_L = \psi_{\text{eff}}\,\Delta C_{L,vc}\, s_c, \qquad
-\Delta C_D = \Delta C_{D,cf}
+\Delta C_D = \psi_{\text{eff}}\,\Delta C_{D,cf}\, s_c
 \tag{4.3}
 $$
 
@@ -289,7 +289,8 @@ App. B.2, Noll & Ham 1982), but is written as an **increment on the static
 polar** so that in steady flow the output exactly reproduces the static
 coefficients.
 
-Three state variables are carried per blade element:
+Three physical state variables (plus two bookkeeping values) are
+carried per blade:
 
 - $\alpha_{\text{lag}}$ — the attached-flow-lagged angle (a low-pass filter
   on the geometric angle)
@@ -435,23 +436,31 @@ $x_g$ be the blade-unit CG offset from the pivot (§1). The centrifugal
 force acting on the CG projects onto the pitch axis as
 
 $$
-M_{\text{cf}} = -M \omega^2 R_p x_g \sin\psi
+M_{\text{cf}} = -M \omega^2 R_p\,(x_g \cos\psi + a_r \sin\psi)
 \tag{8.1}
 $$
 
 This is the Sharp (2021) restoring torque. It grows with $\omega^2$ and
-with the CG offset. When $x_g = 0$ the mechanism cannot pitch (rigid
-blade); when $x_g \to \infty$ the blade locks against the stop.
+with the CG offset. The $a_r \sin\psi$ term is the dominant restoring
+contribution for small $x_g$; the $x_g \cos\psi$ term provides the
+equilibrium bias that fixes the blade's neutral pitch angle. When
+$x_g = 0$ the mechanism has no bias but still has a restoring torque
+proportional to $a_r \sin\psi$; when $x_g$ is large the blade locks
+against the stop before it can reach equilibrium.
 
 The total pitch torque is the sum of aerodynamic, centrifugal,
 damping, friction, spring, and hard-stop contributions:
 
 $$
-Q_{\text{tot}} = Q_{\text{aero}} + M_{\text{cf}}
+Q_{\text{tot}} = Q_{\text{aero}}
                   - c_b\dot\psi - k_c\psi - Q_{\text{fric}}
                   + Q_{\text{stop}}
 \tag{8.2}
 $$
+
+Note: $Q_{\text{tot}}$ here contains the aerodynamic and dissipative
+torques only. The centrifugal restoring term $M_{\text{cf}}$ from
+eq. (8.1) is added separately in the generalized force $X_k$ (eq. 8.6).
 
 The friction torque depends on the centrifugal load on the pivot
 bearing:
@@ -579,7 +588,7 @@ symplectic structure that conserves a nearby Hamiltonian for the
 unforced system.
 
 Typical time step: $\Delta t = 2\times10^{-4}$ s. The rotor turns through
-about 0.1° per step at the design speed. Convergence studies show that
+about 0.4° per step at the design speed. Convergence studies show that
 halving $\Delta t$ changes Cp by less than 0.5 %.
 
 ---
