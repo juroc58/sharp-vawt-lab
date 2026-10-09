@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+*.npy
+run_last_rev.csv
+*.mp4
+*.gif
+.venv/
+vawt-env/
+archive/
+papers/
