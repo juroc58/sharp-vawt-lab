@@ -513,6 +513,21 @@ class PolarDatabase:
             self._load_csv(files)
             self.source = "csv:" + polar_dir
         else:
+            # FIX: silent fallback to a surrogate polar model is a
+            # reproducibility hazard.  If the caller passed a non-empty
+            # polar_dir and we found no CSVs, warn loudly.  This
+            # distinguishes deliberate surrogate use (polar_dir="") from
+            # a missing-data mistake (polar_dir="polars/naca0012" but the
+            # files are gone).
+            if polar_dir:
+                warnings.warn(
+                    f"PolarDatabase: no CSVs found in '{polar_dir}'.  "
+                    f"Falling back to the analytic NACA-0012 surrogate.  "
+                    f"Results are NOT based on the Sheldahl-Klimas tables.  "
+                    f"Check that {polar_dir}/*.csv exist.",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
             self.logRe_grid = np.log(np.array([2e4, 6.3e4, 2e5, 6.3e5, 2e6]))
             Cl = np.zeros((len(self.logRe_grid), len(self.alpha_grid)))
             Cd = np.zeros_like(Cl)
