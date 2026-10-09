@@ -1,21 +1,28 @@
 """
 Annual Energy Production (AEP) for the Sharp cycloturbine.
 
-Two operating strategies are compared:
+Three operating strategies are compared at the same rotor geometry and
+the same k_load external load:
 
-  1. Passive k_load   — rotor speed adjusts to balance aero torque against
-                        the external load torque k_load*omega^2. This is the
-                        natural mode for a passive Sharp machine.
-  2. Fixed-rpm gen.   — rotor speed held constant by a synchronous
-                        generator. TSR varies with wind speed.
+  1. Passive CPPC, free-running    — Sharp's centrifugal-pendulum pitch
+                                     mechanism, rotor speed adjusts to
+                                     match the wind.
+  2. Rigid blade, free-running     — same rotor, same k_load, but pitch
+                                     locked at zero. This isolates the
+                                     effect of the CPPC mechanism.
+  3. Passive CPPC, fixed-rpm       — synchronous generator holds omega
+                                     constant. Shows the penalty of not
+                                     tracking the wind.
 
-Both are integrated against a Weibull wind distribution to give kWh/year.
+Tip-loss correction is ON (bounded finite-span, max 15 % lift reduction),
+matching the convention used in the README headline results.
 
-Produces docs/aep.png with four panels: Cp(TSR), P(U), Weibull pdf,
-and the AEP contribution per wind-speed bin.
+Integrates each power curve against a Weibull wind distribution to give
+kWh/year.  Produces docs/aep.png.
 """
 from __future__ import annotations
 
+import json
 import math
 import os
 import sys
@@ -35,7 +42,7 @@ from vawt_core import create_sim_from_params
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-# Sharp-conforming CPPC design at R = 0.60 m  (Cp = 0.36)
+# Sharp-conforming CPPC design at R = 0.60 m
 BASE = dict(
     R=0.60, H=0.40, N=3, c=0.14,
     ar=0.50, sp=0.25,
@@ -44,202 +51,169 @@ BASE = dict(
     balance=0, bias_deg=0.0,
     prescribe_pitch=False,
     cd_add=0.002,
-    use_dynamic_stall=True, use_flow_curvature=True, use_dmst=True,
+    use_dynamic_stall=True,
+    use_flow_curvature=True,
+    use_dmst=True,
+    use_tip_loss=True,                # <-- bounded finite-span correction ON
     win_deg=45.0, cb=2e-5, mu_c=3e-4,
     free=False, T_max=25.0, stride=5,
     w0_frac=0.9, k_load=0.0025, tsr=2.0,
 )
 
 # Wind resource
-U_MEAN      = 6.0      # m/s
-K_WEIBULL   = 2.0      # shape (2 = Rayleigh)
-CUT_IN      = 3.0      # m/s
-CUT_OUT     = 25.0     # m/s
+U_MEAN      = 6.0
+K_WEIBULL   = 2.0
+CUT_IN      = 3.0
+CUT_OUT     = 25.0
 RHO         = 1.225
 HOURS_YEAR  = 8760.0
-
-# Rated power cap (set to None for no cap).  For R = 0.6 m the peak power
-# at the design point is ~200 W, so 250 W is a reasonable generator rating.
 P_RATED_W   = 250.0
+ETA_DRIVETRAIN = 0.90    # shaft -> electrical (generator + bearings + wiring)
 
 
 # ============================================================================
-# 1. Cp vs TSR (fixed rpm)
+# Helpers
 # ============================================================================
-def compute_cp_curve(base, tsrs):
-    print("Computing Cp(TSR) at fixed rpm ...")
-    out = []
-    for tsr in tsrs:
-        r = create_sim_from_params({**base, 'free': False, 'tsr': float(tsr)}).run()
-        cp = float(r['cp'])
-        out.append(cp)
-        print(f"  TSR = {tsr:5.2f}   Cp = {cp:+.4f}   "
-              f"alpha_max = {r['aoa_max']:5.1f}   steady = {r.get('steady', True)}")
-    return np.array(out)
+def rigid_params(base):
+    """Lock the pitch at zero by prescribing an all-zero Fourier law."""
+    return {**base,
+            'prescribe_pitch': True,
+            'pp0_deg': 0.0,
+            'pp1_deg': 0.0,
+            'pp2_deg': 0.0,
+            'pp3_deg': 0.0,
+            'pp_ph_deg': 0.0}
 
 
-# ============================================================================
-# 2. Passive free-running operating point
-# ============================================================================
-def free_run_cp(base, U):
-    """Run in free mode at wind speed U and return the equilibrium Cp."""
-    try:
-        r = create_sim_from_params({**base, 'free': True, 'U': U}).run()
-    except Exception:
-        return None
-    if not r.get('steady', True):
-        return None
-    cp = float(r['cp'])
-    if cp <= 0.0 or not np.isfinite(cp):
-        return None
-    return dict(U=U, cp=cp, tsr_eq=float(r['tsr_eq']),
-                rpm=float(r['rpm']), aoa_max=float(r['aoa_max']))
-
-
-# ============================================================================
-# 3. Weibull
-# ============================================================================
 def weibull_pdf(U, U_mean, k):
     lam = U_mean / math.gamma(1.0 + 1.0 / k)
     return (k / lam) * (U / lam) ** (k - 1.0) * np.exp(-(U / lam) ** k)
 
 
 # ============================================================================
-# 4. AEP integration
+# 1. Cp(TSR) at fixed rpm — passive vs rigid
 # ============================================================================
-def compute_aep(base, tsrs, cps_fixed, U_mean, k_weibull,
-                cut_in, cut_out, p_rated):
-    R = base['R']
-    H = base['H']
-    A_swept = 2.0 * R * H
+def compute_cp_curve(base, tsrs, label):
+    print(f"  Cp(TSR) for {label}:")
+    cps = []
+    for tsr in tsrs:
+        r = create_sim_from_params({**base, 'free': False, 'tsr': float(tsr)}).run()
+        cp = float(r['cp'])
+        cps.append(cp)
+        print(f"    TSR = {tsr:5.2f}   Cp = {cp:+.4f}   "
+              f"α_max = {r['aoa_max']:5.1f}   "
+              f"steady = {r.get('steady', True)}")
+    return np.array(cps)
 
-    # Peak of the Cp curve (used as the fixed-rpm design TSR)
-    idx_best = int(np.argmax(cps_fixed))
-    tsr_best = float(tsrs[idx_best])
-    cp_best = float(cps_fixed[idx_best])
-    print(f"\n  Cp curve: peak Cp = {cp_best:.4f} at TSR = {tsr_best:.2f}")
 
-    # --- strategy 2: fixed-rpm generator ---
-    # Design speed: omega set so that TSR = tsr_best at U = U_mean
-    # omega_design = tsr_best * U_mean / R
-    # At another wind speed: TSR = omega_design * R / U = tsr_best * U_mean / U
-    U_grid = np.linspace(cut_in, cut_out, 200)
-    tsr_fixed = np.clip(tsr_best * U_mean / U_grid, tsrs[0], tsrs[-1])
-    cp_fixed = np.interp(tsr_fixed, tsrs, cps_fixed)
-    P_fixed = 0.5 * RHO * A_swept * U_grid ** 3 * cp_fixed
+# ============================================================================
+# 2. Free-running equilibrium at each U
+# ============================================================================
+def free_run(base, U, label):
+    try:
+        r = create_sim_from_params({**base, 'free': True, 'U': U}).run()
+    except Exception:
+        return None
+    cp = float(r['cp'])
+    if not r.get('steady', True) or cp <= 0.0 or not np.isfinite(cp):
+        return None
+    return dict(U=float(U), cp=cp,
+                tsr_eq=float(r['tsr_eq']),
+                rpm=float(r['rpm']),
+                aoa_max=float(r['aoa_max']))
+
+
+# ============================================================================
+# 3. AEP integration
+# ============================================================================
+def integrate_aep(U_grid, cp_curve, U_mean, k_weibull,
+                  cut_in, cut_out, p_rated, R, H):
+    A = 2.0 * R * H
+    cp_clipped = np.clip(cp_curve, 0.0, 0.593)
+    P_mech = 0.5 * RHO * A * U_grid ** 3 * cp_clipped
+    P = P_mech * ETA_DRIVETRAIN
     if p_rated is not None:
-        P_fixed = np.minimum(P_fixed, p_rated)
-
-    # --- strategy 1: passive k_load (variable speed) ---
-    # Run free at several reference wind speeds, get Cp(U)
-    print("\n  Free-running k_load strategy — running at reference U:")
-    U_ref = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
-    free_results = []
-    for U in U_ref:
-        f = free_run_cp(base, U)
-        if f is not None:
-            free_results.append(f)
-            print(f"    U = {U:4.1f} m/s   Cp = {f['cp']:+.4f}   "
-                  f"TSR_eq = {f['tsr_eq']:5.2f}   α_max = {f['aoa_max']:5.1f}")
-        else:
-            print(f"    U = {U:4.1f} m/s   (did not converge)")
-
-    # Interpolate Cp(U); hold the last valid value beyond the sample range
-    if len(free_results) >= 2:
-        U_samp = np.array([f['U'] for f in free_results])
-        cp_samp = np.array([f['cp'] for f in free_results])
-        cp_kload = np.interp(U_grid, U_samp, cp_samp)
-    else:
-        # fallback: use the fixed-rpm peak
-        cp_kload = np.full_like(U_grid, cp_best)
-
-    P_kload = 0.5 * RHO * A_swept * U_grid ** 3 * cp_kload
-    if p_rated is not None:
-        P_kload = np.minimum(P_kload, p_rated)
-
-    # --- integrate against Weibull ---
+        P = np.minimum(P, p_rated)
     pdf = weibull_pdf(U_grid, U_mean, k_weibull)
-    aep_kload = float(np.trapezoid(P_kload * pdf, U_grid) * HOURS_YEAR / 1000.0)   # kWh/yr
-    aep_fixed = float(np.trapezoid(P_fixed * pdf, U_grid) * HOURS_YEAR / 1000.0)
-
-    # capacity factor
-    cf_kload = aep_kload * 1000.0 / (p_rated * HOURS_YEAR) if p_rated else float('nan')
-    cf_fixed = aep_fixed * 1000.0 / (p_rated * HOURS_YEAR) if p_rated else float('nan')
-
-    return dict(
-        U_grid=U_grid, pdf=pdf,
-        P_kload=P_kload, P_fixed=P_fixed,
-        cp_kload=cp_kload, cp_fixed=cp_fixed,
-        tsr_fixed=tsr_fixed,
-        cp_best=cp_best, tsr_best=tsr_best,
-        aep_kload_kWh=aep_kload, aep_fixed_kWh=aep_fixed,
-        cf_kload=cf_kload, cf_fixed=cf_fixed,
-        free_results=free_results,
-    )
+    aep = float(np.trapezoid(P * pdf, U_grid) * HOURS_YEAR / 1000.0)
+    cf = aep * 1000.0 / (p_rated * HOURS_YEAR) if p_rated else float('nan')
+    return dict(U=U_grid, cp=cp_curve, P=P, pdf=pdf, aep=aep, cf=cf)
 
 
 # ============================================================================
-# 5. Plot
+# 4. Plot
 # ============================================================================
-def make_plot(res, tsrs, cps_fixed, U_mean, k_weibull, cut_in, cut_out, out_path):
-    fig, ax = plt.subplots(2, 2, figsize=(12, 9))
+def make_plot(results, tsrs, out_path):
+    fig, ax = plt.subplots(2, 2, figsize=(13, 9))
 
-    # Panel 1: Cp vs TSR
+    # --- colours used consistently across all panels ---
+    col_passive = "C0"    # blue
+    col_rigid   = "C1"    # orange
+    col_fixed   = "C2"    # green
+
+    # --- Panel 1: Cp vs TSR ---
     a = ax[0, 0]
-    a.plot(tsrs, cps_fixed, "o-", color="C3", lw=1.8)
+    a.plot(tsrs, results['passive']['cp_tsr'], "o-", color=col_passive,
+           lw=1.8, label="passive CPPC")
+    a.plot(tsrs, results['rigid']['cp_tsr'], "s--", color=col_rigid,
+           lw=1.8, label="rigid blade")
     a.axhline(0, color="k", lw=0.5)
-    a.axvline(res['tsr_best'], color="k", ls=":", lw=0.8,
-              label=f"design TSR = {res['tsr_best']:.2f}")
-    a.axhline(res['cp_best'], color="k", ls=":", lw=0.8,
-              label=f"peak Cp = {res['cp_best']:.3f}")
     a.set_xlabel("tip-speed ratio λ")
-    a.set_ylabel("power coefficient Cp")
-    a.set_title("Cp vs TSR at fixed rpm")
+    a.set_ylabel("Cp")
+    a.set_title("Cp vs TSR at fixed rpm (tip loss on)")
     a.grid(alpha=0.3)
-    a.legend(fontsize=8)
+    a.legend(fontsize=9)
 
-    # Panel 2: Power curves
+    # --- Panel 2: free-running Cp vs U ---
     a = ax[0, 1]
-    a.plot(res['U_grid'], res['P_kload'], "-", color="C0", lw=1.8,
-           label="passive k_load (variable speed)")
-    a.plot(res['U_grid'], res['P_fixed'], "--", color="C1", lw=1.8,
-           label="fixed-rpm generator")
+    for key, col, marker, label in [
+        ('passive', col_passive, 'o', 'passive CPPC'),
+        ('rigid',   col_rigid,   's', 'rigid blade'),
+    ]:
+        fr = results[key]['free_results']
+        if fr:
+            Us = np.array([f['U'] for f in fr])
+            cps = np.array([f['cp'] for f in fr])
+            a.plot(Us, cps, marker + "-", color=col, lw=1.6, label=label)
     a.set_xlabel("wind speed U [m/s]")
-    a.set_ylabel("electrical/mechanical power [W]")
+    a.set_ylabel("Cp at equilibrium")
+    a.set_title("Free-running Cp vs wind speed")
+    a.grid(alpha=0.3)
+    a.legend(fontsize=9)
+
+    # --- Panel 3: power curves ---
+    a = ax[1, 0]
+    a.plot(results['passive']['U'], results['passive']['P'], "-",
+           color=col_passive, lw=2.0, label="passive CPPC, k_load")
+    a.plot(results['rigid']['U'], results['rigid']['P'], "-",
+           color=col_rigid, lw=2.0, label="rigid blade, k_load")
+    a.plot(results['fixed']['U'], results['fixed']['P'], "--",
+           color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
+    a.set_xlabel("wind speed U [m/s]")
+    a.set_ylabel("electrical power [W]")
     a.set_title("Power curve")
     a.grid(alpha=0.3)
-    a.legend(fontsize=8)
-    a.set_xlim(cut_in, cut_out)
+    a.legend(fontsize=9)
+    a.set_xlim(CUT_IN, CUT_OUT)
 
-    # Panel 3: Weibull PDF
-    a = ax[1, 0]
-    a.fill_between(res['U_grid'], res['pdf'], alpha=0.35, color="C2")
-    a.plot(res['U_grid'], res['pdf'], color="C2", lw=1.5)
-    a.axvline(U_mean, color="k", ls="--", lw=0.8,
-              label=f"mean U = {U_mean:.1f} m/s")
-    a.set_xlabel("wind speed U [m/s]")
-    a.set_ylabel("Weibull pdf")
-    a.set_title(f"Wind distribution  (Weibull k = {k_weibull})")
-    a.grid(alpha=0.3)
-    a.legend(fontsize=8)
-    a.set_xlim(cut_in, cut_out)
-
-    # Panel 4: AEP per bin
+    # --- Panel 4: AEP contribution per bin ---
     a = ax[1, 1]
-    dE_kload = res['P_kload'] * res['pdf'] * HOURS_YEAR / 1000.0
-    dE_fixed = res['P_fixed'] * res['pdf'] * HOURS_YEAR / 1000.0
-    a.plot(res['U_grid'], dE_kload, "-", color="C0", lw=1.6,
-           label=f"k_load: {res['aep_kload_kWh']:.0f} kWh/yr")
-    a.plot(res['U_grid'], dE_fixed, "--", color="C1", lw=1.6,
-           label=f"fixed-rpm: {res['aep_fixed_kWh']:.0f} kWh/yr")
+    for key, col, style, label in [
+        ('passive', col_passive, "-",  None),
+        ('rigid',   col_rigid,   "-",  None),
+    ]:
+        r = results[key]
+        dE = r['P'] * r['pdf'] * HOURS_YEAR / 1000.0
+        a.plot(r['U'], dE, style, color=col, lw=1.7,
+               label=f"{key}: {r['aep']:.0f} kWh/yr")
     a.set_xlabel("wind speed U [m/s]")
     a.set_ylabel("d(AEP)/dU  [kWh/yr per m/s]")
-    a.set_title("AEP contribution per wind-speed bin")
+    a.set_title(f"AEP per wind bin  (η_drivetrain = {ETA_DRIVETRAIN:.2f})")
     a.grid(alpha=0.3)
-    a.legend(fontsize=8)
-    a.set_xlim(cut_in, cut_out)
+    a.legend(fontsize=9)
+    a.set_xlim(CUT_IN, CUT_OUT)
 
-    fig.suptitle(f"Annual energy production — Sharp CPPC at R = 0.60 m",
+    fig.suptitle("Annual energy production — Sharp CPPC vs rigid blade, R = 0.60 m",
                  fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     fig.savefig(out_path, dpi=150)
@@ -247,42 +221,159 @@ def make_plot(res, tsrs, cps_fixed, U_mean, k_weibull, cut_in, cut_out, out_path
 
 
 # ============================================================================
-# 6. Main
+# 5. Main
 # ============================================================================
 def main():
     print("=" * 74)
     print("Sharp cycloturbine — Annual Energy Production")
     print("=" * 74)
-    print(f"  Design   : R = {BASE['R']} m, c = {BASE['c']} m, N = {BASE['N']}")
+    print(f"  Geometry : R = {BASE['R']} m, c = {BASE['c']} m, N = {BASE['N']}, "
+          f"σ = {BASE['N']*BASE['c']/(2*math.pi*BASE['R']):.3f}")
     print(f"  Wind     : Weibull k = {K_WEIBULL}, mean U = {U_MEAN} m/s")
     print(f"  Cut-in   : {CUT_IN} m/s   cut-out: {CUT_OUT} m/s")
     print(f"  Rated P  : {P_RATED_W} W")
+    print(f"  Tip loss : ON (bounded finite-span)")
+    print(f"  Drivetrain efficiency: {ETA_DRIVETRAIN*100:.0f} %")
     print()
 
-    # Cp curve over the TSR range we care about
+    rigid = rigid_params(BASE)
+
+    # --- fixed-rpm Cp curves ---
     tsrs = np.linspace(1.0, 3.5, 11)
-    cps = compute_cp_curve(BASE, tsrs)
+    cps_passive_tsr = compute_cp_curve(BASE, tsrs, "passive CPPC")
+    print()
+    cps_rigid_tsr = compute_cp_curve(rigid, tsrs, "rigid blade")
 
-    res = compute_aep(BASE, tsrs, cps, U_MEAN, K_WEIBULL,
-                      CUT_IN, CUT_OUT, P_RATED_W)
+    # --- free-running reference speeds ---
+    print()
+    U_ref = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
 
+    print("  Free-running passive CPPC:")
+    free_passive = []
+    for U in U_ref:
+        f = free_run(BASE, U, "passive")
+        if f:
+            free_passive.append(f)
+            print(f"    U = {U:4.1f}   Cp = {f['cp']:+.4f}   "
+                  f"TSR = {f['tsr_eq']:5.2f}   α_max = {f['aoa_max']:5.1f}")
+
+    print()
+    print("  Free-running rigid blade:")
+    free_rigid = []
+    for U in U_ref:
+        f = free_run(rigid, U, "rigid")
+        if f:
+            free_rigid.append(f)
+            print(f"    U = {U:4.1f}   Cp = {f['cp']:+.4f}   "
+                  f"TSR = {f['tsr_eq']:5.2f}   α_max = {f['aoa_max']:5.1f}")
+        else:
+            print(f"    U = {U:4.1f}   (no equilibrium)")
+
+    # --- build power curves on a common U grid ---
+    U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
+    R, H = BASE['R'], BASE['H']
+
+    # fixed-rpm: omega held so that TSR = peak-TSR of passive at U_mean
+    idx_best = int(np.argmax(cps_passive_tsr))
+    tsr_design = float(tsrs[idx_best])
+    tsr_fixed = np.clip(tsr_design * U_MEAN / U_grid, tsrs[0], tsrs[-1])
+    cp_fixed = np.interp(tsr_fixed, tsrs, cps_passive_tsr)
+
+    # passive free-running: interpolate Cp(U) from reference runs
+    if len(free_passive) >= 2:
+        U_s = np.array([f['U'] for f in free_passive])
+        cp_s = np.array([f['cp'] for f in free_passive])
+        cp_passive = np.interp(U_grid, U_s, cp_s)
+    else:
+        cp_passive = np.full_like(U_grid, float(cps_passive_tsr.max()))
+
+    # rigid free-running
+    if len(free_rigid) >= 2:
+        U_s = np.array([f['U'] for f in free_rigid])
+        cp_s = np.array([f['cp'] for f in free_rigid])
+        cp_rigid = np.interp(U_grid, U_s, cp_s)
+    else:
+        cp_rigid = np.full_like(U_grid, float(cps_rigid_tsr.max()))
+
+    # --- integrate ---
+    res_passive = integrate_aep(U_grid, cp_passive, U_MEAN, K_WEIBULL,
+                                CUT_IN, CUT_OUT, P_RATED_W, R, H)
+    res_rigid   = integrate_aep(U_grid, cp_rigid, U_MEAN, K_WEIBULL,
+                                CUT_IN, CUT_OUT, P_RATED_W, R, H)
+    res_fixed   = integrate_aep(U_grid, cp_fixed, U_MEAN, K_WEIBULL,
+                                CUT_IN, CUT_OUT, P_RATED_W, R, H)
+
+    results = {
+        'passive':   {**res_passive,
+                      'cp_tsr': cps_passive_tsr,
+                      'free_results': free_passive},
+        'rigid':     {**res_rigid,
+                      'cp_tsr': cps_rigid_tsr,
+                      'free_results': free_rigid},
+        'fixed':     {**res_fixed,
+                      'cp_tsr': cps_passive_tsr,   # same physics, fixed omega
+                      'free_results': []},
+    }
+
+    # --- report ---
     print()
     print("=" * 74)
     print("RESULTS")
     print("=" * 74)
-    print(f"  Peak Cp                     = {res['cp_best']:.4f} "
-          f"(at TSR = {res['tsr_best']:.2f})")
-    print(f"  Passive k_load  AEP         = {res['aep_kload_kWh']:8.1f} kWh/yr")
-    print(f"      capacity factor         = {res['cf_kload']*100:6.2f} %")
-    print(f"  Fixed-rpm       AEP         = {res['aep_fixed_kWh']:8.1f} kWh/yr")
-    print(f"      capacity factor         = {res['cf_fixed']*100:6.2f} %")
+    print(f"  Geometry    : R = {R} m, c = {BASE['c']} m, σ = "
+          f"{BASE['N']*BASE['c']/(2*math.pi*R):.3f}")
+    print(f"  Wind        : Weibull k = {K_WEIBULL}, mean U = {U_MEAN} m/s")
     print()
-    print(f"  Annual load match (k_load/fixed) = "
-          f"{res['aep_kload_kWh'] / max(res['aep_fixed_kWh'], 1e-9):.3f}")
+    print(f"  Peak Cp (passive, fixed-rpm) = {cps_passive_tsr.max():.4f} "
+          f"at TSR = {tsrs[cps_passive_tsr.argmax()]:.2f}")
+    print(f"  Peak Cp (rigid,   fixed-rpm) = {cps_rigid_tsr.max():.4f} "
+          f"at TSR = {tsrs[cps_rigid_tsr.argmax()]:.2f}")
+    print()
+    print(f"  {'Strategy':<32} {'AEP [kWh/yr]':>14} {'Cap factor':>12}")
+    print("  " + "-" * 60)
+    print(f"  {'Passive CPPC, k_load (var speed)':<32} "
+          f"{res_passive['aep']:>14.1f} {res_passive['cf']*100:>11.2f}%")
+    print(f"  {'Rigid blade, k_load (var speed)':<32} "
+          f"{res_rigid['aep']:>14.1f} {res_rigid['cf']*100:>11.2f}%")
+    print(f"  {'Passive CPPC, fixed rpm':<32} "
+          f"{res_fixed['aep']:>14.1f} {res_fixed['cf']*100:>11.2f}%")
+    print()
+    gain_rigid = (res_passive['aep'] / max(res_rigid['aep'], 1e-9) - 1.0) * 100
+    gain_fixed = (res_passive['aep'] / max(res_fixed['aep'], 1e-9) - 1.0) * 100
+    print(f"  Passive CPPC vs rigid blade, same load  : "
+          f"{gain_rigid:+6.1f} %")
+    print(f"  Passive CPPC vs fixed-rpm,  same physics : "
+          f"{gain_fixed:+6.1f} %")
 
+    # --- plot ---
     out_path = os.path.join(_ROOT, "docs", "aep.png")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    make_plot(res, tsrs, cps, U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, out_path)
+    make_plot(results, tsrs, out_path)
+
+    # --- json dump ---
+    summary = {
+        "geometry": {"R": R, "c": BASE['c'], "N": BASE['N'],
+                     "sigma": BASE['N']*BASE['c']/(2*math.pi*R)},
+        "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
+                 "cut_in": CUT_IN, "cut_out": CUT_OUT,
+                 "p_rated_W": P_RATED_W},
+        "results": {
+            "passive_k_load":  {"aep_kWh": res_passive['aep'],
+                                "cf": res_passive['cf']},
+            "rigid_k_load":    {"aep_kWh": res_rigid['aep'],
+                                "cf": res_rigid['cf']},
+            "passive_fixed_rpm": {"aep_kWh": res_fixed['aep'],
+                                  "cf": res_fixed['cf']},
+        },
+        "gains_percent": {
+            "passive_vs_rigid": gain_rigid,
+            "passive_vs_fixed_rpm": gain_fixed,
+        },
+    }
+    json_path = os.path.join(_HERE, "aep_results.json")
+    with open(json_path, "w") as fh:
+        json.dump(summary, fh, indent=2)
+    print(f"JSON saved to {json_path}")
 
 
 if __name__ == "__main__":
