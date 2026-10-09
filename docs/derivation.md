@@ -122,18 +122,18 @@ inflow angle are
 
 $$
 W = \sqrt{u_1^2 + u_2^2}, \qquad
-\varphi_f = \operatorname{atan2}(u_2,\, u_1)
+\varphi_f = \mathrm{atan2}(u_2, u_1)
 \tag{2.5}
 $$
 
 and the angle of attack is
 
 $$
-\alpha = \operatorname{wrap}(\varphi_f + \psi_k)
+\alpha = \mathrm{wrap}(\varphi_f + \psi_k)
 \tag{2.6}
 $$
 
-with $\operatorname{wrap}(a) = \operatorname{atan2}(\sin a, \cos a)$ to keep
+with $\mathrm{wrap}(a) = \mathrm{atan2}(\sin a, \cos a)$ to keep
 $\alpha \in (-\pi, \pi]$.
 
 Equation (2.6) is the sign convention at the heart of the code. The `+`
@@ -270,7 +270,7 @@ Sharpe 1990). The transition at $C_T = 0.879$ is continuous.
 The induction factor is relaxed toward its target with a first-order lag:
 
 $$
-a_k^{n+1} = a_k^n + \min\!\left(1,\,
+a_k^{n+1} = a_k^n + \min\!\left(1,
              \frac{\Delta t\, \omega}{2\pi\, \tau_{\text{rev}}}\right)
              \left(a_{\text{tgt}} - a_k^n\right)
 \tag{5.5}
@@ -330,7 +330,7 @@ $$
 \tag{6.4}
 $$
 
-with $v_{\text{target}} = \operatorname{sign}(\alpha)\,(1-f)\,|C_L(\alpha_{\text{lag}})|$
+with $v_{\text{target}} = \mathrm{sign}(\alpha)\,(1-f)\,|C_L(\alpha_{\text{lag}})|$
 and $\tau_v = T_v c / W$, $\tau_{\text{conv}} = 15 c / W$.
 
 The lift and drag are reconstructed from the separation parameter:
