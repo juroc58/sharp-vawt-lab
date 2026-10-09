@@ -13,6 +13,7 @@ DESIGN = dict(
     pp0_deg=+5.15612, pp1_deg=-6.32883,
     pp2_deg=+2.75837, pp3_deg=-0.0845207,
     cd_add=0.002,
+    use_flow_curvature=True,   # ← add this
     free=True, T_max=30.0, stride=5,
     prescribe_pitch=True, w0_frac=0.9,
 )

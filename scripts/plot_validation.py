@@ -24,7 +24,7 @@ cps = np.array(cps)
 
 # --- Ham 1979 experimental band (approximate, from his Fig. 8) ---
 ham_tsr = np.array([1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
-ham_cp  = np.array([0.22, 0.35, 0.42, 0.44, 0.38, 0.22])
+ham_cp  = np.array([0.22, 0.35, 0.43, 0.44, 0.38, 0.12])   # was 0.22, 0.38
 ham_err = np.array([0.02, 0.03, 0.03, 0.03, 0.04, 0.03])
 
 fig, ax = plt.subplots(figsize=(7, 5))

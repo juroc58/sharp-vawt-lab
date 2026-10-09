@@ -1,4 +1,4 @@
-"""
+"""sta
 Ham 1979 benchmark (AIAA 79-0968, Fig. 4/8).
 
 Ham's Pinson C2E rig:
@@ -53,15 +53,13 @@ for label, flags in configs:
         print(f"{tsr:>6.1f} {cps[0]:>14.4f} {cps[1]:>14.4f}")
     print()
 
-print("Ham 1979 published peak Cp = 0.42-0.45 at TSR = 2.5-3.0")
-
-print()
-print("Interpretation:")
-print("  static only = Ham's own model class  -> Cp = 0.42-0.47, matches paper")
-print("  + DS        = modern VAWT model      -> Cp = 0.47  @ TSR 2.5")
-print("  + DS + curv = Adams shift applied")
-print("                Adams fitted his coefficients at c/R = 0.418 on a")
-print("                variable-pitch machine.  Ham's rig has c/R = 0.167 and")
-print("                a fixed cosine pitch, so the shift is not absorbed by")
-print("                the pitch schedule and Cp drops to 0.40.  This is a")
-print("                known limitation of applying Adams outside his fit range.")
+# after the print loop, replace with:
+static_peak = max(
+    create_sim_from_params({... 'use_dynamic_stall': False,
+                             'use_flow_curvature': False}).run()['cp']
+    for tsr in (2.0, 2.5, 3.0)
+)
+ham_ref = 0.42
+ok = abs(static_peak - ham_ref) / ham_ref < 0.15
+print(f"Static-only peak Cp = {static_peak:.3f}  (Ham ref = {ham_ref})")
+print(f"PASS: within 15%" if ok else f"FAIL: off by {abs(static_peak-ham_ref)/ham_ref*100:.0f}%")
