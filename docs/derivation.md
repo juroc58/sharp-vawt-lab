@@ -323,9 +323,10 @@ $$
 The vortex lift is driven by the rate of change of $f$:
 
 $$
-\dot v = \begin{cases}
-\dfrac{v_{\text{target}} - v}{\tau_v} & \dot f < 0 \;\;(\text{separation growing})\\[6pt]
--\dfrac{v}{\tau_{\text{conv}}} & \text{otherwise}
+\dot v =
+\begin{cases}
+\dfrac{v_{\mathrm{target}} - v}{\tau_v} & \dot f < 0 \;\;(\text{separation growing})\\
+-\dfrac{v}{\tau_{\mathrm{conv}}} & \text{otherwise}
 \end{cases}
 \tag{6.4}
 $$
