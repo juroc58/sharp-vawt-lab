@@ -276,7 +276,8 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
     cd sharp-vawt-lab
     python3 -m venv vawt-env
     source vawt-env/bin/activate
-    pip install -r requirements.txt
+    pip install -r requirements.txt          # runtime only
+    pip install -r requirements-dev.txt      # + test tools (pytest, timeout)
 
 ---
 
@@ -416,8 +417,6 @@ sharp-vawt-lab/
     maximum-power pitch schedule from first principles is not implemented. The
     prescribed-pitch optimiser searches a Fourier parametrisation instead.
 
-    Annual energy production. AEP over a Weibull wind distribution is not
-    shipped in v2.
 
     Uncertainty quantification. The dynamic-stall sensitivity check is
     one-dimensional. A full Latin-hypercube UQ over the model constants would

@@ -1,0 +1,6 @@
+# Runtime dependencies
+-r requirements.txt
+
+# Test and CI dependencies
+pytest>=8.0
+pytest-timeout>=2.3
