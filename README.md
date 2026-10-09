@@ -77,6 +77,53 @@ cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 ---
 
+## 🌀 Active Lift
+
+Sharp (2021) describes a secondary mechanism — "Active Lift" — in which the
+blade unit's CG moving radially inward on the upwind pass and outward on
+the downwind pass produces a Coriolis torque on the rotor. He estimates
+it contributes about 10 % to torque at his scale.
+
+**This effect is already captured by the model.** It emerges from the
+Lagrangian coupling between the rotor and pitch DOFs in the `sumL` term —
+no additional physics was needed.
+
+### Diagnostic
+
+Three operating points at the same TSR (the passive rotor's equilibrium
+point), the same external load, and the same blade geometry, differing
+only in whether the blade is free to rock:
+
+| Case | Cp | Notes |
+|---|---|---|
+| **A. Passive** | **0.2728** | blade rocks freely, ψ ∈ [−11.5°, +24.3°] |
+| B. Rigid at time-mean pitch | 0.2313 | locked at ψ = +6.4° |
+| C. Rigid at ψ = 0 | 0.1426 | locked flat |
+
+Two contributions decompose cleanly:
+
+| Effect | ΔCp | Relative |
+|---|---|---|
+| **Mean pitch offset (B − C)** | +0.0888 | **+62 %** |
+| **Dynamic pitch (A − B)** | +0.0414 | **+18 %** |
+
+The mean-pitch term captures most of the benefit of pitch control — a
+rigid blade at the right bias angle is already much better than one at
+ψ = 0. The **dynamic** term is the part that specifically requires the
+blade to *rock*. Its 18 % contribution is the model's estimate of Active
+Lift at R = 0.60 m and Re ≈ 1.4 × 10⁵.
+
+### Comparison to Sharp's estimate
+
+Sharp estimated Active Lift at about **+10 %** at his scale. The model
+gives **+18 %** at R = 0.60 m. The difference is consistent with the
+scale-dependent balance between aerodynamic and centrifugal pitch moments:
+at smaller radius and lower Reynolds number, the aero moment is relatively
+stronger, so the dynamic component of the pitch schedule has more room to
+act. Both numbers agree on sign and order of magnitude.
+
+To reproduce: `python3 scripts/diag_active_lift.py`.
+
 ## 📈 Annual energy production
 
 ![aep](docs/aep.png)
