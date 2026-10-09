@@ -68,6 +68,40 @@ cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 ---
 
+## 📈 Annual energy production
+
+![aep](docs/aep.png)
+
+Power curve integrated against a Weibull wind distribution (k = 2.0,
+mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See `scripts/compute_aep.py`.
+
+For the Sharp-conforming design (R = 0.60 m, Cp_peak = 0.33):
+
+| Strategy | AEP | Capacity factor | Load match |
+|---|---|---|---|
+| **Passive k_load (variable speed)** | **350 kWh/yr** | **16.0 %** | — |
+| Fixed-rpm generator | 129 kWh/yr | 5.9 % | 0.37× |
+
+The passive machine produces **2.7× more energy** because the k_load·ω²
+torque tracks the wind's power curve: the rotor speed adjusts so the
+tip-speed ratio stays near its optimum (TSR ≈ 2.05) at every wind speed.
+A fixed-speed generator drifts far from the design point as the wind
+varies — at 3 m/s it runs at TSR 4 (Cp ≈ 0.02), at 12 m/s at TSR 1.0
+(Cp ≈ 0.04) — and only operates near peak efficiency in a narrow window
+around its design wind speed.
+
+This is the physical claim Sharp's paper makes for CPPC. The passive
+mechanism adapts to wind speed without any external control.
+
+### Reynolds-number sensitivity
+
+The free-running Cp is not constant across the wind range:
+it rises from 0.30 at U = 3 m/s to 0.37 at U = 15 m/s, then drops
+at 20 m/s because α_max reaches 20° and the blade stalls. The
+low-Re penalty at U = 3 m/s is real: the NACA 0012 polar has L/D ≈ 30
+at Re = 5 × 10⁴ vs L/D ≈ 80 at Re = 10⁶, and the passive mechanism
+cannot compensate for that.
+
 ## 🔬 What this project does differently
 
 Most VAWT hobby repos report a Cp number. This one reports **four**, with the
