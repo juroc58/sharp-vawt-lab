@@ -1,28 +1,40 @@
-"""sta
+"""
 Ham 1979 benchmark (AIAA 79-0968, Fig. 4/8).
 
 Ham's Pinson C2E rig:
-  sigma = 0.25, R = 6 ft = 1.83 m, N = 3
-  => chord c = sigma * 2*pi*R / N = 0.958 m
-  Blade span H is not given explicitly; aspect ratio ~1.3 assumed (H = 1.22 m).
-  Lift slope a = 5 per rad (Ham used NACA 0015, low-Re)
-  Zero-lift drag CD0 = 0.01
-  Pitch law: theta = theta_0 + theta_1c*cos(psi_Ham),  theta_0 = 0, theta_1c = -10 deg
+  N = 3, R = 1.83 m, c = 0.305 m, H = 1.37 m
+  Solidity, Ham's definition:       sigma_Ham = N*c / (2*R)   = 0.25
+  Solidity, modern VAWT convention: sigma_std = N*c / (2*pi*R) = 0.080
+  (Both are correct — they are different conventions. Modern papers use sigma_std.)
 
-Run with three model configurations to isolate what breaks:
-  (a) static polars only (matches Ham's model)
-  (b) + dynamic stall (Migliore-style)
-  (c) + dynamic stall + Adams curvature
+Pitch law: theta = theta_0 + theta_1c*cos(psi_Ham), theta_0 = 0, theta_1c = -10 deg
+
+Runs three model configurations on Ham's own geometry:
+  (a) static polars only              — matches Ham's model class
+  (b) + dynamic stall                 — modern VAWT model
+  (c) + dynamic stall + curvature     — full model
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vawt_core import create_sim_from_params
 
 R_HAM, C_HAM, H_HAM, N_HAM = 1.83, 0.305, 1.37, 3
-SIGMA = N_HAM * C_HAM / (2 * 3.14159265 * R_HAM)
-print(f"Ham geometry: R={R_HAM} c={C_HAM:.3f} H={H_HAM} N={N_HAM} sigma={SIGMA:.3f}")
-print(f"Re at tip, TSR=2.5, U=8 m/s: {2.5*8*C_HAM/1.5e-5:.2e}")
+SIGMA_HAM = N_HAM * C_HAM / (2.0 * R_HAM)
+SIGMA_STD = N_HAM * C_HAM / (2.0 * 3.14159265 * R_HAM)
+print(f"Ham geometry: R={R_HAM} c={C_HAM} H={H_HAM} N={N_HAM}")
+print(f"  sigma (Ham defn, Nc/2R)   = {SIGMA_HAM:.3f}")
+print(f"  sigma (modern, Nc/2piR)   = {SIGMA_STD:.3f}")
+print(f"  Re at tip, TSR=2.5, U=8   = {2.5*8*C_HAM/1.5e-5:.2e}")
 print()
+
+COMMON = dict(
+    R=R_HAM, c=C_HAM, H=H_HAM, N=N_HAM,
+    ar=0.0, sp=0.25,
+    free=False, T_max=20.0, stride=5,
+    prescribe_pitch=True,
+    pp0_deg=0.0, pp2_deg=0.0, pp3_deg=0.0,
+    use_dmst=True, cd_add=0.005,
+)
 
 configs = [
     ("static only   ", dict(use_dynamic_stall=False, use_flow_curvature=False)),
@@ -32,34 +44,38 @@ configs = [
 
 TSRS = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5)
 
+# Collect results so we can run a pass/fail check afterwards
+results = {label: [] for label, _ in configs}
+
 for label, flags in configs:
     print(f"--- {label} ---")
     print(f"{'TSR':>6} {'Cp(pp1=-10)':>14} {'Cp(pp1=+10)':>14}")
     for tsr in TSRS:
         cps = []
         for pp1 in (-10.0, +10.0):
-            r = create_sim_from_params({
-                'R': R_HAM, 'c': C_HAM, 'H': H_HAM, 'N': N_HAM,
-                'ar': 0.0, 'sp': 0.25,
-                'free': False, 'tsr': tsr, 'T_max': 20.0, 'stride': 5,
-                'prescribe_pitch': True,
-                'pp0_deg': 0.0, 'pp1_deg': pp1,
-                'pp2_deg': 0.0, 'pp3_deg': 0.0,
-                'use_dmst': True,
-                'cd_add': 0.005,
-                **flags,
-            }).run()
+            r = create_sim_from_params({**COMMON, **flags, 'tsr': tsr,
+                                        'pp1_deg': pp1}).run()
             cps.append(r['cp'])
+        results[label].append((tsr, cps[0], cps[1]))
         print(f"{tsr:>6.1f} {cps[0]:>14.4f} {cps[1]:>14.4f}")
     print()
 
-# after the print loop, replace with:
-static_peak = max(
-    create_sim_from_params({... 'use_dynamic_stall': False,
-                             'use_flow_curvature': False}).run()['cp']
-    for tsr in (2.0, 2.5, 3.0)
-)
-ham_ref = 0.42
-ok = abs(static_peak - ham_ref) / ham_ref < 0.15
-print(f"Static-only peak Cp = {static_peak:.3f}  (Ham ref = {ham_ref})")
-print(f"PASS: within 15%" if ok else f"FAIL: off by {abs(static_peak-ham_ref)/ham_ref*100:.0f}%")
+# ------------------------------------------------------------------ verdict
+HAM_REF_PEAK = 0.42
+TOL = 0.15
+
+static_only = [cp for _, cp, _ in results["static only   "]]
+static_peak = max(static_only)
+err = abs(static_peak - HAM_REF_PEAK) / HAM_REF_PEAK
+
+print("=" * 60)
+print("VERDICT")
+print("=" * 60)
+print(f"  static-only peak Cp  = {static_peak:.4f}")
+print(f"  Ham 1979 published    = {HAM_REF_PEAK:.2f}")
+print(f"  relative error        = {err * 100:.1f} %")
+print()
+if err < TOL:
+    print(f"  PASS  (within {TOL * 100:.0f} % of Ham's published peak)")
+else:
+    print(f"  FAIL  (off by {err * 100:.0f} %)")
