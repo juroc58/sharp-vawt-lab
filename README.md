@@ -145,6 +145,45 @@ statistics.
 
 To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
 
+## 🌪️ Turbulent-wind sensitivity
+
+![aep_turbulent](docs/aep_turbulent.png)
+
+10 realisations per wind speed, turbulence intensity I = 12 %,
+length scale L = 30 m (Dryden-like AR(1)). See
+`scripts/compute_aep_turbulent.py`.
+
+| | AEP | CF |
+|---|---|---|
+| Steady wind | 281.3 kWh/yr | 12.85 % |
+| Turbulent wind (I = 12 %) | 293.7 kWh/yr | 13.41 % |
+| **Effect** | **+4.4 %** | **+0.56 pp** |
+
+### Why turbulence gives a gain, not a loss
+
+The AEP is `∫ P(U) · pdf(U) dU`. Two convex nonlinearities in that
+integral produce a mean power above the power at the mean wind speed:
+
+1. **Cube-bias.** For any fluctuating signal, `E[U³] > (E[U])³`
+   (Jensen's inequality applied to `x³`). At I = 12 %, this alone
+   contributes `3·I² ≈ +4.3 %` — independent of any physics.
+2. **Cp(U) convexity.** The steady Cp rises from 0.23 at U = 3 m/s to
+   0.35 at U = 15 m/s (Reynolds effect). Turbulence samples this
+   convex range and `E[Cp(U)] > Cp(E[U])`. Another ~1 %.
+
+Both effects are captured by the model because it uses real polars
+across four Reynolds numbers.
+
+### Caveat
+
+The 2D BEM captures the mathematical gain plus the inertial and
+induction losses, but not 3D wake-turbulence interaction or high-
+frequency dynamic-stall hysteresis. Real turbines typically lose
+2–8 % of the perfect-turbine gain to these effects, so the realistic
+net effect is probably within ±3 % of the steady-wind AEP. The result
+should be read as **"the CPPC mechanism is robust under turbulence"**
+rather than "turbulence improves the machine."
+
 ## 🔬 What this project does differently
 
 Most VAWT hobby repos report a Cp number. This one reports **four**, with the
