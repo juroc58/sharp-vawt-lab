@@ -17,20 +17,28 @@ number in this README is reproducible from the scripts in `scripts/`.
 
 At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.09**:
 
-| Configuration | Cp | Reference |
-|---|---|---|
-| **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.46** | ~77 % of Betz |
-| **Sharp-conforming CPPC** | **0.36** | Bayly-Kentfield measured 0.37 |
-| Optimised passive (mass-balanced) | 0.49 | — |
-| Rigid blade (no pitch) | 0.34 | — |
-| Prescribed pitch (ideal actuator) | 0.48 | Ham 1979 measured 0.42–0.45 |
+| Configuration | Cp | 90 % CI | Reference |
+|---|---|---|---|
+| **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
+| **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | Bayly-Kentfield 0.37 at 4.6 m |
+| Optimised passive (mass-balanced) | 0.44 | [0.42, 0.46] | — |
+| Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
+| Ham 1979 reproduction | 0.49 | [0.46, 0.51] | matches Ham's method |
+
+The confidence intervals come from a Latin-hypercube sampling over eight
+uncalibrated model constants (`scripts/uncertainty.py`). All Sharp-machine
+numbers use the bounded tip-loss correction; the Ham reproduction uses
+Ham's own model class (single-streamtube, no tip loss). See the
+[Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
 ### Sharp-conforming CPPC
 
 Uses a light counterweight 0.30 chord ahead of the leading edge (Sharp's spec
-range is 0.5–1.0). Produces a +14.9° nose-out bias, keeps α_max at 16.2° (near
-the NACA 0012 stall angle), and reaches **Cp = 0.36** — matching the best
-measured passive-pitch VAWT (Bayly-Kentfield, 4.6 m diameter).
+range is 0.5–1.0). At R = 0.60 m with the bounded tip-loss correction on, it
+reaches **Cp = 0.27 [0.25, 0.29]** at the 90 % confidence level. This is below
+the Bayly-Kentfield measured 0.37, but their machine was 4.6 m diameter; the
+difference is consistent with the Reynolds-number scaling Sharp's paper
+predicts.
 
 The mechanism is auto-regulating: as load increases, pitch range grows and
 TSR falls, keeping the blade's angle of attack near stall. A diagnostic
@@ -43,7 +51,8 @@ blades do not stall.
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a **mass-balanced** configuration — heavy
 counterweight sitting nearly on the pitch pivot (CG offset ≈ 3 mm from pivot)
-— that reaches **Cp = 0.49**, matching the ideal-actuator upper bound.
+— that reaches **Cp = 0.44 [0.42, 0.46]** with the bounded tip-loss correction
+enabled.
 
 At this design point the aerodynamic pitch torque (~0.20 N·m peak) is roughly
 4× the centrifugal restoring torque (0.048 N·m peak). The blade pitches
@@ -101,6 +110,40 @@ at 20 m/s because α_max reaches 20° and the blade stalls. The
 low-Re penalty at U = 3 m/s is real: the NACA 0012 polar has L/D ≈ 30
 at Re = 5 × 10⁴ vs L/D ≈ 80 at Re = 10⁶, and the passive mechanism
 cannot compensate for that.
+
+## 📊 Uncertainty
+
+![uncertainty](docs/uncertainty.png)
+
+Eight model constants are uncalibrated: they come from the source papers
+but were not fitted to this specific machine. Latin-hypercube sampling
+over their plausible ranges (40 samples per anchor) propagates that
+uncertainty through each headline case:
+
+| Parameter | Low | High | Source of uncertainty |
+|---|---|---|---|
+| `cd_add` | 0.001 | 0.005 | strut / interference drag |
+| `ds_Tf` | 1.5 | 4.5 | separation lag (default 3.0) |
+| `ds_Tv` | 3.0 | 9.0 | vortex-lift lag (default 6.0) |
+| `ds_Ta` | 0.05 | 0.15 | attached-flow lag (default 0.10) |
+| `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
+| `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
+| `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
+| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
+
+The 90 % confidence width is **0.032–0.042 in Cp** across all four anchors
+(3–4 % of the mean). No single parameter dominates — the model is well-
+conditioned. The widest band is on the Ham reproduction because it samples
+`c_scale_override` across a range that spans the fit's validity.
+
+Two anomalies in the histograms are worth noting: one isolated sample
+in the `sharp_cppc` anchor sits at Cp ≈ 0.05 (a convergence failure that
+slipped past the `steady` check), and the `ham_1979` distribution is
+bimodal with clusters at 0.465 and 0.495 (likely a bifurcation when one
+of the DS time constants crosses a threshold). Neither invalidates the
+statistics.
+
+To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
 
 ## 🔬 What this project does differently
 

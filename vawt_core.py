@@ -445,6 +445,8 @@ class AeroConfig:
     ds_Ta: float = 0.1                   # attached-flow lag (>~0.5 can excite pitch flutter, see docs)
     ds_Kv: float = 0.5                   # vortex-lift strength (0 disables)
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
+    c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
+    tip_loss_floor_override: float = 0.0  # 0 = default 0.85; else use this
 
 
 @dataclass(frozen=True)
@@ -623,7 +625,10 @@ class CycloturbineSim:
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
         self.f_ar  = max(0.85, f_ar_raw)
         self.ind_k = min(0.02, ind_k_raw)
-        self.c_scale = min(1.0, (geo.c / geo.R) / 0.418)                # Adams constants were fitted at c/r=0.418
+        if aero.c_scale_override > 0.0:
+            self.c_scale = float(aero.c_scale_override)
+        else:
+            self.c_scale = min(1.0, (geo.c / geo.R) / 0.418)   # Adams fit at c/r=0.418
         self.freq_ratio = 1.0 / self.fn_ratio if self.fn_ratio > 0 else float("inf")
 
     # ---------------------------------------------------------------- balance
