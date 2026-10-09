@@ -455,19 +455,20 @@ sharp-vawt-lab/
   2D upper bounds. With the correction on, the scale-up Cp drops
   from 0.53 to 0.46.
 
-    Active Lift. Sharp's secondary mechanism, where the L-shaped bellcrank
-    between the rocking hinge and the CG adds a transient torque during pitch
-    reversal. A first-order model of the effect produced no measurable Cp gain
-    at R = 0.60 m; it likely requires Sharp's larger machine geometry.
+    Active Lift (detail). The Coriolis contribution from the blade unit's
+    radial CG motion is captured by the Lagrangian coupling (see the
+    Active Lift section). The specific L-shaped bellcrank geometry of
+    Sharp's later machines is not modelled separately; it would add a
+    secondary effect of order 5-10 % at his larger scale.
 
     Flux-line optimal pitch. Adams's inverse method for computing the
     maximum-power pitch schedule from first principles is not implemented. The
     prescribed-pitch optimiser searches a Fourier parametrisation instead.
 
 
-    Uncertainty quantification. The dynamic-stall sensitivity check is
-    one-dimensional. A full Latin-hypercube UQ over the model constants would
-    be more rigorous.
+    Uncertainty interactions. The LHS + Spearman study covers first-order
+    monotonic sensitivities. Full Sobol indices (parameter interactions)
+    are not computed.
 
 ## 📄 References
 
