@@ -28,6 +28,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from vawt_core import create_sim_from_params
 
 # ----------------------------------------------------------------- design space
