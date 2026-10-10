@@ -629,18 +629,20 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # Finite-span correction.  The classical form 1/(1 + 2/(e*AR)) is
-        # derived for elliptical wings with attached, high-AR flow.  At the
-        # AR ~ 3-30 range this project operates in, the raw value (f_ar ~
-        # 0.59 at AR 3.2) destabilises the pitch mechanism -- prescribed
-        # and passive alike -- so the floor below is a guardrail against an
-        # invalid extrapolation, not a derived physical quantity.  The
-        # induced-drag cap at 0.02 is the same kind of guardrail.  See the
-        # Limitations section of README.md.
+        # Finite-span corrections.
+        # Lift: f_ar = 1/(1 + 2/(e*AR)).  Valid for high-AR attached flow;
+        # at AR ~ 3 it over-corrects and destabilises the pitch mechanism,
+        # so it is floored at 0.85 as a guardrail (not physics).
+        # Induced drag: Cd_i = Cl^2 / (pi * e * AR).  Uncapped; this is
+        # the correct low-AR penalty and the optimiser must see it.
+        # See the Limitations section of README.md.
         f_ar_raw  = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_raw)
-        self.ind_k = min(0.02, ind_k_raw)
+        # Induced drag is NOT capped.  Cd_i = Cl^2 / (pi * e * AR) is the
+        # physically correct low-AR penalty; at AR = 3.18 it is ~0.111,
+        # which is large but right.  The optimiser must see this cost.
+        self.ind_k = ind_k_raw
         if aero.c_scale_override > 0.0:
             self.c_scale = float(aero.c_scale_override)
         else:

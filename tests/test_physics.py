@@ -32,6 +32,14 @@ class TestTipLossBounds:
         # AR = 30, raw f_ar ≈ 0.93; override 0.50 should not apply
         assert s.f_ar > 0.85
 
+    def test_ind_k_uncapped_at_low_AR(self):
+        """Induced drag uses the raw 1/(pi*e*AR) form; no cap."""
+        s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
+        # AR = 3.1786, e_osw = 0.90  ->  ind_k ~ 0.1113 (old cap was 0.02)
+        assert s.ind_k == pytest.approx(1.0 / (3.14159265 * 0.90 * 3.1786), rel=0.02)
+        assert s.ind_k > 0.10
+        assert s.ind_k < 0.02 * 20  # sanity: nowhere near the old cap
+
     def test_high_AR_gives_high_f_ar(self):
         """Higher aspect ratio must give a higher (closer to 1) f_ar."""
         s_lo = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
