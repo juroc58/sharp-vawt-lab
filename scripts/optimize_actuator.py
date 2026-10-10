@@ -61,7 +61,7 @@ DEFAULT_BASE: Dict[str, Any] = {
     "ar": 0.50, "sp": 0.25, "arm_d": 0.0, "n_arm": 2, "arm_cd": 1.0,
     # --- mass / CPPC ------------------------------------------------------
     "mb": 0.010, "xbcg": 0.20, "mc": 0.008, "dcw": 0.50,
-    "balance": 0, "bias_deg": 0.0, "J_hub": 0.02, "mu_friction": 3.0e-4,
+    "balance": 0, "bias_deg": 0.0, "J_hub": 0.02,
     # --- polar / aero switches -------------------------------------------
     "polar_dir": "polars/naca0012",
     "use_dynamic_stall": True, "use_tip_loss": False,

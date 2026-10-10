@@ -51,7 +51,7 @@ UQ_SPEC = [
     ("ds_Kv",                    0.25,  0.75),    # vortex strength (default 0.50)
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_floor_override",  0.80,  1.00),    # finite-span floor
+    ("tip_loss_floor_override",  0.80,  1.00),    # guardrail; see Limitations
 ]
 UQ_NAMES = [s[0] for s in UQ_SPEC]
 UQ_LOW   = np.array([s[1] for s in UQ_SPEC])

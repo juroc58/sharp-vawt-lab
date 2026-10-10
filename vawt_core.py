@@ -411,7 +411,6 @@ class MassProps:
     balance: int = 1         # 0: use mc,dcw as given; 1: solve dcw from mc; 2: solve mc from dcw
     bias_deg: float = 0.0
     J_hub: float = 0.02
-    mu_friction: float = 3.0e-4     # <-- add this
 
 
 @dataclass(frozen=True)
@@ -446,7 +445,7 @@ class AeroConfig:
     ds_Kv: float = 0.5                   # vortex-lift strength (0 disables)
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
-    tip_loss_floor_override: float = 0.0  # 0 = default 0.85; else use this
+    tip_loss_floor_override: float = 0.85  # minimum f_ar; pass ~0.001 for raw (no effective floor)
 
 
 @dataclass(frozen=True)
@@ -630,15 +629,17 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # 3D finite-span correction.  The classic formula 1/(1 + 2/(e*AR))
-        # is derived for an elliptical finite wing, where the entire span
-        # loses lift.  A VAWT blade only loses lift in the last ~10-15 % of
-        # span near each tip, so the midspan correction should be close to
-        # 1.  We cap the reduction at 15 % and the induced-drag coefficient
-        # at 0.02 to keep the correction physically bounded.
+        # Finite-span correction.  The classical form 1/(1 + 2/(e*AR)) is
+        # derived for elliptical wings with attached, high-AR flow.  At the
+        # AR ~ 3-30 range this project operates in, the raw value (f_ar ~
+        # 0.59 at AR 3.2) destabilises the pitch mechanism -- prescribed
+        # and passive alike -- so the floor below is a guardrail against an
+        # invalid extrapolation, not a derived physical quantity.  The
+        # induced-drag cap at 0.02 is the same kind of guardrail.  See the
+        # Limitations section of README.md.
         f_ar_raw  = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
-        self.f_ar  = max(0.85, f_ar_raw)
+        self.f_ar  = max(aero.tip_loss_floor_override, f_ar_raw)
         self.ind_k = min(0.02, ind_k_raw)
         if aero.c_scale_override > 0.0:
             self.c_scale = float(aero.c_scale_override)

@@ -7,21 +7,37 @@ from tests.conftest import BASE_QUICK
 
 class TestTipLossBounds:
 
-    def test_bounded_tip_loss_floor_applies(self):
-        """At AR = 3.18, un-bounded correction would be ~0.59. We cap at 0.85."""
+    def test_default_floor_is_085(self):
+        """Default f_ar is floored at 0.85 (guardrail; see README Limitations)."""
         s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
-        # AR = 0.445 / 0.14 = 3.18  →  raw f_ar ≈ 0.59
-        # bounded should be 0.85
+        # AR = 0.445 / 0.14 = 3.18  →  raw f_ar ≈ 0.59, floored to 0.85
         assert s.f_ar == pytest.approx(0.85, abs=0.01)
+
+    def test_raw_correction_when_floor_near_zero(self):
+        """Passing ~0 bypasses the floor; used only for diagnostics."""
+        s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
+                                    'tip_loss_floor_override': 0.001})
+        assert s.f_ar == pytest.approx(0.5885, abs=0.01)
+
+    def test_override_raises_floor(self):
+        """tip_loss_floor_override > raw clamps f_ar up to the override value."""
+        s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
+                                    'tip_loss_floor_override': 0.85})
+        assert s.f_ar == pytest.approx(0.85, abs=0.01)
+
+    def test_override_below_raw_is_ignored(self):
+        """An override below the raw value must not pull f_ar down."""
+        s = create_sim_from_params({**BASE_QUICK, 'H': 3.0, 'c': 0.10,
+                                    'tip_loss_floor_override': 0.50})
+        # AR = 30, raw f_ar ≈ 0.93; override 0.50 should not apply
+        assert s.f_ar > 0.85
 
     def test_high_AR_gives_high_f_ar(self):
         """Higher aspect ratio must give a higher (closer to 1) f_ar."""
         s_lo = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
         s_hi = create_sim_from_params({**BASE_QUICK, 'H': 3.0, 'c': 0.10})
-        # AR 3.18 vs 30: raw f_ar 0.59 vs 0.93
         assert s_hi.f_ar > s_lo.f_ar
         assert s_hi.f_ar < 1.0
-        assert s_lo.f_ar >= 0.85   # bounded floor
 
 
 class TestCScaleOverride:
