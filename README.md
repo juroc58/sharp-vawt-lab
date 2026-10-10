@@ -11,6 +11,8 @@ number in this README is reproducible from the scripts in `scripts/`.
 
 ![validation](docs/validation.png)
 
+![ham curve](docs/ham_curve.png)
+
 ---
 
 ## 🏆 Headline results
@@ -345,11 +347,16 @@ Most VAWT hobby repos report a Cp number. This one reports **four**, with the
 mechanism of each spelled out, plus a validation against the primary
 literature:
 
-1. **Ham 1979 reproduction.** The same solver, run in the model class Ham
-   used (single-streamtube, static polars, cosine pitch law with
-   θ₁c = −10°), reproduces his Pinson C2E rig at **Cp = 0.47 at TSR = 2.5**
-   (~9 % above his measured band of 0.42–0.45), consistent with
-   running the solver without a finite-span correction.
+1. **Ham 1979 reproduction (partial).** The same solver, run in the
+   model class Ham used (single-streamtube, static polars, cosine pitch
+   law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** — 9 % above
+   his measured band of 0.42–0.45. The **shape** of the curve does not
+   match: the model over-predicts by ~0.08 at TSR 2, is closest at the
+   peak, and with the Adams curvature correction active it under-predicts
+   at TSR 3+ (see `docs/ham_curve.png`). The peak reproduction is
+   consistent with running without a finite-span correction; the shape
+   is a residual limitation of the model class, not something the peak
+   number captures.
 2. **Dynamic-stall sensitivity.** Turning the (uncalibrated) DS model off
    changes Cp by **2.1 %** at the design point. The result is driven by
    steady blade forces, not by fitting the unsteady model.

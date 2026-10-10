@@ -61,21 +61,33 @@ for label, flags in configs:
     print()
 
 # ------------------------------------------------------------------ verdict
-HAM_REF_PEAK = 0.42
-TOL = 0.15
+# Ham's measured band is Cp = 0.42-0.45 at TSR 2.5-3.0.  Compare the
+# model peak against the midpoint of the band, not the lower edge.
+HAM_BAND_LO, HAM_BAND_HI = 0.42, 0.45
+HAM_MID = 0.5 * (HAM_BAND_LO + HAM_BAND_HI)
+TOL = 0.10
 
 static_only = [cp for _, cp, _ in results["static only   "]]
 static_peak = max(static_only)
-err = abs(static_peak - HAM_REF_PEAK) / HAM_REF_PEAK
+err = abs(static_peak - HAM_MID) / HAM_MID
+in_band = HAM_BAND_LO <= static_peak <= HAM_BAND_HI
 
 print("=" * 60)
 print("VERDICT")
 print("=" * 60)
 print(f"  static-only peak Cp  = {static_peak:.4f}")
-print(f"  Ham 1979 published    = {HAM_REF_PEAK:.2f}")
-print(f"  relative error        = {err * 100:.1f} %")
+print(f"  Ham 1979 band        = {HAM_BAND_LO:.2f} - {HAM_BAND_HI:.2f} "
+      f"(mid {HAM_MID:.3f})")
+print(f"  relative error       = {err * 100:.1f} % vs mid-band")
+print(f"  inside Ham's band?   = {'yes' if in_band else 'no'}")
 print()
-if err < TOL:
-    print(f"  PASS  (within {TOL * 100:.0f} % of Ham's published peak)")
+if in_band:
+    print("  PASS  (peak inside Ham's measured band)")
+elif err < TOL:
+    print(f"  PASS  (peak within {TOL * 100:.0f} % of Ham's mid-band)")
 else:
-    print(f"  FAIL  (off by {err * 100:.0f} %)")
+    print(f"  FAIL  (off by {err * 100:.0f} % from mid-band)")
+print()
+print("  Note: only the peak is checked here.  See docs/ham_curve.png")
+print("  and the README section for the full Cp(TSR) shape, which does")
+print("  not match Ham across the range.")
