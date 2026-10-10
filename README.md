@@ -594,12 +594,10 @@ sharp-vawt-lab/
 
     Active Lift (detail). The Coriolis contribution from the blade unit's
     radial CG motion is present in the model via the relative-motion
-    term in the blade's air velocity; isolating it lowers Cp by ~7 %
-    (see the Active Lift section). The Lagrangian sumL coupling nets
-    only ~0.1 % of shaft power, so it is not the dominant path. The
-    specific L-shaped bellcrank geometry of Sharp's later machines is
-    not modelled separately; it would add a secondary effect of order
-    5-10 % at his larger scale.
+    term in the blade's air velocity, but it is not quantitatively
+    isolated by the current diagnostic — see the Active Lift section.
+    The specific L-shaped bellcrank geometry of Sharp's later machines
+    is not modelled separately.
 
     Flux-line optimal pitch. Adams's inverse method for computing the
     maximum-power pitch schedule from first principles is not implemented. The
