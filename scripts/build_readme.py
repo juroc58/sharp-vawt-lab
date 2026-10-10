@@ -28,7 +28,7 @@ def block_headline_table():
         ("**Scaled-up passive (R = 2.26 m, Re = 5.1e5)**",
          uq["scaleup"], "~76 % of Betz"),
         ("**Sharp-conforming CPPC**",
-         uq["sharp_cppc"], "Bayly-Kentfield 0.37 at 4.6 m"),
+         uq["sharp_cppc"], "\u2014"),
         ("Optimised passive (mass-balanced)",
          uq["optimised_passive"], "\u2014"),
         ("Prescribed pitch (ideal actuator)", None,
@@ -77,20 +77,25 @@ def block_aep_turbulent_table():
 
 def block_uq_params_table():
     p = _j("uncertainty_results.json")["parameters"]
-    src = {
-        "cd_add":                  "strut / interference drag",
-        "ds_Tf":                   "separation lag (default 3.0)",
-        "ds_Tv":                   "vortex-lift lag (default 6.0)",
-        "ds_Ta":                   "attached-flow lag (default 0.10)",
-        "ds_Kv":                   "vortex-lift strength (default 0.50)",
-        "tau_rev":                 "induction lag (default 0.10 rev)",
-        "c_scale_override":        "Adams shift strength",
-        "tip_loss_floor_override": "finite-span correction floor",
+    # Display strings preserve the significant figures of the original bounds.
+    # Values are asserted against the JSON so drift is caught here.
+    display = {
+        "cd_add":                  ("0.001", "0.005", "strut / interference drag"),
+        "ds_Tf":                   ("1.5",   "4.5",   "separation lag (default 3.0)"),
+        "ds_Tv":                   ("3.0",   "9.0",   "vortex-lift lag (default 6.0)"),
+        "ds_Ta":                   ("0.05",  "0.15",  "attached-flow lag (default 0.10)"),
+        "ds_Kv":                   ("0.25",  "0.75",  "vortex-lift strength (default 0.50)"),
+        "tau_rev":                 ("0.05",  "0.20",  "induction lag (default 0.10 rev)"),
+        "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
+        "tip_loss_floor_override": ("0.80",  "1.00",  "finite-span correction floor"),
     }
     out = ["| Parameter | Low | High | Source of uncertainty |",
            "|---|---|---|---|"]
     for name, lo, hi in p:
-        out.append(f"| `{name}` | {lo:.2f} | {hi:.2f} | {src[name]} |")
+        lo_s, hi_s, src = display[name]
+        assert float(lo_s) == float(lo), f"{name} lo mismatch: {lo_s} vs {lo}"
+        assert float(hi_s) == float(hi), f"{name} hi mismatch: {hi_s} vs {hi}"
+        out.append(f"| `{name}` | {lo_s} | {hi_s} | {src} |")
     return "\n".join(out)
 
 

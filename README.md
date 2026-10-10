@@ -21,7 +21,7 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
 | **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
-| **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | Bayly-Kentfield 0.37 at 4.6 m |
+| **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | — |
 | Optimised passive (mass-balanced) | **0.44** | [0.42, 0.46] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | **0.49** | [0.46, 0.51] | matches Ham's method |
@@ -37,16 +37,17 @@ Ham's own model class (single-streamtube, no tip loss). See the
 
 Uses a light counterweight 0.30 chord ahead of the leading edge (Sharp's spec
 range is 0.5–1.0). At R = 0.60 m with the bounded tip-loss correction on, it
-reaches **Cp = 0.27 [0.25, 0.29]** at the 90 % confidence level. This is below
-the Bayly-Kentfield measured 0.37, but their machine was 4.6 m diameter; the
-difference is consistent with the Reynolds-number scaling Sharp's paper
-predicts.
+reaches **Cp = 0.27 [0.25, 0.29]** at the 90 % confidence level. This sits below the 0.37 figure quoted for Bayly-Kentfield's larger
+machine, but no primary-source citation for that number has been
+verified here, so it is reported as context rather than as a
+validation anchor.
 
 The mechanism is auto-regulating: as load increases, pitch range grows and
-TSR falls, keeping the blade's angle of attack near stall. A diagnostic
-confirms the aerodynamic pitch torque has the correct sign (nose-in when
-α → +stall, nose-out when α → −stall), which is the physical reason Sharp's
-blades do not stall.
+TSR falls, keeping the blade's angle of attack near stall. A diagnostic confirms the aerodynamic pitch torque has the correct
+sign (nose-in when α → +stall, nose-out when α → −stall), which is
+the stabilising property Sharp's CPPC mechanism relies on. Note that
+the blade does still reach stall at high wind speeds — see the AEP
+section below.
 
 ### Optimised passive
 
@@ -174,9 +175,9 @@ uncertainty through each headline case:
 <!-- BEGIN GENERATED: uq_params -->
 | Parameter | Low | High | Source of uncertainty |
 |---|---|---|---|
-| `cd_add` | 0.00 | 0.01 | strut / interference drag |
-| `ds_Tf` | 1.50 | 4.50 | separation lag (default 3.0) |
-| `ds_Tv` | 3.00 | 9.00 | vortex-lift lag (default 6.0) |
+| `cd_add` | 0.001 | 0.005 | strut / interference drag |
+| `ds_Tf` | 1.5 | 4.5 | separation lag (default 3.0) |
+| `ds_Tv` | 3.0 | 9.0 | vortex-lift lag (default 6.0) |
 | `ds_Ta` | 0.05 | 0.15 | attached-flow lag (default 0.10) |
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
@@ -186,15 +187,19 @@ uncertainty through each headline case:
 
 The 90 % confidence width is **0.032–0.042 in Cp** across all four anchors
 (3–4 % of the mean). No single parameter dominates — the model is well-
-conditioned. The widest band is on the Ham reproduction because it samples
-`c_scale_override` across a range that spans the fit's validity.
+conditioned. The widest band is on the Ham reproduction, which is nearly
+single-parameter in `tau_rev` (ρ = +0.89); the LHS samples that
+parameter over a wide range.
 
-Two anomalies in the histograms are worth noting: one isolated sample
-in the `sharp_cppc` anchor sits at Cp ≈ 0.05 (a convergence failure that
-slipped past the `steady` check), and the `ham_1979` distribution is
-bimodal with clusters at 0.465 and 0.495 (likely a bifurcation when one
-of the DS time constants crosses a threshold). Neither invalidates the
-statistics.
+Two anomalies in the histograms are worth noting. First, one sample in
+the `sharp_cppc` anchor sits at Cp = 0.034 with α_max ≈ 180° — a
+fully-reversed-flow case that passed the `steady` check. Excluding it
+shifts the `sharp_cppc` mean from 0.266 to 0.272 (+2.2 %); both are
+reported and the outlier is retained for transparency. Second, the
+`ham_1979` distribution is bimodal with clusters near 0.465 and 0.500;
+this is likely a bifurcation when a DS time constant crosses a
+threshold. Neither invalidates the wider UQ study, but neither is
+fully explained by it.
 
 To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
 
@@ -268,9 +273,9 @@ numerical artifact.
   (`ds_Tf`, `cd_add`, `ds_Tv`, `ds_Ta`). Passive pitching couples the
   blade's response to the unsteady aerodynamics, so all the DS time
   constants contribute.
-- **`optimised_passive`**: a different mix again, with `ds_Ta` flipping
-  sign relative to `sharp_cppc`. The mass-balanced operating point
-  responds to the attached-flow lag in the opposite direction.
+- **`optimised_passive`**: a different mix again, dominated by
+  `tau_rev` (ρ = +0.44) with `ds_Ta` and `c_scale_override` both
+  contributing negatively (ρ ≈ −0.37 each).
 - **`scaleup`**: dominated by the Adams curvilinear shift, with a
   *negative* correlation. At high Reynolds number and high aspect ratio
   the Adams correction is over-correcting — a design hint that the
@@ -291,7 +296,8 @@ literature:
 1. **Ham 1979 reproduction.** The same solver, run in the model class Ham
    used (single-streamtube, static polars, cosine pitch law with
    θ₁c = −10°), reproduces his Pinson C2E rig at **Cp = 0.47 at TSR = 2.5**
-   — inside his measured band of 0.42–0.45.
+   (~9 % above his measured band of 0.42–0.45), consistent with
+   running the solver without a finite-span correction.
 2. **Dynamic-stall sensitivity.** Turning the (uncalibrated) DS model off
    changes Cp by **2.1 %** at the design point. The result is driven by
    steady blade forces, not by fitting the unsteady model.
