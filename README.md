@@ -138,46 +138,39 @@ That A−B difference is the ordinary benefit of *any* time-varying pitch
 schedule on a VAWT. It is not specific to Sharp's mechanism, and labelling
 it "Active Lift" was incorrect.
 
-### What actually isolates the Coriolis effect
+### What `diag_active_lift.py` actually measures
 
-Two further experiments isolate the parts of A−B that depend on the blade
-unit's motion relative to its arm — the components that correspond to
-Sharp's Coriolis mechanism:
+The current diagnostic script compares three operating points at the
+same TSR and the same load:
 
-1. **Net energy through the Lagrangian `sumL` coupling.** Integrating the
-   instantaneous `sumL` power over one revolution gives **+0.0002 Cp** net
-   — about **0.1 %** of shaft power. Whatever benefit the Coriolis-like
-   coupling provides is second-order against the rotor's aero torque.
+| Case | Cp |
+|---|---|
+| A. Passive (blade rocks freely) | 0.2728 |
+| B. Rigid, locked at the time-mean pitch | 0.2313 |
+| C. Rigid, locked at ψ = 0 | 0.1426 |
 
-2. **Suppressing the blade's own rocking velocity.** The pitch rate
-   contributes to the blade's air velocity through the relative-motion
-   term. Removing that contribution — leaving the pitch schedule, the
-   pendulum, and the rotor untouched — lowers Cp by **≈ 7 %**. This is the
-   closest the model gets to isolating Sharp's mechanism.
+The A−B difference (ΔCp = +0.0414, +18 %) is the ordinary benefit of a
+time-varying pitch schedule, not a specific measurement of Sharp's
+Coriolis mechanism. Any pitch-controlled VAWT benefits from cyclic pitch
+in this way.
 
-**Best estimate of the model's Active Lift contribution: +7 %.**
-Sharp's own estimate is +10 %. The model and Sharp agree to within the
-scale of his own uncertainty, but the actual figure is closer to 7 % than
-to 18 %.
+**The specific Coriolis contribution is not isolated by the current
+diagnostic.** Earlier versions of this README quoted a +7 % figure from
+a rocking-velocity-suppression experiment and a +0.0002 Cp net-energy
+figure from an integral of the Lagrangian `sumL` term. Those numbers
+are not produced by `scripts/diag_active_lift.py` as it currently
+stands; they should be treated as retracted until the script implements
+the experiments. Sharp's own estimate remains +10 %, which the model
+does not currently confirm or refute.
 
 ### What this means for the mechanism
 
-The Coriolis effect is real in the model — removing it costs ~7 % Cp — but
-it is not what makes the passive machine work. The dominant benefit
-(≈ 62 %) comes from the blade sitting at the right **mean pitch**. The
-rocking motion adds a further ≈ 18 %, of which roughly 7 % is specifically
-attributable to the blade's motion relative to its arm.
-
-An implication worth stating: if this passive design ever became
-competitive with active pitch control, it would be because of the
-mean-pitch schedule, not the Coriolis term. The Coriolis contribution is
-a modest bonus, not the operating principle.
-
-*The two isolation experiments above are reported from an independent
-re-run of `scripts/diag_active_lift.py`; the passive/rigid/zero-pitch
-Cp values reproduce exactly (0.2728 / 0.2313 / 0.1426). See
-`scripts/diag_active_lift.py` for the current diagnostic.*
-
+The dominant benefit of pitch control here is the **mean pitch offset**
+(B − C = +62 %): a rigid blade sitting at the right bias angle is much
+better than one at ψ = 0. The rocking motion adds a further **+18 %**
+(A − B), which is the ordinary cyclic-pitch benefit and includes any
+Coriolis contribution alongside the non-Coriolis effects. The model does
+not currently separate the two.
 
 ## 📈 Annual energy production
 
@@ -238,7 +231,6 @@ efficiency in a narrow window around its design wind speed.
 
 This is the physical claim Sharp's paper makes for CPPC. The passive
 mechanism adapts to wind speed without any external control.
-
 
 ## 📊 Uncertainty
 
@@ -308,8 +300,8 @@ integral produce a mean power above the power at the mean wind speed:
    0.35 at U = 15 m/s (Reynolds effect). Turbulence samples this
    convex range and `E[Cp(U)] > Cp(E[U])`. Another ~1 %.
 
-Both effects are captured by the model because it uses real polars
-across four Reynolds numbers.
+Both effects are captured by the model because it uses polars
+across four Reynolds numbers (synthetic — see `polars/README.md`).
 
 ### Caveat
 
@@ -410,8 +402,11 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
   Euler. Sharp's centrifugal-pendulum restoring torque is computed from the
   blade unit's CG position relative to the pitch pivot.
 - **Pitch law** (prescribed mode): `ψ(φ) = pp0 + pp1·cos(φ + ph) + pp2·cos 2(φ + ph) + pp3·sin 2(φ + ph)` with `ph` = `pp_ph_deg`. There is no sin φ term and no fourth harmonic.
-- **Polars**: Sheldahl-Klimas NACA 0012 tables at four Reynolds numbers
-  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶), bilinear interpolation in (log Re, α).
+- **Polars**: synthetic NACA 0012 tables at four Reynolds numbers
+  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶), approximating the Sheldahl-Klimas
+  shape with `Cl ~ 0.85·sin 2α` post-stall and `Cm = 0`. Bilinear
+  interpolation in (log Re, α). See `polars/README.md` for what is
+  and is not captured.
 - **Energy ledger**: closes to within a few percent for passive runs;
   disabled in prescribed mode because the pitch actuator work is external.
 
@@ -530,7 +525,7 @@ parameter mismatches surface immediately.
 ```text
 sharp-vawt-lab/
 |-- vawt_core.py # physics engine (single source of truth)
-|-- polars/naca0012/ # real NACA 0012 tables at four Re
+|-- polars/naca0012/ # synthetic NACA 0012 polars; see polars/README.md
 |-- scripts/
 | |-- validate_ham.py # Ham 1979 benchmark
 | |-- validate_ds_off.py # dynamic-stall sensitivity
@@ -593,9 +588,8 @@ sharp-vawt-lab/
 - Adams, Z., Chen, J. (2018). Flux-line theory: a novel analytical model for vertical axis wind turbines. AIAA J. 56(6). DOI 10.2514/1.J056575.
 - Pawsey, N.C.K. (2002). Development and evaluation of passive variable-pitch vertical axis wind turbines. PhD thesis, UNSW.
 - Sharp, P.A. (2021). The Sharp Cycloturbine: a summary of how it works.
-- Sheldahl, R.E., Klimas, P.C. (1981). Aerodynamic characteristics of seven symmetrical airfoil sections through 180 degrees angle of attack. Sandia SAND80-2114.
+- Sheldahl, R.E., Klimas, P.C. (1981). Aerodynamic characteristics of seven symmetrical airfoil sections through 180 degrees angle of attack. Sandia SAND80-2114. *(Reference for the airfoil family; the polar files in this repo are synthetic approximations, not digitised from this report.)*
 - Bayly, D., Kentfield, J. (1981). A vertical axis cyclogiro type wind-turbine with freely-hinged blades. Proc. Intersociety Energy Conversion Conference.
-
 
 ## 📜 License
 

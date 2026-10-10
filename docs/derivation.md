@@ -607,9 +607,16 @@ limitations in the README:
    to accelerate through the rotor in a way that a 2D DMS model misses.
    The Adams correction partially compensates but is not a substitute.
 
-3. **No Active Lift.** Sharp's secondary mechanism (the L-shaped
-   bellcrank between the rocking hinge and the CG) is not modelled. A
-   first-order term was tested and gave a null result at R = 0.6 m.
+3. **Active Lift is not quantitatively isolated.** Sharp's secondary
+   mechanism (the L-shaped bellcrank between the rocking hinge and the
+   CG) is present in the model through the blade's motion relative to
+   its arm, but the current diagnostic (`scripts/diag_active_lift.py`)
+   only measures the combined benefit of a time-varying pitch schedule,
+   not the Coriolis-specific component. Earlier attempts to isolate the
+   Coriolis term via a Lagrangian `sumL` integral gave a near-null result
+   (~0.1 % of shaft power) but the script that produced that number is no
+   longer in the repo, so the figure should not be relied on. See the
+   Active Lift section of README.md for the current state.
 
 4. **Uncalibrated dynamic-stall constants.** $T_f, T_v, T_\alpha$ are
    literature-typical values from Pawsey's thesis, not fitted to data.
