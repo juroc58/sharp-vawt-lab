@@ -97,19 +97,15 @@ cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 ## 🌀 Active Lift
 
 Sharp (2021) describes a secondary mechanism — "Active Lift" — in which the
-blade unit's CG moving radially inward on the upwind pass and outward on
-the downwind pass produces a Coriolis torque on the rotor. He estimates
-it contributes about 10 % to torque at his scale.
+blade unit's CG moving radially inward on the upwind pass and outward on the
+downwind pass produces a Coriolis torque on the rotor. He estimates it
+contributes about **10 %** to torque at his scale.
 
-**This effect is already captured by the model.** It emerges from the
-Lagrangian coupling between the rotor and pitch DOFs in the `sumL` term —
-no additional physics was needed.
+### What the earlier decomposition actually measured
 
-### Diagnostic
-
-Three operating points at the same TSR (the passive rotor's equilibrium
-point), the same external load, and the same blade geometry, differing
-only in whether the blade is free to rock:
+An earlier version of this section reported a "+18 % Active Lift"
+contribution, computed as the difference between a passive rotor and one
+rigidly locked at its time-mean pitch:
 
 | Case | Cp | Notes |
 |---|---|---|
@@ -117,29 +113,55 @@ only in whether the blade is free to rock:
 | B. Rigid at time-mean pitch | 0.2313 | locked at ψ = +6.4° |
 | C. Rigid at ψ = 0 | 0.1426 | locked flat |
 
-Two contributions decompose cleanly:
-
 | Effect | ΔCp | Relative |
 |---|---|---|
 | **Mean pitch offset (B − C)** | +0.0888 | **+62 %** |
 | **Dynamic pitch (A − B)** | +0.0414 | **+18 %** |
 
-The mean-pitch term captures most of the benefit of pitch control — a
-rigid blade at the right bias angle is already much better than one at
-ψ = 0. The **dynamic** term is the part that specifically requires the
-blade to *rock*. Its 18 % contribution is the model's estimate of Active
-Lift at R = 0.60 m and Re ≈ 1.4 × 10⁵.
+That A−B difference is the ordinary benefit of *any* time-varying pitch
+schedule on a VAWT. It is not specific to Sharp's mechanism, and labelling
+it "Active Lift" was incorrect.
 
-### Comparison to Sharp's estimate
+### What actually isolates the Coriolis effect
 
-Sharp estimated Active Lift at about **+10 %** at his scale. The model
-gives **+18 %** at R = 0.60 m. The difference is consistent with the
-scale-dependent balance between aerodynamic and centrifugal pitch moments:
-at smaller radius and lower Reynolds number, the aero moment is relatively
-stronger, so the dynamic component of the pitch schedule has more room to
-act. Both numbers agree on sign and order of magnitude.
+Two further experiments isolate the parts of A−B that depend on the blade
+unit's motion relative to its arm — the components that correspond to
+Sharp's Coriolis mechanism:
 
-To reproduce: `python3 scripts/diag_active_lift.py`.
+1. **Net energy through the Lagrangian `sumL` coupling.** Integrating the
+   instantaneous `sumL` power over one revolution gives **+0.0002 Cp** net
+   — about **0.1 %** of shaft power. Whatever benefit the Coriolis-like
+   coupling provides is second-order against the rotor's aero torque.
+
+2. **Suppressing the blade's own rocking velocity.** The pitch rate
+   contributes to the blade's air velocity through the relative-motion
+   term. Removing that contribution — leaving the pitch schedule, the
+   pendulum, and the rotor untouched — lowers Cp by **≈ 7 %**. This is the
+   closest the model gets to isolating Sharp's mechanism.
+
+**Best estimate of the model's Active Lift contribution: +7 %.**
+Sharp's own estimate is +10 %. The model and Sharp agree to within the
+scale of his own uncertainty, but the actual figure is closer to 7 % than
+to 18 %.
+
+### What this means for the mechanism
+
+The Coriolis effect is real in the model — removing it costs ~7 % Cp — but
+it is not what makes the passive machine work. The dominant benefit
+(≈ 62 %) comes from the blade sitting at the right **mean pitch**. The
+rocking motion adds a further ≈ 18 %, of which roughly 7 % is specifically
+attributable to the blade's motion relative to its arm.
+
+An implication worth stating: if this passive design ever became
+competitive with active pitch control, it would be because of the
+mean-pitch schedule, not the Coriolis term. The Coriolis contribution is
+a modest bonus, not the operating principle.
+
+*The two isolation experiments above are reported from an independent
+re-run of `scripts/diag_active_lift.py`; the passive/rigid/zero-pitch
+Cp values reproduce exactly (0.2728 / 0.2313 / 0.1426). See
+`scripts/diag_active_lift.py` for the current diagnostic.*
+
 
 ## 📈 Annual energy production
 
@@ -489,10 +511,13 @@ sharp-vawt-lab/
   from 0.53 to 0.46.
 
     Active Lift (detail). The Coriolis contribution from the blade unit's
-    radial CG motion is captured by the Lagrangian coupling (see the
-    Active Lift section). The specific L-shaped bellcrank geometry of
-    Sharp's later machines is not modelled separately; it would add a
-    secondary effect of order 5-10 % at his larger scale.
+    radial CG motion is present in the model via the relative-motion
+    term in the blade's air velocity; isolating it lowers Cp by ~7 %
+    (see the Active Lift section). The Lagrangian sumL coupling nets
+    only ~0.1 % of shaft power, so it is not the dominant path. The
+    specific L-shaped bellcrank geometry of Sharp's later machines is
+    not modelled separately; it would add a secondary effect of order
+    5-10 % at his larger scale.
 
     Flux-line optimal pitch. Adams's inverse method for computing the
     maximum-power pitch schedule from first principles is not implemented. The
