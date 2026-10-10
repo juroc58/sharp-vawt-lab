@@ -28,6 +28,18 @@ class TestFactoryKeyChecking:
     def test_alias_win_accepted(self):
         create_sim_from_params({**BASE_QUICK, 'win': 40.0})
 
+    @pytest.mark.parametrize("dead_key", ["n_span", "use_hub_loss",
+                                          "use_rotational_aug"])
+    def test_removed_legacy_keys_rejected(self, dead_key):
+        """Keys dropped in the Tier-2 dead-code cleanup must stay gone.
+
+        If any of these is silently re-added to a config dataclass, this
+        fails and forces a conscious decision instead of bit-rot.
+        """
+        with pytest.raises(KeyError) as exc:
+            create_sim_from_params({**BASE_QUICK, dead_key: 1})
+        assert dead_key in str(exc.value)
+
 
 class TestFactoryForwarding:
     """SimConfig fields the AEP scripts depend on must actually be forwarded."""

@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "sharp-vawt-lab: a 2D BEM solver for the Sharp cycloturbine"
+abstract: >-
+  A Python numerical laboratory for the Sharp cycloturbine — a passive
+  variable-pitch vertical-axis wind turbine with centrifugal-pendulum
+  pitch control (CPPC). Implements the modified MIT dynamic stall model,
+  Adams (2018) curvilinear corrections, double-multiple-streamtube
+  induction, and the full Lagrangian coupling between rotor and pitch
+  dynamics.
+type: software
+authors:
+  - name: juroc58
+version: 3.1.0
+date-released: "2026-10-10"
+license: MIT
+repository-code: "https://github.com/juroc58/sharp-vawt-lab"
+keywords:
+  - vertical axis wind turbine
+  - VAWT
+  - cycloturbine
+  - blade element momentum
+  - dynamic stall
+  - passive variable pitch
+  - centrifugal pendulum pitch control
+  - renewable energy
+references:
+  - type: article
+    title: "Analytical and experimental evaluation of cycloturbine aerodynamic performance"
+    authors:
+      - name: "Ham, N. D."
+      - name: "Soohoo, P."
+      - name: "Noll, R. B."
+      - name: "Drees, H. M."
+    year: 1979
+    notes: "AIAA 79-0968"
+  - type: article
+    title: "Flux-line theory: a novel analytical model for vertical axis wind turbines"
+    authors:
+      - name: "Adams, Z."
+      - name: "Chen, J."
+    year: 2018
+    doi: "10.2514/1.J056575"
+  - type: thesis
+    title: "Development and evaluation of passive variable-pitch vertical axis wind turbines"
+    authors:
+      - name: "Pawsey, N. C. K."
+    year: 2002
+    institution:
+      name: "University of New South Wales"

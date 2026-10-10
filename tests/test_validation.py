@@ -7,6 +7,32 @@ iteration: `pytest -m "not slow"`.
 import pytest
 
 from vawt_core import create_sim_from_params
+from scripts.validate_ham import verdict, HAM_MID, HAM_BAND_LO, HAM_BAND_HI
+
+
+class TestHamVerdictLogic:
+    """The pass/fail rule in scripts/validate_ham.py, without running a sim."""
+
+    def test_mid_band_passes(self):
+        ok, err, in_band = verdict(HAM_MID)
+        assert ok and in_band and err == pytest.approx(0.0)
+
+    def test_band_edges_pass(self):
+        assert verdict(HAM_BAND_LO)[0] is True
+        assert verdict(HAM_BAND_HI)[0] is True
+
+    def test_within_tolerance_passes(self):
+        # +9% of mid-band is inside the 10% tolerance.
+        ok, err, in_band = verdict(HAM_MID * 1.09)
+        assert ok is True and in_band is False
+
+    def test_far_off_fails(self):
+        ok, err, in_band = verdict(HAM_MID * 1.30)
+        assert ok is False and in_band is False
+
+    def test_negative_side_within_tolerance(self):
+        ok, err, in_band = verdict(HAM_MID * 0.92)
+        assert ok is True and in_band is False
 
 
 @pytest.mark.slow

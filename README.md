@@ -43,6 +43,13 @@ optimiser's deterministic `best_cp` (e.g. 0.28 for the passive optimum,
 optimum; the table gives the UQ mean over eight uncertain constants,
 which is usually lower.
 
+The same distinction explains the two Ham numbers that appear in this
+document. The **body text quotes 0.47** — a single deterministic run of
+`scripts/validate_ham.py` at TSR = 2.5. The **headline table quotes
+0.49** — the UQ mean over the eight uncertain constants, which for the
+Ham anchor sits slightly above the deterministic point. They are not
+in conflict; they are the same case measured two ways.
+
 ### Sharp-inspired CPPC
 
 This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
@@ -366,7 +373,7 @@ literature:
 
 1. **Ham 1979 reproduction (partial).** The same solver, run in the
    model class Ham used (single-streamtube, static polars, cosine pitch
-   law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** — 9 % above
+   law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** (a single deterministic run; the UQ mean in the headline table is 0.49) — 9 % above
    his measured band of 0.42–0.45. The **shape** of the curve does not
    match: the model over-predicts by ~0.08 at TSR 2, is closest at the
    peak, and with the Adams curvature correction active it under-predicts
@@ -377,9 +384,12 @@ literature:
 2. **Dynamic-stall sensitivity.** Turning the (uncalibrated) DS model off
    changes Cp by **2.1 %** at the design point. The result is driven by
    steady blade forces, not by fitting the unsteady model.
-3. **Pitch-torque sign check.** A diagnostic confirms the aero pitch torque
-   is stabilising — the physical requirement for Sharp's "blades do not
-   stall" claim.
+3. **Pitch-torque sign check.** `scripts/diag_qa.py` reconstructs the aero
+   pitch torque from the pitch equation and **exits non-zero** if it is not
+   restoring at the stall extremes — the physical requirement for Sharp's
+   "blades do not stall" claim. The pass/fail logic is pinned by
+   `tests/test_diag_qa.py` with synthetic histories, so a sign regression
+   fails the suite.
 4. **Sharp-inspired parameter sweep.** The counterweight mass and offset
    are swept through Sharp's design range, showing where his mechanism works
    and where the mass ratio becomes unstable.
@@ -425,6 +435,18 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
 
 ## ⚡ Quick start
 
+### 0. Run the test suite
+
+    pip install -r requirements-dev.txt
+    pytest                      # full suite (fast + slow validation)
+    pytest -m "not slow"        # fast only, for local iteration
+    pytest --cov                # with coverage (kernel is numba-jitted)
+
+`tests/` pins the solver with golden-Cp regression cases
+(`tests/test_regression.py`), a pitch-torque sign check, the Ham/DS
+verdict logic, and factory validation. The validation scripts below also
+exit non-zero on failure, so they can be wired into CI directly.
+
 ### 1. Validate against Ham 1979
 
     python3 scripts/validate_ham.py
@@ -435,6 +457,9 @@ model configurations:
 - **static polars only** — Ham's model class  → peak Cp = 0.47 at TSR = 2.5
 - **+ dynamic stall** — modern VAWT model     → peak Cp = 0.47 at TSR = 2.5
 - **+ dynamic stall + curvilinear flow** — Adams shift applied
+
+These are single deterministic runs. The headline table's Ham UQ mean of
+0.49 samples the eight uncertain model constants about this point.
 
 Ham 1979 published peak Cp = 0.42–0.45 at TSR = 2.5–3.0. The `+ curv` row
 drops to 0.40 because Adams fitted his coefficients at c/R = 0.418 on a
@@ -462,9 +487,9 @@ that establish the Cp = 0.36 operating point.
     python3 scripts/diag_qa.py
 
 Reconstructs the aerodynamic pitch torque from the passive simulation and
-verifies it has the correct sign (nose-in at +stall, nose-out at −stall).
-This is the physical evidence that the CPPC mechanism is behaving as Sharp
-describes.
+verifies it has the correct sign (nose-in at +stall, nose-out at −stall),
+exiting non-zero on failure. This is the physical evidence that the CPPC
+mechanism is behaving as Sharp describes.
 
 ### 5. Regenerate the validation figure
 
@@ -524,24 +549,40 @@ parameter mismatches surface immediately.
 
 ```text
 sharp-vawt-lab/
-|-- vawt_core.py # physics engine (single source of truth)
-|-- polars/naca0012/ # synthetic NACA 0012 polars; see polars/README.md
+|-- vawt_core.py                 # physics engine (single source of truth)
+|-- pyproject.toml               # packaging + pytest config
+|-- polars/naca0012/             # synthetic NACA 0012 polars; see polars/README.md
 |-- scripts/
-| |-- validate_ham.py # Ham 1979 benchmark
-| |-- validate_ds_off.py # dynamic-stall sensitivity
-| |-- plot_validation.py # regenerate docs/validation.png
-| |-- passive_sweeps.py # Sharp counterweight and load sweeps
-| |-- passive_sharp.py # single passive run at design point
-| |-- diag_qa.py # pitch-torque sign verification
-| |-- optimize_passive.py # DE + NM over passive hardware
-| |-- optimize_actuator.py # DE + NM over prescribed pitch (reference)
-| |-- render_animation.py # MP4 visualization
-|-- docs/
-|-- validation.png
-|-- diag_qa.png
-        |-- animation.mp4
+|   |-- build_readme.py          # regenerate README numeric blocks
+|   |-- validate_ham.py          # Ham 1979 benchmark
+|   |-- validate_ds_off.py       # dynamic-stall sensitivity
+|   |-- plot_validation.py       # regenerate docs/validation.png
+|   |-- plot_ham_curve.py        # regenerate docs/ham_curve.png
+|   |-- passive_sweeps.py        # Sharp counterweight and load sweeps
+|   |-- passive_sharp.py         # single passive run at design point
+|   |-- diag_qa.py               # pitch-torque sign verification (pass/fail)
+|   |-- diag_active_lift.py      # passive / rigid / zero-pitch decomposition
+|   |-- compute_aep.py           # AEP, passive vs fixed-rpm
+|   |-- compute_aep_rigid_fair.py# fair rigid-blade AEP baseline
+|   |-- compute_aep_turbulent.py # turbulent-wind AEP
+|   |-- uncertainty.py           # LHS over eight uncalibrated constants
+|   |-- spearman_sensitivity.py  # rank-correlation sensitivity
+|   |-- optimize_passive.py      # DE + NM over passive hardware
+|   |-- optimize_actuator.py     # DE + NM over prescribed pitch (reference)
+|   |-- optimize_scaleup.py      # joint R + hardware optimisation
+|   |-- render_animation.py      # MP4 visualization
+|-- tests/                       # pytest suite (fast + slow markers)
+|   |-- test_regression.py       # golden-Cp regression cases
+|   |-- test_diag_qa.py          # pitch-torque sign check
+|   |-- test_validation.py       # Ham + DS verdict logic
+|   |-- test_physics.py          # tip-loss / c_scale / ledger
+|   |-- test_factory.py          # key validation, removed-key guards
+|   |-- test_geometry.py         # geometry + mass balance
+|   |-- test_readme_numbers.py   # README vs scripts/*.json drift
+|   |-- regenerate_golden.py     # helper to refresh golden Cp
+|-- docs/                        # figures + derivation.md
+|-- README.md
 ```
----
 
 ## 🧭 What this project does not model
 

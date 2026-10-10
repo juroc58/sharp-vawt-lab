@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sharp-vawt-lab"
+version = "3.1.0"
+description = "2D BEM solver for the Sharp cycloturbine (passive variable-pitch VAWT with centrifugal-pendulum pitch control)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "juroc58" }]
+keywords = [
+    "vawt", "wind-energy", "bem", "cycloturbine", "dynamic-stall",
+    "vertical-axis-wind-turbine", "numba",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=1.26",
+    "numba>=0.59",
+    "scipy>=1.11",
+    "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.3",
+    "pytest-cov>=5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/juroc58/sharp-vawt-lab"
+Repository = "https://github.com/juroc58/sharp-vawt-lab"
+
+[tool.setuptools]
+py-modules = ["vawt_core"]
+
+[tool.setuptools.package-data]
+"*" = ["polars/naca0012/*.csv"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: tests that take more than 30 seconds (skip with -m \"not slow\")",
+]
+timeout = 300
+
+[tool.coverage.run]
+source = ["vawt_core", "scripts"]
+omit = ["tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

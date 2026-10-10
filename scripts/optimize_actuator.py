@@ -77,7 +77,7 @@ DEFAULT_BASE: Dict[str, Any] = {
     # --- simulation ------------------------------------------------------
     "U": 8.0, "tsr": 2.5, "free": True, "w0_frac": 0.9,
     "dt": 2.0e-4, "T_max": 20.0, "stride": 5,
-    "n_span": 1, "n_rev_fixed": 20,
+    "n_rev_fixed": 20,
 }
 
 
@@ -178,7 +178,7 @@ class VAWTOptimizer:
     def _warmup(self) -> None:
         print("[Opt] Warming up Numba JIT ...")
         warm = dict(self.base)
-        warm.update(T_max=0.5, n_span=1)
+        warm.update(T_max=0.5)
         try:
             t0 = time.perf_counter()
             create_sim_from_params(warm).run()
@@ -358,7 +358,7 @@ def _cli():
     opt = VAWTOptimizer(base_params=base, de_popsize=15, de_maxiter=30,
                         local_maxiter=40, workers=-1, seed=42)
     report = opt.optimise()
-    out = Path(__file__).with_name("optimization_result.json")
+    out = Path(__file__).with_name("optimization_actuator.json")
     opt.save(str(out), report)
     opt.evaluate_best(report, T_long=30.0)
 

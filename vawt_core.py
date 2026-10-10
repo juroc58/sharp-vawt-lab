@@ -418,8 +418,6 @@ class AeroConfig:
     polar_dir: str = "polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
     use_dynamic_stall: bool = True
     use_tip_loss: bool = False           # finite-span correction (lift slope + induced drag)
-    use_hub_loss: bool = False           # unused (kept for compatibility)
-    use_rotational_aug: bool = False     # unused (kept for compatibility)
     use_dmst: bool = True
     use_dynamic_inflow: bool = True      # False -> near-instant induction (tau = 0.02 rev)
     use_flow_curvature: bool = False     # Adams (2018) shifts, scaled by (c/R)/0.418
@@ -464,7 +462,6 @@ class SimConfig:
     turb_I: float = 0.0
     turb_L: float = 30.0
     k_load: float = 0.0004
-    n_span: int = 1          # deprecated: all span stations are identical in this 2D model
     rho: float = 1.225
     seed: int = 0
     n_rev_fixed: int = 16    # length of fixed-rpm runs in revolutions
@@ -501,11 +498,8 @@ def surrogate_polar(Re, alpha):
 class PolarDatabase:
     """Static polar tables (Cl, Cd over log Re x alpha). Cm is not used by the kernel."""
 
-    def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None, n_span: int = 1,
-                 use_rotational_aug: bool = False):
+    def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None):
         self.polar_dir = polar_dir
-        self.n_span = max(1, int(n_span))
-        self.r_stations = np.linspace(-0.5, 0.5, self.n_span) * (geo.H if geo else 1.0)
         self.alpha_grid = np.radians(np.linspace(-180.0, 180.0, 721))
         files = sorted(glob.glob(os.path.join(polar_dir, "*.csv"))) if polar_dir else []
         if files:
@@ -542,8 +536,6 @@ class PolarDatabase:
         """Re-independent table from fn(alpha_array) -> (Cl, Cd); cla = attached lift slope (per rad)."""
         self = cls.__new__(cls)
         self.polar_dir = ""
-        self.n_span = 1
-        self.r_stations = np.zeros(1)
         self.alpha_grid = np.radians(np.linspace(-180.0, 180.0, 721))
         self.logRe_grid = np.array([math.log(1e5)])
         cl, cd = fn(self.alpha_grid)
@@ -596,14 +588,6 @@ class PolarDatabase:
         self.Cd_min = float(np.min(self.Cd[:, sel]))
         self.alpha_stall = float(self.alpha_grid[sel][np.argmax(self.Cl[-1][sel])])
         self.Cl_alpha = float(np.mean(self.cla_re))
-        self.Cl_3d = np.repeat(self.Cl[None], self.n_span, axis=0)
-        self.Cd_3d = np.repeat(self.Cd[None], self.n_span, axis=0)
-        self.Cm_3d = np.zeros_like(self.Cl_3d)
-
-    def get_numba_data(self):
-        return (self.logRe_grid, self.alpha_grid, self.Cl_3d, self.Cd_3d, self.Cm_3d,
-                self.n_span, len(self.logRe_grid), len(self.alpha_grid),
-                self.Cl_alpha, self.Cl_max, self.alpha_stall, self.Cd_min)
 
 
 # =============================================================================
@@ -620,8 +604,7 @@ class CycloturbineSim:
         self.xm = 0.50 * geo.c - self.sp_len
         self.xb = -self.sp_len + mass.xbcg * geo.c
         self._resolve_balance()
-        self.polar_db = polar_db or PolarDatabase(aero.polar_dir, geo, sim.n_span,
-                                                  aero.use_rotational_aug)
+        self.polar_db = polar_db or PolarDatabase(aero.polar_dir, geo)
         self.wstop = aero.wstop
         self.win = math.radians(aero.win_deg)
         self.ks = self.Ip * self.wstop ** 2
@@ -647,7 +630,6 @@ class CycloturbineSim:
             self.c_scale = float(aero.c_scale_override)
         else:
             self.c_scale = min(1.0, (geo.c / geo.R) / 0.418)   # Adams fit at c/r=0.418
-        self.freq_ratio = 1.0 / self.fn_ratio if self.fn_ratio > 0 else float("inf")
 
     # ---------------------------------------------------------------- balance
     def _resolve_balance(self):
@@ -677,7 +659,8 @@ class CycloturbineSim:
         self.M, self.mc, self.dcw = M, mc, dcw
         self.xg = (mb * xb + mc * xcw) / M
         self.Ip = mb * (c * c / 12.0 + xb * xb + ar * ar) + mc * (xcw * xcw + ar * ar)
-        # natural pitching frequency / rotor frequency (Sharp: >= 1.5).  Pawsey's ratio is the inverse.
+        # natural pitching frequency / rotor frequency (Sharp's design rule: >= 1.5).
+        # Reported in run() results as 'pitch_freq_ratio'.  Pawsey's ratio is the inverse.
         self.fn_ratio = math.sqrt(M * Rp * ar / self.Ip) if ar > 0 else 0.0
 
     # ---------------------------------------------------------------- wind
@@ -758,6 +741,7 @@ class CycloturbineSim:
             pitch_min=float(beta.min()), pitch_max=float(beta.max()), pitch_rms=float(beta.std()),
             aoa_max=float(np.degrees(np.abs(out[m, 5]).max())),
             stop_pct=float(100.0 * np.mean(np.abs(out[m, 3]) > 0.98 * self.win)) if self.win > 0 else 100.0,
+            pitch_freq_ratio=float(self.fn_ratio),
             ct=float(out[m, 9].mean() / (0.5 * s.rho * s.U ** 2 * 2.0 * g.R * g.H)),
             energy_balance=float(resid), energy_balance_valid=valid,
             energies=dict(aero=E_in, shaft=E_sh, arm=E_arm, piv_vis=E_vis, piv_cou=E_cou,

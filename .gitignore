@@ -12,3 +12,9 @@ vawt-env/
 archive/
 papers/
 docs/animation.mp4
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+coverage.xml
