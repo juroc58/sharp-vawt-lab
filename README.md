@@ -15,7 +15,7 @@ number in this README is reproducible from the scripts in `scripts/`.
 
 ## 🏆 Headline results
 
-At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.09**:
+At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
@@ -133,16 +133,16 @@ To reproduce: `python3 scripts/diag_active_lift.py`.
 Power curve integrated against a Weibull wind distribution (k = 2.0,
 mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See `scripts/compute_aep.py`.
 
-For the Sharp-conforming design (R = 0.60 m, Cp_peak = 0.33):
+For the Sharp-conforming design (R = 0.60 m, Cp_peak = 0.27):
 
 <!-- BEGIN GENERATED: aep_steady -->
-| Strategy | AEP | Capacity factor | Load match |
-|---|---|---|---|
-| **Passive k_load (variable speed)** | **272 kWh/yr** | **12.4 %** | — |
-| Fixed-rpm generator | 117 kWh/yr | 5.3 % | 2.32× |
+| Strategy | AEP | Capacity factor |
+|---|---|---|
+| **Passive k_load (variable speed)** | **272 kWh/yr** | **12.4 %** |
+| Fixed-rpm generator | 117 kWh/yr | 5.3 % |
 <!-- END GENERATED: aep_steady -->
 
-The passive machine produces **2.7× more energy** because the k_load·ω²
+The passive machine produces **2.3× more energy** because the k_load·ω²
 torque tracks the wind's power curve: the rotor speed adjusts so the
 tip-speed ratio stays near its optimum (TSR ≈ 2.05) at every wind speed.
 A fixed-speed generator drifts far from the design point as the wind
@@ -174,14 +174,14 @@ uncertainty through each headline case:
 <!-- BEGIN GENERATED: uq_params -->
 | Parameter | Low | High | Source of uncertainty |
 |---|---|---|---|
-| `cd_add` | 0.001 | 0.005 | strut / interference drag |
-| `ds_Tf` | 1.5 | 4.5 | separation lag (default 3.0) |
-| `ds_Tv` | 3.0 | 9.0 | vortex-lift lag (default 6.0) |
+| `cd_add` | 0.00 | 0.01 | strut / interference drag |
+| `ds_Tf` | 1.50 | 4.50 | separation lag (default 3.0) |
+| `ds_Tv` | 3.00 | 9.00 | vortex-lift lag (default 6.0) |
 | `ds_Ta` | 0.05 | 0.15 | attached-flow lag (default 0.10) |
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
-| `tau_rev` | 0.05 | 0.2 | induction lag (default 0.10 rev) |
-| `c_scale_override` | 0.3 | 0.6 | Adams shift strength |
-| `tip_loss_floor_override` | 0.8 | 1.0 | finite-span correction floor |
+| `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
+| `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
+| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
 <!-- END GENERATED: uq_params -->
 
 The 90 % confidence width is **0.032–0.042 in Cp** across all four anchors

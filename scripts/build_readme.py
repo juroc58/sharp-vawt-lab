@@ -51,14 +51,13 @@ def block_aep_steady_table():
     a = _j("aep_results.json")
     p = a["results"]["passive_k_load"]
     f = a["results"]["passive_fixed_rpm"]
-    ratio = 1.0 + a["gains_percent"]["passive_vs_fixed_rpm"] / 100.0
     return "\n".join([
-        "| Strategy | AEP | Capacity factor | Load match |",
-        "|---|---|---|---|",
+        "| Strategy | AEP | Capacity factor |",
+        "|---|---|---|",
         f"| **Passive k_load (variable speed)** | **{p['aep_kWh']:.0f} kWh/yr** "
-        f"| **{_pct(p['cf'])}** | \u2014 |",
+        f"| **{_pct(p['cf'])}** |",
         f"| Fixed-rpm generator | {f['aep_kWh']:.0f} kWh/yr "
-        f"| {_pct(f['cf'])} | {ratio:.2f}\u00d7 |",
+        f"| {_pct(f['cf'])} |",
     ])
 
 
@@ -91,7 +90,7 @@ def block_uq_params_table():
     out = ["| Parameter | Low | High | Source of uncertainty |",
            "|---|---|---|---|"]
     for name, lo, hi in p:
-        out.append(f"| `{name}` | {lo} | {hi} | {src[name]} |")
+        out.append(f"| `{name}` | {lo:.2f} | {hi:.2f} | {src[name]} |")
     return "\n".join(out)
 
 
