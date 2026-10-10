@@ -450,6 +450,7 @@ parameter mismatches surface immediately.
 
 ## 📊 Directory layout
 
+```text
 sharp-vawt-lab/
 |-- vawt_core.py # physics engine (single source of truth)
 |-- polars/naca0012/ # real NACA 0012 tables at four Re
@@ -467,7 +468,7 @@ sharp-vawt-lab/
 |-- validation.png
 |-- diag_qa.png
         |-- animation.mp4
-
+```
 ---
 
 ## 🧭 What this project does not model
@@ -521,26 +522,13 @@ sharp-vawt-lab/
 
 ## 📄 References
 
-    Ham, N.D., Soohoo, P., Noll, R.B., Drees, H.M. (1979). Analytical and
-    experimental evaluation of cycloturbine aerodynamic performance.
-    AIAA 79-0968.
+- Ham, N.D., Soohoo, P., Noll, R.B., Drees, H.M. (1979). Analytical and experimental evaluation of cycloturbine aerodynamic performance. AIAA 79-0968.
+- Adams, Z., Chen, J. (2018). Flux-line theory: a novel analytical model for vertical axis wind turbines. AIAA J. 56(6). DOI 10.2514/1.J056575.
+- Pawsey, N.C.K. (2002). Development and evaluation of passive variable-pitch vertical axis wind turbines. PhD thesis, UNSW.
+- Sharp, P.A. (2021). The Sharp Cycloturbine: a summary of how it works.
+- Sheldahl, R.E., Klimas, P.C. (1981). Aerodynamic characteristics of seven symmetrical airfoil sections through 180 degrees angle of attack. Sandia SAND80-2114.
+- Bayly, D., Kentfield, J. (1981). A vertical axis cyclogiro type wind-turbine with freely-hinged blades. Proc. Intersociety Energy Conversion Conference.
 
-    Adams, Z., Chen, J. (2018). Flux-line theory: a novel analytical model
-    for vertical axis wind turbines. AIAA J. 56(6).
-    DOI 10.2514/1.J056575.
-
-    Pawsey, N.C.K. (2002). Development and evaluation of passive
-    variable-pitch vertical axis wind turbines. PhD thesis, UNSW.
-
-    Sharp, P.A. (2021). The Sharp Cycloturbine: a summary of how it works.
-
-    Sheldahl, R.E., Klimas, P.C. (1981). Aerodynamic characteristics of
-    seven symmetrical airfoil sections through 180 degrees angle of attack.
-    Sandia SAND80-2114.
-
-    Bayly, D., Kentfield, J. (1981). A vertical axis cyclogiro type
-    wind-turbine with freely-hinged blades. Proc. Intersociety Energy
-    Conversion Conference.
 
 ## 📜 License
 

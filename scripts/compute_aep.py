@@ -28,6 +28,7 @@ import os
 import sys
 
 import numpy as np
+from scipy.integrate import trapezoid
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -135,7 +136,7 @@ def integrate_aep(U_grid, cp_curve, U_mean, k_weibull,
     if p_rated is not None:
         P = np.minimum(P, p_rated)
     pdf = weibull_pdf(U_grid, U_mean, k_weibull)
-    aep = float(np.trapezoid(P * pdf, U_grid) * HOURS_YEAR / 1000.0)
+    aep = float(trapezoid(P * pdf, U_grid) * HOURS_YEAR / 1000.0)
     cf = aep * 1000.0 / (p_rated * HOURS_YEAR) if p_rated else float('nan')
     return dict(U=U_grid, cp=cp_curve, P=P, pdf=pdf, aep=aep, cf=cf)
 

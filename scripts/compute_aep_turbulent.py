@@ -14,6 +14,7 @@ import os
 import sys
 
 import numpy as np
+from scipy.integrate import trapezoid
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -166,8 +167,8 @@ def main():
     P_t_g = np.minimum(np.interp(U_grid, U_t, P_t) * ETA_DRIVETRAIN, P_RATED_W)
 
     pdf = weibull_pdf(U_grid, U_MEAN, K_WEIBULL)
-    aep_s = float(np.trapezoid(P_s_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
-    aep_t = float(np.trapezoid(P_t_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
+    aep_s = float(trapezoid(P_s_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
+    aep_t = float(trapezoid(P_t_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
 
     cf_s = aep_s * 1000.0 / (P_RATED_W * HOURS_YEAR)
     cf_t = aep_t * 1000.0 / (P_RATED_W * HOURS_YEAR)
