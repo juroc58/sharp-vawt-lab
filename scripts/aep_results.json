@@ -14,8 +14,8 @@
   },
   "results": {
     "passive_k_load": {
-      "aep_kWh": 164.47614196590848,
-      "cf": 0.07510326117164771
+      "aep_kWh": 163.56064884192241,
+      "cf": 0.07468522778169973
     },
     "passive_fixed_rpm": {
       "aep_kWh": 93.70860612384246,
@@ -23,7 +23,7 @@
     }
   },
   "gains_percent": {
-    "passive_vs_fixed_rpm": 75.51871569676514,
+    "passive_vs_fixed_rpm": 74.54175833729253,
     "passive_vs_rigid_fair": 2048.4565770247377
   },
   "rigid_fair_ref": {

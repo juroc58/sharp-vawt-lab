@@ -229,8 +229,12 @@ def main():
     cps_passive_tsr = compute_cp_curve(BASE, tsrs, "passive CPPC")
 
     # --- free-running reference speeds ---
+    # Sample every 1 m/s. The free-running equilibrium is bistable near
+    # U ~ 8 m/s (a saddle-node bifurcation between a high-TSR and a low-TSR
+    # branch), so a sparse grid linearly interpolates across the jump and
+    # fabricates a false Cp valley. Dense sampling localises it.
     print()
-    U_ref = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
+    U_ref = np.arange(CUT_IN, CUT_OUT + 1.0, 1.0).tolist()
 
     print("  Free-running passive CPPC:")
     free_passive = []
