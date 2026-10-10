@@ -14,20 +14,26 @@
   },
   "results": {
     "passive_k_load": {
-      "aep_kWh": 271.88838240507255,
-      "cf": 0.1241499463036861
-    },
-    "rigid_k_load": {
-      "aep_kWh": 6.888007821348795,
-      "cf": 0.0031452090508441986
+      "aep_kWh": 164.47614196590848,
+      "cf": 0.07510326117164771
     },
     "passive_fixed_rpm": {
-      "aep_kWh": 116.95047817527593,
-      "cf": 0.05340204482889312
+      "aep_kWh": 93.70860612384246,
+      "cf": 0.04278931786476824
     }
   },
   "gains_percent": {
-    "passive_vs_rigid": 3847.2716851798223,
-    "passive_vs_fixed_rpm": 132.4816338053686
+    "passive_vs_fixed_rpm": 75.51871569676514,
+    "passive_vs_rigid_fair": 2048.4565770247377
+  },
+  "rigid_fair_ref": {
+    "source": "aep_rigid_fair.json",
+    "geometry": "sharp_inspired",
+    "psi0_deg": 10.0,
+    "k_load": 0.012,
+    "cp_design": 0.0073724739577608325,
+    "aep_kWh": 7.559466701977378,
+    "cf": 0.003451811279441725,
+    "gain_percent": 2048.4565770247377
   }
 }

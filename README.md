@@ -183,37 +183,62 @@ Cp values reproduce exactly (0.2728 / 0.2313 / 0.1426). See
 
 ![aep](docs/aep.png)
 
-Power curve integrated against a Weibull wind distribution (k = 2.0,
-mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See `scripts/compute_aep.py`.
+Power curves integrated against a Weibull wind distribution (k = 2.0,
+mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See
+`scripts/compute_aep.py` and `scripts/compute_aep_rigid_fair.py`.
 
-For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.27):
+### CPPC vs a fair rigid baseline
+
+The comparison that matters is against a **fixed-pitch rigid blade at its
+own optimal pitch and load**, not a blade locked at zero pitch inheriting
+the passive machine's load. `scripts/compute_aep_rigid_fair.py` runs that
+comparison at both design points:
+
+| Geometry | AR | Passive CPPC | Best rigid | Gain |
+|---|---|---|---|---|
+| **Sharp-inspired (R = 0.60 m)** | 2.86 | **162 kWh/yr** | 7.6 kWh/yr | **+2048 %** |
+| **Scale-up (R = 2.72 m)** | 10.5 | **18 792 kWh/yr** | 15 246 kWh/yr | **+23.3 %** |
+
+Sharp's published claim is **25–30 % more energy than a fixed-blade
+rotor**. The model gives **+23 %** at the scale-up geometry, where a
+rigid blade actually works. This is the closest agreement with Sharp in
+the repo, and it required the fair baseline to surface.
+
+The two rows describe different regimes. At AR 2.86, the best rigid blade
+reaches Cp = 0.007 — the rotor barely turns. Uncapped induced drag
+(Cd_i ≈ 0.11 at this AR) kills fixed-pitch operation entirely, so at
+that geometry the CPPC mechanism is the difference between a working
+machine and a dead one, not an efficiency gain. At AR 10.5, a rigid blade
+at ψ₀ = +5°, k_load = 6.0 reaches Cp = 0.39 with no pitching at all;
+the passive CPPC machine reaches 0.42.
+
+**Caveat.** Both geometries were optimised *for* CPPC. The comparison is
+fair in the sense of "same rotor, same wind, only the pitch mechanism
+differs" — it is not a claim that rigid VAWTs are useless at other
+geometries. A rotor designed from scratch for fixed-pitch operation would
+likely do better than 15 246 kWh/yr at AR 10.5.
+
+### Fixed-rpm penalty
+
+For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.17):
 
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **272 kWh/yr** | **12.4 %** |
-| Fixed-rpm generator | 117 kWh/yr | 5.3 % |
+| **Passive k_load (variable speed)** | **164 kWh/yr** | **7.5 %** |
+| Fixed-rpm generator | 94 kWh/yr | 4.3 % |
 <!-- END GENERATED: aep_steady -->
 
-The passive machine produces **2.3× more energy** because the k_load·ω²
-torque tracks the wind's power curve: the rotor speed adjusts so the
-tip-speed ratio stays near its optimum (TSR ≈ 2.05) at every wind speed.
-A fixed-speed generator drifts far from the design point as the wind
-varies — at 3 m/s it runs at TSR 4 (Cp ≈ 0.02), at 12 m/s at TSR 1.0
-(Cp ≈ 0.04) — and only operates near peak efficiency in a narrow window
-around its design wind speed.
+The passive machine produces **2.3× more energy** than the same rotor on
+a fixed-rpm generator because the k_load·ω² torque tracks the wind's
+power curve: the rotor speed adjusts so the tip-speed ratio stays near
+its optimum at every wind speed. A fixed-speed generator drifts far from
+the design point as the wind varies and only operates near peak
+efficiency in a narrow window around its design wind speed.
 
 This is the physical claim Sharp's paper makes for CPPC. The passive
 mechanism adapts to wind speed without any external control.
 
-### Reynolds-number sensitivity
-
-The free-running Cp is not constant across the wind range:
-it rises from 0.30 at U = 3 m/s to 0.37 at U = 15 m/s, then drops
-at 20 m/s because α_max reaches 20° and the blade stalls. The
-low-Re penalty at U = 3 m/s is real: the NACA 0012 polar has L/D ≈ 30
-at Re = 5 × 10⁴ vs L/D ≈ 80 at Re = 10⁶, and the passive mechanism
-cannot compensate for that.
 
 ## 📊 Uncertainty
 
