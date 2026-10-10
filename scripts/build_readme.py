@@ -25,8 +25,8 @@ def _pct(x, d=1):
 def block_headline_table():
     uq = _j("uncertainty_results.json")["summary"]
     rows = [
-        ("**Scaled-up passive (R = 2.26 m, Re = 5.1e5)**",
-         uq["scaleup"], "~76 % of Betz"),
+        ("**Scaled-up passive (R = 2.72 m, Re = 5.1e5)**",
+         uq["scaleup"], "~71 % of Betz"),
         ("**Sharp-inspired CPPC**",
          uq["sharp_cppc"], "\u2014"),
         ("Optimised passive (mass-balanced)",
@@ -105,7 +105,7 @@ def block_spearman_table():
         "ham_1979":          "Ham 1979 reproduction",
         "sharp_cppc":        "Sharp-inspired CPPC",
         "optimised_passive": "Optimised passive",
-        "scaleup":           "Scale-up R = 2.26 m",
+        "scaleup":           "Scale-up R = 2.72 m",
     }
     pretty = {
         "cd_add":                  "`cd_add` (strut drag)",

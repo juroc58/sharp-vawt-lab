@@ -20,9 +20,9 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
-| **Sharp-inspired CPPC** | **0.27** | [0.25, 0.29] | — |
-| Optimised passive (mass-balanced) | **0.44** | [0.42, 0.46] | — |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.39, 0.43] | ~71 % of Betz |
+| **Sharp-inspired CPPC** | **0.17** | [0.15, 0.19] | — |
+| Optimised passive (mass-balanced) | **0.24** | [0.15, 0.30] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | **0.49** | [0.46, 0.51] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
@@ -34,17 +34,18 @@ Ham's own model class (single-streamtube, no tip loss). See the
 [Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
 **Convention.** The headline Cp for each machine is the **UQ mean with
-tip loss ON**. Where the body text quotes a higher number -- e.g. 0.49
-for Ham (no tip loss) or 0.53 for the 2D scale-up bound -- that is the
-deterministic 2D result without the finite-span correction. Both are
-reported; the table gives the tip-loss-ON average, because that is the
-closer of the two to a physical machine.
+tip loss ON**. Ham is the exception: his model class has no tip loss, so
+the reproduction is run without one. Where the body text quotes the
+optimiser's deterministic `best_cp` (e.g. 0.28 for the passive optimum,
+0.43 for the scale-up), that is a single design point evaluated at the
+optimum; the table gives the UQ mean over eight uncertain constants,
+which is usually lower.
 
 ### Sharp-inspired CPPC
 
 Uses a light counterweight 0.30 chord ahead of the leading edge (Sharp's spec
 range is 0.5–1.0). At R = 0.60 m with the bounded tip-loss correction on, it
-reaches **Cp = 0.27 [0.25, 0.29]** at the 90 % confidence level. This sits below the 0.37 figure quoted for Bayly-Kentfield's larger
+reaches **Cp = 0.17 [0.15, 0.19]** at the 90 % confidence level. This sits below the 0.37 figure quoted for Bayly-Kentfield's larger
 machine, but no primary-source citation for that number has been
 verified here, so it is reported as context rather than as a
 validation anchor.
@@ -59,25 +60,31 @@ section below.
 ### Optimised passive
 
 A joint optimisation over chord, counterweight mass and position, load factor,
-and pivot geometry found a **mass-balanced** configuration — heavy
-counterweight sitting nearly on the pitch pivot (CG offset ≈ 3 mm from pivot)
-— that reaches **Cp = 0.44 [0.42, 0.46]** with the bounded tip-loss correction
-enabled.
+and pivot geometry found a configuration with the counterweight near the pitch
+pivot that reaches **Cp = 0.24 [0.15, 0.30]** with the finite-span correction
+active in the optimiser.
 
-At this design point the aerodynamic pitch torque (~0.20 N·m peak) is roughly
-4× the centrifugal restoring torque (0.048 N·m peak). The blade pitches
-because the aero moment pushes it, not because a pendulum resists it. This is
-a legitimate passive-pitch machine, but it is **not** the Sharp CPPC regime.
+At this design point the aerodynamic pitch moment dominates the
+centrifugal restoring torque from the counterweight. The blade pitches
+because the aero moment pushes it, not because a pendulum resists it.
+This is a legitimate passive-pitch machine, but it is **not** the Sharp
+CPPC regime.
 
 ### Scaled-up passive design
 
-Extending the joint optimiser to radius R ∈ [0.6, 3.0] m finds an
-interior optimum at **R = 2.26 m** (chord 0.355 m, AR 3.18, Re_tip
-5.1 × 10⁵). The 2D model reaches **Cp = 0.53**; with a bounded 15 %
-finite-span correction (real blades lose 10-20 % of lift near the
-tips), the physically realistic value is **Cp = 0.46**. Both numbers
-match Sharp's published estimate of 0.45-0.50 for his larger
-experimental machines.
+Extending the joint optimiser to radius R ∈ [0.6, 3.0] m now finds
+**R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
+enabled *inside the optimiser*, the optimum sits on the **upper bound**
+of the height-to-radius band (H/R = 1.49, i.e. H/D = 0.75). UQ mean:
+**Cp = 0.42 [0.39, 0.43]**.
+
+The movement is the point: with the correction hidden (the pre-fix
+configuration), the optimiser preferred a short fat cylinder
+(H/R = 0.5, AR = 3.2). Once the aspect-ratio cost is visible, it
+prefers a tall thin one (H/R = 1.5, AR = 10.5). Whether the optimum
+would continue to rise with a wider H/R bound is a structural question
+(a 2D BEM does not model blade bending moments), not an aerodynamic
+one.
 
 ### Prescribed pitch (upper bound)
 
@@ -261,14 +268,16 @@ generated data (`scripts/spearman_sensitivity.py`).
 | Anchor | Dominant parameter | ρ | p-value |
 |---|---|---|---|
 | Ham 1979 reproduction | `tau_rev` (induction lag) | **+0.89** | < 0.001 |
-| Sharp-inspired CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
-| Optimised passive | `tau_rev` (induction lag) | **+0.44** | 0.004 |
-| Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **-0.70** | < 0.001 |
+| Sharp-inspired CPPC | `cd_add` (strut drag) | **-0.57** | < 0.001 |
+| Optimised passive | `tau_rev` (induction lag) | **-0.74** | < 0.001 |
+| Scale-up R = 2.72 m | `cd_add` (strut drag) | **-0.46** | 0.003 |
 <!-- END GENERATED: spearman_table -->
 
-Four different anchors, four different dominant parameters — the model
-is responding to the different physics of each regime, not to a single
-numerical artifact.
+Two parameters account for all four anchors: `tau_rev` dominates the
+prescribed-pitch Ham case and the mass-balanced passive case; `cd_add`
+dominates the two designs where the blade rides near stall. No single
+parameter dominates *all four* anchors — the model is not a disguised
+fit of one number.
 
 **Physical reading:**
 

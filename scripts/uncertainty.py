@@ -98,10 +98,10 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
     ),
     # Optimised passive (mass-balanced) at R = 0.60 m
     "optimised_passive": dict(
-        R=0.60, c=0.177, H=0.40, N=3,
-        ar=0.312, sp=0.178,
-        mb=0.010, xbcg=0.20, mc=0.040, dcw=-0.132,
-        balance=0, bias_deg=-1.1,
+        R=0.60, c=0.157004, H=0.40, N=3,
+        ar=0.797355, sp=0.153250,
+        mb=0.010, xbcg=0.20, mc=0.016460, dcw=0.011736,
+        balance=0, bias_deg=0.2430,
         prescribe_pitch=False,
         free=True, tsr=2.14, T_max=30.0, stride=5,
         use_dynamic_stall=True,
@@ -109,13 +109,13 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_tip_loss=True,
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        k_load=0.00355,
+        k_load=0.001909,
     ),
     # Scale-up R = 2.26 m with tip loss on
     "scaleup": dict(
-        R=2.2602, c=0.3552, H=1.1328, N=3,
-        ar=0.3542, sp=0.2001,
-        mb=0.53457, xbcg=0.20, mc=0.52077, dcw=-0.1464,
+        R=2.7179, c=0.3861, H=4.0568, N=3,
+        ar=0.3121, sp=0.2181,
+        mb=0.92954, xbcg=0.20, mc=2.69306, dcw=-0.1935,
         balance=0, bias_deg=0.0,
         prescribe_pitch=False,
         free=True, tsr=2.5, T_max=40.0, stride=8,
@@ -124,7 +124,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_tip_loss=True,
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        k_load=0.970696,
+        k_load=4.164352,
     ),
 }
 ANCHOR_NAMES = list(ANCHORS.keys())
