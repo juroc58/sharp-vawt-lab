@@ -23,7 +23,7 @@ def wrap(name, anchor, transform=None):
 wrap("headline_table", """| Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
 | **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
-| **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | Bayly-Kentfield 0.37 at 4.6 m |
+| **Sharp-inspired CPPC** | **0.27** | [0.25, 0.29] | Bayly-Kentfield 0.37 at 4.6 m |
 | Optimised passive (mass-balanced) | 0.44 | [0.42, 0.46] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | 0.49 | [0.46, 0.51] | matches Ham's method |""")
@@ -57,7 +57,7 @@ wrap("uq_params", """| Parameter | Low | High | Source of uncertainty |
 wrap("spearman_table", """| Anchor | Dominant parameter | ρ | p-value |
 |---|---|---|---|
 | Ham 1979 reproduction | `tau_rev` (induction lag) | **+0.89** | < 0.001 |
-| Sharp-conforming CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
+| Sharp-inspired CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
 | Optimised passive | `tau_rev` | **+0.44** | 0.004 |
 | Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **−0.70** | < 0.001 |""")
 

@@ -27,7 +27,7 @@ def block_headline_table():
     rows = [
         ("**Scaled-up passive (R = 2.26 m, Re = 5.1e5)**",
          uq["scaleup"], "~76 % of Betz"),
-        ("**Sharp-conforming CPPC**",
+        ("**Sharp-inspired CPPC**",
          uq["sharp_cppc"], "\u2014"),
         ("Optimised passive (mass-balanced)",
          uq["optimised_passive"], "\u2014"),
@@ -103,7 +103,7 @@ def block_spearman_table():
     sp = _j("spearman_results.json")["anchor_results"]
     labels = {
         "ham_1979":          "Ham 1979 reproduction",
-        "sharp_cppc":        "Sharp-conforming CPPC",
+        "sharp_cppc":        "Sharp-inspired CPPC",
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.26 m",
     }

@@ -21,7 +21,7 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
 | **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
-| **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | — |
+| **Sharp-inspired CPPC** | **0.27** | [0.25, 0.29] | — |
 | Optimised passive (mass-balanced) | **0.44** | [0.42, 0.46] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | **0.49** | [0.46, 0.51] | matches Ham's method |
@@ -33,7 +33,14 @@ numbers use the bounded tip-loss correction; the Ham reproduction uses
 Ham's own model class (single-streamtube, no tip loss). See the
 [Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
-### Sharp-conforming CPPC
+**Convention.** The headline Cp for each machine is the **UQ mean with
+tip loss ON**. Where the body text quotes a higher number -- e.g. 0.49
+for Ham (no tip loss) or 0.53 for the 2D scale-up bound -- that is the
+deterministic 2D result without the finite-span correction. Both are
+reported; the table gives the tip-loss-ON average, because that is the
+closer of the two to a physical machine.
+
+### Sharp-inspired CPPC
 
 Uses a light counterweight 0.30 chord ahead of the leading edge (Sharp's spec
 range is 0.5–1.0). At R = 0.60 m with the bounded tip-loss correction on, it
@@ -134,7 +141,7 @@ To reproduce: `python3 scripts/diag_active_lift.py`.
 Power curve integrated against a Weibull wind distribution (k = 2.0,
 mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See `scripts/compute_aep.py`.
 
-For the Sharp-conforming design (R = 0.60 m, Cp_peak = 0.27):
+For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.27):
 
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
@@ -254,7 +261,7 @@ generated data (`scripts/spearman_sensitivity.py`).
 | Anchor | Dominant parameter | ρ | p-value |
 |---|---|---|---|
 | Ham 1979 reproduction | `tau_rev` (induction lag) | **+0.89** | < 0.001 |
-| Sharp-conforming CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
+| Sharp-inspired CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
 | Optimised passive | `tau_rev` (induction lag) | **+0.44** | 0.004 |
 | Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **-0.70** | < 0.001 |
 <!-- END GENERATED: spearman_table -->
@@ -304,7 +311,7 @@ literature:
 3. **Pitch-torque sign check.** A diagnostic confirms the aero pitch torque
    is stabilising — the physical requirement for Sharp's "blades do not
    stall" claim.
-4. **Sharp-conforming parameter sweep.** The counterweight mass and offset
+4. **Sharp-inspired parameter sweep.** The counterweight mass and offset
    are swept through Sharp's design range, showing where his mechanism works
    and where the mass ratio becomes unstable.
 
@@ -325,7 +332,7 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
 - **Pitch dynamics**: coupled rotor + pitch DOF integrated with symplectic
   Euler. Sharp's centrifugal-pendulum restoring torque is computed from the
   blade unit's CG position relative to the pitch pivot.
-- **Pitch law** (prescribed mode): `ψ(φ) = ψ₀ + ψ₁·cos φ + ψ₂·sin φ + ψ₃·cos 2φ + ψ₄·sin 2φ`
+- **Pitch law** (prescribed mode): `ψ(φ) = pp0 + pp1·cos(φ + ph) + pp2·cos 2(φ + ph) + pp3·sin 2(φ + ph)` with `ph` = `pp_ph_deg`. There is no sin φ term and no fourth harmonic.
 - **Polars**: Sheldahl-Klimas NACA 0012 tables at four Reynolds numbers
   (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶), bilinear interpolation in (log Re, α).
 - **Energy ledger**: closes to within a few percent for passive runs;
@@ -375,7 +382,7 @@ artifact.
 
     python3 scripts/passive_sweeps.py
 
-Reproduces the Sharp-conforming counterweight sweep and the k_load sweep
+Reproduces the Sharp-inspired counterweight sweep and the k_load sweep
 that establish the Cp = 0.36 operating point.
 
 ### 4. Pitch-torque sign diagnostic
@@ -417,7 +424,7 @@ Every quantity in the README is reproducible from a single function call:
 ```python
 from vawt_core import create_sim_from_params
 
-# Sharp-conforming CPPC design point
+# Sharp-inspired CPPC design point
 r = create_sim_from_params({
     'R': 0.60, 'H': 0.40, 'N': 3, 'c': 0.14,
     'ar': 0.50, 'sp': 0.25,

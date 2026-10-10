@@ -81,7 +81,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         win_deg=89.0, cb=2e-5, mu_c=0.0,
         k_load=0.0004,
     ),
-    # Sharp-conforming CPPC at R = 0.60 m
+    # Sharp-inspired CPPC at R = 0.60 m
     "sharp_cppc": dict(
         R=0.60, c=0.14, H=0.40, N=3,
         ar=0.50, sp=0.25,

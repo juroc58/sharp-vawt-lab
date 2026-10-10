@@ -42,7 +42,7 @@ from vawt_core import create_sim_from_params
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-# Sharp-conforming CPPC design at R = 0.60 m
+# Sharp-inspired CPPC design at R = 0.60 m
 BASE = dict(
     R=0.60, H=0.40, N=3, c=0.14,
     ar=0.50, sp=0.25,
