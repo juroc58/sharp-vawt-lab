@@ -486,6 +486,19 @@ sharp-vawt-lab/
     monotonic sensitivities. Full Sobol indices (parameter interactions)
     are not computed.
 
+    Finite-span correction. The correction uses Prandtl's lifting-line
+    form f_ar = 1/(1 + 2/(e*AR)), floored at 0.85. The formula is only
+    valid for high-aspect-ratio wings with attached, near-elliptic
+    loading. This project operates at AR ~ 3-30, where the raw form
+    over-corrects badly -- at AR = 3.18 it gives f_ar ~ 0.59, which
+    destabilises the pitch mechanism regardless of whether it is
+    passive or prescribed. The 0.85 floor is a guardrail against that
+    extrapolation, not a derived physical quantity. The "physically
+    realistic" Cp values quoted in the headline table depend on this
+    guardrail; an honest low-AR correction remains an open problem.
+    The optimiser also exploits the floor by preferring low AR, where
+    the floor removes the penalty.
+
 ## 📄 References
 
     Ham, N.D., Soohoo, P., Noll, R.B., Drees, H.M. (1979). Analytical and
