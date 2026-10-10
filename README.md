@@ -17,13 +17,15 @@ number in this README is reproducible from the scripts in `scripts/`.
 
 At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.09**:
 
+<!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
 | **Scaled-up passive (R = 2.26 m, Re = 5.1e5)** | **0.45** | [0.43, 0.46] | ~76 % of Betz |
 | **Sharp-conforming CPPC** | **0.27** | [0.25, 0.29] | Bayly-Kentfield 0.37 at 4.6 m |
-| Optimised passive (mass-balanced) | 0.44 | [0.42, 0.46] | — |
+| Optimised passive (mass-balanced) | **0.44** | [0.42, 0.46] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
-| Ham 1979 reproduction | 0.49 | [0.46, 0.51] | matches Ham's method |
+| Ham 1979 reproduction | **0.49** | [0.46, 0.51] | matches Ham's method |
+<!-- END GENERATED: headline_table -->
 
 The confidence intervals come from a Latin-hypercube sampling over eight
 uncalibrated model constants (`scripts/uncertainty.py`). All Sharp-machine
@@ -133,10 +135,12 @@ mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See `scripts/compute_aep.py`.
 
 For the Sharp-conforming design (R = 0.60 m, Cp_peak = 0.33):
 
+<!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor | Load match |
 |---|---|---|---|
-| **Passive k_load (variable speed)** | **350 kWh/yr** | **16.0 %** | — |
-| Fixed-rpm generator | 129 kWh/yr | 5.9 % | 0.37× |
+| **Passive k_load (variable speed)** | **272 kWh/yr** | **12.4 %** | — |
+| Fixed-rpm generator | 117 kWh/yr | 5.3 % | 2.32× |
+<!-- END GENERATED: aep_steady -->
 
 The passive machine produces **2.7× more energy** because the k_load·ω²
 torque tracks the wind's power curve: the rotor speed adjusts so the
@@ -167,6 +171,7 @@ but were not fitted to this specific machine. Latin-hypercube sampling
 over their plausible ranges (40 samples per anchor) propagates that
 uncertainty through each headline case:
 
+<!-- BEGIN GENERATED: uq_params -->
 | Parameter | Low | High | Source of uncertainty |
 |---|---|---|---|
 | `cd_add` | 0.001 | 0.005 | strut / interference drag |
@@ -174,9 +179,10 @@ uncertainty through each headline case:
 | `ds_Tv` | 3.0 | 9.0 | vortex-lift lag (default 6.0) |
 | `ds_Ta` | 0.05 | 0.15 | attached-flow lag (default 0.10) |
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
-| `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
-| `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
+| `tau_rev` | 0.05 | 0.2 | induction lag (default 0.10 rev) |
+| `c_scale_override` | 0.3 | 0.6 | Adams shift strength |
+| `tip_loss_floor_override` | 0.8 | 1.0 | finite-span correction floor |
+<!-- END GENERATED: uq_params -->
 
 The 90 % confidence width is **0.032–0.042 in Cp** across all four anchors
 (3–4 % of the mean). No single parameter dominates — the model is well-
@@ -200,11 +206,13 @@ To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
 length scale L = 30 m (Dryden-like AR(1)). See
 `scripts/compute_aep_turbulent.py`.
 
+<!-- BEGIN GENERATED: aep_turbulent -->
 | | AEP | CF |
 |---|---|---|
 | Steady wind | 281.3 kWh/yr | 12.85 % |
 | Turbulent wind (I = 12 %) | 293.7 kWh/yr | 13.41 % |
-| **Effect** | **+4.4 %** | **+0.56 pp** |
+| **Effect** | **+4.4 %** | **+0.57 pp** |
+<!-- END GENERATED: aep_turbulent -->
 
 ### Why turbulence gives a gain, not a loss
 
@@ -237,12 +245,14 @@ Spearman rank correlation between each of the 8 uncertain constants and
 Cp, computed on the 40 LHS samples. Runs in 3 seconds on the already-
 generated data (`scripts/spearman_sensitivity.py`).
 
+<!-- BEGIN GENERATED: spearman_table -->
 | Anchor | Dominant parameter | ρ | p-value |
 |---|---|---|---|
 | Ham 1979 reproduction | `tau_rev` (induction lag) | **+0.89** | < 0.001 |
 | Sharp-conforming CPPC | `ds_Tf` (separation lag) | **+0.56** | < 0.001 |
-| Optimised passive | `tau_rev` | **+0.44** | 0.004 |
-| Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **−0.70** | < 0.001 |
+| Optimised passive | `tau_rev` (induction lag) | **+0.44** | 0.004 |
+| Scale-up R = 2.26 m | `c_scale_override` (Adams shift) | **-0.70** | < 0.001 |
+<!-- END GENERATED: spearman_table -->
 
 Four different anchors, four different dominant parameters — the model
 is responding to the different physics of each regime, not to a single
