@@ -71,6 +71,7 @@ DEFAULT_BASE: Dict[str, Any] = dict(
     use_dynamic_stall=True,
     use_flow_curvature=True,
     use_dmst=True,
+    use_tip_loss=True,
     win_deg=45.0,              # Sharp's physical stop limit
     cb=2e-5,
     mu_c=3e-4,
