@@ -35,4 +35,9 @@ for label, override in cases:
     print(f"{label:<25} {r['cp']:>9.4f} {r['aoa_max']:>12.2f}")
 
 print()
-print("If delta Cp < 5%: result is NOT dynamic-stall dominated -> publishable.")
+print(
+    "Note: this check runs at a prescribed-pitch design point where "
+    "alpha_max stays below stall. A small delta Cp here does NOT "
+    "imply the passive case is DS-insensitive -- see the "
+    "Uncertainty section for the passive-anchor spread."
+)

@@ -42,10 +42,12 @@ class TestHamReproduction:
 
 @pytest.mark.slow
 class TestDynamicStallSensitivity:
-    """Turning DS off should change Cp by less than 10 % at the design point."""
+    """Turning DS off should change Cp by less than 5 % at the design point."""
 
-    # Prescribed-pitch design at the optimiser's best point.  Matches
-    # the DS sensitivity number quoted in the README (2.1 %).
+    # Prescribed-pitch design at the actuator optimiser's best point.
+    # The passive optimiser's optimum is different; see
+    # scripts/optimization_passive.json.  This test isolates DS
+    # sensitivity at a below-stall, prescribed-pitch point.
     DESIGN = dict(
         R=0.60, H=0.40, N=3, c=0.117607,
         ar=0.31, sp=0.18,
@@ -62,14 +64,14 @@ class TestDynamicStallSensitivity:
         w0_frac=0.9, k_load=0.0015, tsr=2.14,
     )
 
-    def test_ds_sensitivity_under_10_percent(self):
+    def test_ds_sensitivity_under_5_percent(self):
         """The README claims ΔCp < 5 % when the dynamic-stall model is
         turned off at the optimiser's prescribed-pitch design point."""
         r_ds = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': True}).run()
         r_nods = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': False}).run()
         delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
-        assert delta < 0.10, \
-            f"DS sensitivity {delta*100:.1f}% > 10% " \
+        assert delta < 0.05, \
+            f"DS sensitivity {delta*100:.1f}% > 5% " \
             f"(Cp with DS = {r_ds['cp']:.4f}, without = {r_nods['cp']:.4f})"
 
     def test_passive_ds_sensitivity_is_larger(self):
@@ -83,8 +85,10 @@ class TestDynamicStallSensitivity:
         r_ds = create_sim_from_params({**passive, 'use_dynamic_stall': True}).run()
         r_nods = create_sim_from_params({**passive, 'use_dynamic_stall': False}).run()
         delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
-        # Passive mode: DS sensitivity is larger than prescribed (2.1 %)
-        # but should not dominate.  Observed range: 3-10 %.
-        # Wide bounds so the test detects regressions without being fragile.
+        # Passive mode: DS sensitivity is much larger than prescribed.
+        # Wide bounds so the test detects regressions without being
+        # fragile: this case reaches ~50 deg AoA on the upwind pass,
+        # where the DS model is genuinely active, so the delta is not
+        # expected to be small.
         assert 0.01 < delta < 0.30, \
             f"Passive DS sensitivity {delta*100:.1f}% outside expected range"

@@ -43,19 +43,33 @@ which is usually lower.
 
 ### Sharp-inspired CPPC
 
-Uses a light counterweight 0.30 chord ahead of the leading edge (Sharp's spec
-range is 0.5–1.0). At R = 0.60 m with the bounded tip-loss correction on, it
-reaches **Cp = 0.17 [0.15, 0.19]** at the 90 % confidence level. This sits below the 0.37 figure quoted for Bayly-Kentfield's larger
-machine, but no primary-source citation for that number has been
-verified here, so it is reported as context rather than as a
-validation anchor.
+This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
+control) but not his **geometry**. It uses a light counterweight 0.30
+chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
+At R = 0.60 m, with the finite-span correction on and the UQ spread
+over eight uncalibrated constants, it reaches **Cp = 0.17 [0.15, 0.19]**.
 
-The mechanism is auto-regulating: as load increases, pitch range grows and
-TSR falls, keeping the blade's angle of attack near stall. A diagnostic confirms the aerodynamic pitch torque has the correct
-sign (nose-in when α → +stall, nose-out when α → −stall), which is
-the stabilising property Sharp's CPPC mechanism relies on. Note that
-the blade does still reach stall at high wind speeds — see the AEP
-section below.
+**The mechanism fails inside Sharp's own parameter range.** Running the
+same solver at a counterweight offset of 0.5 chords — Sharp's lower
+bound — gives **Cp = 0.0571**, with the blade reaching 50° angle of
+attack and spending 9 % of each revolution against the mechanical
+stops. At 0.6 chords the rotor barely turns (Cp = 0.017, TSR = 0.90).
+The successful design (0.30 chords, Cp = 0.17) sits *below* Sharp's
+range, not inside it.
+
+`scripts/passive_sharp.py` sweeps both the counterweight mass and
+offset. Within Sharp's range, the best result is Cp = 0.0571 at 0.5
+chords; below the range, at 0.3 chords, the same solver gives Cp =
+0.104. Sharp's spec is not a stable operating regime for this model
+at R = 0.60 m.
+
+The mechanism is still auto-regulating at the design point: as load
+increases, pitch range grows and TSR falls, keeping the blade's angle
+of attack near stall. A diagnostic confirms the aerodynamic pitch
+torque has the correct sign (nose-in when α → +stall, nose-out when
+α → −stall), which is the stabilising property Sharp's CPPC mechanism
+relies on. Note that the blade does still reach stall at high wind
+speeds — see the AEP section below.
 
 ### Optimised passive
 
