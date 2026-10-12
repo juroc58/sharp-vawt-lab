@@ -387,14 +387,14 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
 # =============================================================================
 @dataclass(frozen=True)
 class Geometry:
-    R: float = 0.6
-    c: float = 0.07
-    H: float = 0.4
+    R: float = 2.7179
+    c: float = 0.3861
+    H: float = 4.0568
     N: int = 3
-    ar: float = 0.5          # rocking arm / chord
-    sp: float = 0.10         # spar position from LE / chord
-    arm_d: float = 0.0       # support-arm width for drag (m)
-    n_arm: int = 2           # arms per blade (top + bottom)
+    ar: float = 0.3121          # rocking arm / chord
+    sp: float = 0.2181          # spar position from LE / chord
+    arm_d: float = 0.0          # support-arm width for drag (m)
+    n_arm: int = 2              # arms per blade (top + bottom)
     arm_cd: float = 1.0
 
     def __post_init__(self):
@@ -404,11 +404,11 @@ class Geometry:
 
 @dataclass(frozen=True)
 class MassProps:
-    mb: float = 0.010
+    mb: float = 0.92954
     xbcg: float = 0.20
-    mc: float = 0.004
-    dcw: float = 0.5
-    balance: int = 1         # 0: use mc,dcw as given; 1: solve dcw from mc; 2: solve mc from dcw
+    mc: float = 2.69306
+    dcw: float = -0.1935
+    balance: int = 0         # 0: use mc,dcw as given; 1: solve dcw from mc; 2: solve mc from dcw
     bias_deg: float = 0.0
     J_hub: float = 0.02
 
@@ -417,16 +417,16 @@ class MassProps:
 class AeroConfig:
     polar_dir: str = "polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
     use_dynamic_stall: bool = True
-    use_tip_loss: bool = False           # finite-span correction (lift slope + induced drag)
+    use_tip_loss: bool = True           # finite-span correction (lift slope + induced drag)
     use_dmst: bool = True
     use_dynamic_inflow: bool = True      # False -> near-instant induction (tau = 0.02 rev)
-    use_flow_curvature: bool = False     # Adams (2018) shifts, scaled by (c/R)/0.418
-    cd_add: float = 0.005                # strut / interference drag (Ham 1979 used 0.005)
+    use_flow_curvature: bool = True     # Adams (2018) shifts, scaled by (c/R)/0.418
+    cd_add: float = 0.002               # strut / interference drag
     win_deg: float = 45.0
     wstop: float = 300.0
     cb: float = 2e-5
     kc: float = 0.0
-    mu_c: float = 0.0
+    mu_c: float = 3e-4
     r_bearing: float = 0.002
     prescribe_pitch: bool = False        # psi = pp0 + pp1*cos(phi + ph)   (use ar=0, sp=0.25 for pure pitch)
     pp0_deg: float = 0.0
@@ -449,19 +449,19 @@ class AeroConfig:
 @dataclass(frozen=True)
 class SimConfig:
     U: float = 8.0
-    tsr: float = 3.0
-    free: bool = False
-    w0_frac: float = 0.2
+    tsr: float = 2.5
+    free: bool = True
+    w0_frac: float = 0.9
     psi0_deg: float = 0.0
     dt: float = 2e-4
-    T_max: float = 30.0
-    stride: int = 5
+    T_max: float = 40.0
+    stride: int = 8
     gust_g: float = 0.0
     gust_t0: float = 0.0
     gust_tg: float = 0.0
     turb_I: float = 0.0
     turb_L: float = 30.0
-    k_load: float = 0.0004
+    k_load: float = 4.164352
     rho: float = 1.225
     seed: int = 0
     n_rev_fixed: int = 16    # length of fixed-rpm runs in revolutions

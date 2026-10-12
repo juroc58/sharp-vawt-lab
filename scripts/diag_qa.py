@@ -34,19 +34,20 @@ import numpy as np
 from vawt_core import create_sim_from_params
 
 BASE = dict(
-    R=0.60, H=0.40, N=3, c=0.1176,
-    ar=0.50, sp=0.25,
-    mb=0.010, xbcg=0.20,
-    mc=0.004, dcw=-0.10,
+    R=2.7179, H=4.0568, N=3, c=0.3861,
+    ar=0.3121, sp=0.2181,
+    mb=0.92954, xbcg=0.20,
+    mc=2.69306, dcw=-0.1935,
     balance=0, bias_deg=0.0,
     prescribe_pitch=False,
     cd_add=0.002,
     use_dynamic_stall=True,
     use_flow_curvature=True,
     use_dmst=True,
+    use_tip_loss=True,
     win_deg=45.0, cb=2e-5, mu_c=3e-4,
     free=True, T_max=20.0, stride=5,
-    w0_frac=0.9, k_load=0.0015, tsr=2.14,
+    w0_frac=0.9, k_load=4.164352, tsr=2.5,
 )
 
 # Pass criteria (see README "does differently" #3).

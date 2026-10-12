@@ -53,33 +53,33 @@ from vawt_core import create_sim_from_params
 # ============================================================================
 # Base geometry for Sharp cycloturbine (from README headline results)
 BASE = dict(
-    R=0.60,          # m, rotor radius
-    H=0.40,          # m, rotor height
-    N=3,             # number of blades
-    c=0.14,          # m, chord length
-    ar=0.50,         # rocking arm / chord ratio
-    sp=0.25,         # spar position from LE / chord
-    mb=0.010,        # kg, blade mass
-    xbcg=0.20,       # blade CG position (fraction of chord)
-    mc=0.002,        # kg, counterweight mass
-    dcw=0.30,        # counterweight position (fraction of chord ahead of LE)
-    balance=0,       # use mc,dcw as given
-    bias_deg=0.0,    # degrees, fixed pitch bias
+    R=2.7179,          # m, rotor radius
+    H=4.0568,          # m, rotor height
+    N=3,               # number of blades
+    c=0.3861,          # m, chord length
+    ar=0.3121,         # rocking arm / chord ratio
+    sp=0.2181,         # spar position from LE / chord
+    mb=0.92954,        # kg, blade mass
+    xbcg=0.20,         # blade CG position (fraction of chord)
+    mc=2.69306,        # kg, counterweight mass
+    dcw=-0.1935,       # counterweight position (fraction of chord ahead of LE)
+    balance=0,         # use mc,dcw as given
+    bias_deg=0.0,      # degrees, fixed pitch bias
     prescribe_pitch=False,  # passive CPPC mode
-    cd_add=0.002,    # strut/interference drag
+    cd_add=0.002,      # strut/interference drag
     use_dynamic_stall=True,
     use_flow_curvature=True,
     use_dmst=True,
     use_tip_loss=True,     # bounded finite-span correction (max 15% lift reduction)
-    win_deg=45.0,    # degrees, pitch stop limit
-    cb=2e-5,         # viscous pitch damping coefficient
-    mu_c=3e-4,       # Coulomb pitch friction coefficient
-    free=True,       # free-running (variable speed)
-    T_max=25.0,      # s, simulation duration
-    stride=5,        # output sampling interval
-    w0_frac=0.9,     # initial omega fraction of design omega
-    k_load=0.0025,   # load coefficient
-    tsr=2.0,         # tip-speed ratio for design point
+    win_deg=45.0,        # degrees, pitch stop limit
+    cb=2e-5,             # viscous pitch damping coefficient
+    mu_c=3e-4,           # Coulomb pitch friction coefficient
+    free=True,           # free-running (variable speed)
+    T_max=25.0,          # s, simulation duration
+    stride=5,            # output sampling interval
+    w0_frac=0.9,         # initial omega fraction of design omega
+    k_load=4.164352,     # load coefficient
+    tsr=2.5,             # tip-speed ratio for design point
 )
 
 # Wind resource parameters (Weibull distribution)
@@ -89,7 +89,7 @@ CUT_IN = 3.0         # m/s, cut-in wind speed
 CUT_OUT = 25.0       # m/s, cut-out wind speed
 RHO = 1.225          # kg/m^3, air density
 HOURS_YEAR = 8760.0  # hours/year
-P_RATED_W = 250.0    # W, rated power (for capacity factor calculation)
+P_RATED_W = 15000.0    # W, rated power for scale-up (area ~46x R=0.6)
 ETA_DRIVETRAIN = 0.90 # drivetrain efficiency
 
 # Counter-rotating specific parameters

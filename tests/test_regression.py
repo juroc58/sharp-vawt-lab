@@ -33,19 +33,19 @@ GOLDEN = {
             use_tip_loss=False, use_dmst=True,
             win_deg=89.0, cb=2e-5, mu_c=0.0, k_load=0.0004,
         ),
-        0.4660262550,
+        0.4811123861,
     ),
     "passive_short_free": (
         dict(
-            R=0.60, H=0.40, N=3, c=0.14, ar=0.50, sp=0.25,
-            mb=0.010, xbcg=0.20, mc=0.002, dcw=0.30,
+            R=2.7179, H=4.0568, N=3, c=0.3861, ar=0.3121, sp=0.2181,
+            mb=0.92954, xbcg=0.20, mc=2.69306, dcw=-0.1935,
             balance=0, bias_deg=0.0, prescribe_pitch=False,
             cd_add=0.002, use_dynamic_stall=True, use_flow_curvature=True,
             use_dmst=True, use_tip_loss=True, win_deg=45.0, cb=2e-5,
             mu_c=3e-4, free=True, T_max=10.0, stride=10,
-            w0_frac=0.9, k_load=0.0025, tsr=2.0,
+            w0_frac=0.9, k_load=4.164352, tsr=2.5,
         ),
-        0.1756620284,
+        0.4308732977,
     ),
     "prescribed_fixed_rpm": (
         dict(
@@ -106,8 +106,8 @@ class TestBaseQuickReproducibility:
 
     def test_base_quick_cp_in_range(self):
         r = create_sim_from_params({**BASE_QUICK}).run()
-        # BASE_QUICK is the Sharp-inspired CPPC fixture; its Cp is ~0.17.
-        assert 0.10 < r["cp"] < 0.25, f"BASE_QUICK Cp drifted to {r['cp']:.4f}"
+        # BASE_QUICK is the scale-up design; its Cp is ~0.43.
+        assert 0.35 < r["cp"] < 0.50, f"BASE_QUICK Cp drifted to {r['cp']:.4f}"
 
     def test_gust_reproducible_with_seed(self):
         p = {**BASE_QUICK, "turb_I": 0.12, "seed": 7, "T_max": 8.0}

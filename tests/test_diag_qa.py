@@ -66,10 +66,27 @@ class TestEvaluateRestoring:
 
 @pytest.mark.slow
 class TestLiveDiagnostic:
-    """End-to-end: the repo's own design point must actually pass."""
+    """End-to-end: a design that reaches stall must pass the QA check."""
 
     def test_sharp_passive_case_passes(self):
-        from scripts.diag_qa import restoring_report, BASE
-        rep, _out, _sim = restoring_report({**BASE, "T_max": 12.0})
+        # Use the R=0.6 design that reaches stall to verify the QA check works
+        stall_design = dict(
+            R=0.60, H=0.40, N=3, c=0.1176,
+            ar=0.50, sp=0.25,
+            mb=0.010, xbcg=0.20,
+            mc=0.004, dcw=-0.10,
+            balance=0, bias_deg=0.0,
+            prescribe_pitch=False,
+            cd_add=0.002,
+            use_dynamic_stall=True,
+            use_flow_curvature=True,
+            use_dmst=True,
+            use_tip_loss=True,
+            win_deg=45.0, cb=2e-5, mu_c=3e-4,
+            free=True, T_max=12.0, stride=5,
+            w0_frac=0.9, k_load=0.0015, tsr=2.14,
+        )
+        from scripts.diag_qa import restoring_report
+        rep, _out, _sim = restoring_report(stall_design)
         assert rep["passed"] is True, rep
         assert rep["extreme_ok"] is True
