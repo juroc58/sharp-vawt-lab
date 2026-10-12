@@ -226,7 +226,7 @@ For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.17):
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **164 kWh/yr** | **7.5 %** |
+| **Passive k_load (variable speed)** | **159 kWh/yr** | **7.2 %** |
 | Fixed-rpm generator | 94 kWh/yr | 4.3 % |
 <!-- END GENERATED: aep_steady -->
 

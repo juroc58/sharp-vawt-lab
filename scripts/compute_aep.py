@@ -128,20 +128,38 @@ def compute_cp_curve(base, tsrs, label):
 
 
 # ============================================================================
-# Free-running equilibrium at each U
+# Free-running equilibrium at each U (with branch tracing)
 # ============================================================================
-def free_run(base, U, label):
+def free_run(base, U, w0_frac=None, psi0_deg=None):
+    """
+    Run free-running simulation at wind speed U.
+    
+    If w0_frac and psi0_deg are provided, use them as initial conditions
+    (branch tracing from previous wind speed). Otherwise use base defaults.
+    """
+    params = {**base, 'free': True, 'U': U}
+    if w0_frac is not None:
+        params['w0_frac'] = w0_frac
+    if psi0_deg is not None:
+        params['psi0_deg'] = psi0_deg
     try:
-        r = create_sim_from_params({**base, 'free': True, 'U': U}).run()
+        r = create_sim_from_params(params).run()
     except Exception:
-        return None
+        return None, None
     cp = float(r['cp'])
     if not r.get('steady', True) or cp <= 0.0 or not np.isfinite(cp):
-        return None
-    return dict(U=float(U), cp=cp,
-                tsr_eq=float(r['tsr_eq']),
-                rpm=float(r['rpm']),
-                aoa_max=float(r['aoa_max']))
+        return None, None
+    # Return result dict + final state for branch tracing
+    result = dict(U=float(U), cp=cp,
+                  tsr_eq=float(r['tsr_eq']),
+                  rpm=float(r['rpm']),
+                  aoa_max=float(r['aoa_max']))
+    # Final state: use equilibrium omega and mean pitch as initial guess for next U
+    w_final = r['tsr_eq'] * U / base['R'] if base['R'] > 0 else 0
+    pitch_final = 0.5 * (r['pitch_min'] + r['pitch_max']) if r.get('pitch_min') is not None else 0.0
+    final_state = dict(w0_frac=w_final * base['R'] / (U + 1.0) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
+                       psi0_deg=pitch_final)
+    return result, final_state
 
 
 # ============================================================================
@@ -234,25 +252,34 @@ def main():
     tsrs = np.linspace(1.0, 3.5, 11)
     cps_passive_tsr = compute_cp_curve(BASE, tsrs, "passive CPPC")
 
-    # --- free-running reference speeds ---
+    # --- free-running reference speeds (with branch tracing) ---
     # Sample every 1 m/s. The free-running equilibrium is bistable near
     # U ~ 8 m/s (a saddle-node bifurcation between a high-TSR and a low-TSR
-    # branch). Each sampled point is an independent attractor started from
-    # the same initial condition; linear interpolation between them can
-    # still fabricate a shallow Cp valley if adjacent samples land on
-    # different branches, so we detect and report any large jump rather
-    # than hide it.
+    # branch). To stay on the high-Cp branch, we use branch tracing:
+    # each point is seeded with the previous point's final (omega, pitch).
     print()
     U_ref = np.arange(CUT_IN, CUT_OUT + 1.0, 1.0).tolist()
 
-    print("  Free-running passive CPPC:")
+    print("  Free-running passive CPPC (branch tracing):")
     free_passive = []
+    w0_frac = BASE.get('w0_frac', 0.9)
+    psi0_deg = BASE.get('psi0_deg', 0.0)
     for U in U_ref:
-        f = free_run(BASE, U, "passive")
+        f, final_state = free_run(BASE, U, w0_frac=w0_frac, psi0_deg=psi0_deg)
         if f:
             free_passive.append(f)
+            # Use final state as initial condition for next wind speed
+            if final_state:
+                w0_frac = final_state['w0_frac']
+                psi0_deg = final_state['psi0_deg']
             print(f"    U = {U:4.1f}   Cp = {f['cp']:+.4f}   "
-                  f"TSR = {f['tsr_eq']:5.2f}   α_max = {f['aoa_max']:5.1f}")
+                  f"TSR = {f['tsr_eq']:5.2f}   α_max = {f['aoa_max']:5.1f}"
+                  f"   (seeded w0_frac={w0_frac:.3f}, psi0={psi0_deg:+.1f}°)")
+        else:
+            # If fails, reset to defaults and try next U
+            w0_frac = BASE.get('w0_frac', 0.9)
+            psi0_deg = BASE.get('psi0_deg', 0.0)
+            print(f"    U = {U:4.1f}   (no equilibrium, resetting seed)")
 
     # --- build power curves on a common U grid ---
     U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
