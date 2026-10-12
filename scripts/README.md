@@ -5,10 +5,10 @@
 - **Analysis scripts** — reproduce the README figures and tables:
   `validate_ham.py`, `validate_ds_off.py`, `compute_aep.py`,
   `compute_aep_rigid_fair.py`, `compute_aep_turbulent.py`,
-  `uncertainty.py`, `spearman_sensitivity.py`,
-  `diag_qa.py`, `diag_active_lift.py`, `passive_sweeps.py`,
-  `passive_sharp.py`, `plot_validation.py`, `plot_ham_curve.py`,
-  `render_animation.py`, `build_readme.py`.
+  `compute_aep_counter_rotating.py`, `uncertainty.py`,
+  `spearman_sensitivity.py`, `diag_qa.py`, `diag_active_lift.py`,
+  `passive_sweeps.py`, `passive_sharp.py`, `plot_validation.py`,
+  `plot_ham_curve.py`, `render_animation.py`, `build_readme.py`.
 
 - **Optimisers** — `optimize_passive.py`, `optimize_actuator.py`,
   `optimize_scaleup.py`.
@@ -23,6 +23,7 @@
   | `aep_results.json` | `compute_aep.py` (run `compute_aep_rigid_fair.py` first to refresh the rigid reference it echoes) |
   | `aep_rigid_fair.json` | `compute_aep_rigid_fair.py` |
   | `aep_turbulent.json` | `compute_aep_turbulent.py` |
+  | `aep_counter_rotating.json` | `compute_aep_counter_rotating.py` |
   | `optimization_passive.json` | `optimize_passive.py` |
   | `optimization_scaleup.json` | `optimize_scaleup.py` |
   | `optimization_actuator.json` | **not** regenerated: a hand-verified `reference_design_point` snapshot (see its `_note`). Running `optimize_actuator.py` writes a different schema without `_note`/`kind`/`verified`. |
@@ -51,6 +52,7 @@ assumed to be a bug.
 | Scale-up optimum | `optimize_scaleup.py`, UQ `scaleup` | 2.72 | 0.386 | 0.312 | 0.218 | 2.69 | −0.194 | H/R at upper bound; k_load = 4.16 N·m·s² |
 | Actuator / DS case | `optimize_actuator.py`, `validate_ds_off.py`, `render_animation.py` | 0.60 | 0.1176 | 0.50 | 0.25 | 0.008 | 0.50 | prescribed-pitch upper bound |
 | Ham 1979 rig | `validate_ham.py`, UQ `ham_1979` | 1.83 | 0.305 | 0.0 | 0.25 | — | — | Ham's own model class |
+| Counter-rotating pair | `compute_aep_counter_rotating.py` | 0.60 | 0.14 | 0.50 | 0.25 | 0.002 | 0.30 | two Sharp rotors, 2 m separation |
 
 The `optimised_passive` and `scaleup` rows take their exact values from
 `uncertainty.py`'s `ANCHORS`, which is the single place those two
