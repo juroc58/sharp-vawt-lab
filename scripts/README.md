@@ -57,3 +57,5 @@ assumed to be a bug.
 The `optimised_passive` and `scaleup` rows take their exact values from
 `uncertainty.py`'s `ANCHORS`, which is the single place those two
 optima are frozen for the UQ study.
+
+| Scale-up CPPC | `compute_aep_scaleup.py` | 2.72 | 0.386 | 0.312 | 0.218 | 2.69 | −0.194 | high-AR scale-up (AR=10.5) |
