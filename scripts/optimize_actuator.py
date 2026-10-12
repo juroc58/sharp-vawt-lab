@@ -14,7 +14,8 @@ does not read.
 Reference targets (from literature, scaled to R = 0.6 m):
     Ham  1979, R = 1.83 m, Re ~2e6 :  Cp = 0.42–0.45 @ λ = 2.5–3.0
     Adams 2018, R = 0.69 m, Re ~1e6:  Cp = 0.44–0.52 @ λ = 1.5, 2.25
-This work at R = 0.60 m, Re ~1.4e5 reaches Cp ≈ 0.46 at λ ≈ 3.2.
+This work at R = 0.60 m, Re ~1.4e5 reaches Cp = 0.48 at λ ≈ 2.14 (the
+committed reference point in scripts/optimization_actuator.json).
 """
 from __future__ import annotations
 
@@ -51,7 +52,6 @@ PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
 )
 
 PENALTY: float = 1000.0
-ENERGY_TOL: float = 0.03
 BETZ_LIMIT: float = 0.593     # physical ceiling — reject anything above this
 
 
@@ -87,8 +87,12 @@ class CpObjective:
     Reads exactly the parameters the core understands. Applies:
       * geometry feasibility check
       * steady-state requirement
-      * energy-balance penalty, ONLY when the ledger is valid
       * physical Betz limit ceiling
+
+    The energy ledger is deliberately NOT enforced here: this optimiser
+    runs in prescribed-pitch mode, where the core marks the ledger as
+    invalid (the actuator work is external), so a ledger penalty would be
+    either dead code or physically wrong.
     """
 
     def __init__(self, base_params: Dict[str, Any], R: float, ar: float) -> None:
@@ -127,16 +131,6 @@ class CpObjective:
         if not res.get("steady", True):
             return PENALTY + 100.0
 
-        # Energy ledger — only enforce when the core says it is meaningful.
-        # In prescribed-pitch mode, energy_balance_valid is False and the
-        # residual measures untracked actuator work, not a physics error.
-        if res.get("energy_balance_valid", True):
-            eb = abs(float(res.get("energy_balance", 0.0)))
-            if not np.isfinite(eb):
-                return PENALTY
-            if eb > ENERGY_TOL:
-                return PENALTY + 10.0 * (eb - ENERGY_TOL) * PENALTY
-
         return -cp
 
 
@@ -152,7 +146,7 @@ class OptimizationReport:
 
 
 class VAWTOptimizer:
-    """Two-stage optimiser: DE (global) → SLSQP (local)."""
+    """Two-stage optimiser: DE (global) → Nelder-Mead (local)."""
 
     def __init__(self,
                  base_params: Optional[Dict[str, Any]] = None,

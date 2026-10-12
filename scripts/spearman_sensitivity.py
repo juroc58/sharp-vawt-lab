@@ -43,14 +43,24 @@ def load_uq():
 
 
 def extract_design_matrix(raw_rows, param_names):
-    """Rebuild X (N_samples, N_params) and cp (N_samples) from raw rows."""
-    # The JSON stores only the Cp per sample, not the parameter values.
-    # We need to reconstruct them from the LHS scheme — which requires
-    # re-generating the same LHS with the same seed.
-    from scripts.uncertainty import latin_hypercube, sample_to_params, UQ_SPEC
-    unit = latin_hypercube(len(raw_rows), seed=42)
-    X = np.zeros((len(raw_rows), len(param_names)))
-    cp = np.zeros(len(raw_rows))
+    """Rebuild X (N_samples, N_params) and cp (N_samples) from raw rows.
+
+    Prefers the per-row parameter values stored in the JSON (added when the
+    UQ study was run).  Falls back to re-deriving them from the LHS scheme
+    for older result files that predate that change.
+    """
+    n = len(raw_rows)
+    X = np.zeros((n, len(param_names)))
+    cp = np.zeros(n)
+    if raw_rows and "params" in raw_rows[0]:
+        for i, row in enumerate(raw_rows):
+            for j, name in enumerate(param_names):
+                X[i, j] = row["params"][name]
+            cp[i] = row["cp"]
+        return X, cp
+
+    from scripts.uncertainty import latin_hypercube, sample_to_params
+    unit = latin_hypercube(n, seed=42)
     for i, row in enumerate(raw_rows):
         params = sample_to_params(unit[i])
         for j, name in enumerate(param_names):
@@ -149,9 +159,13 @@ def main():
     for row in data["raw"]:
         rows_by_anchor[row["anchor"]].append(row)
 
-    # Compute Spearman per anchor
-    from scripts.uncertainty import latin_hypercube, sample_to_params
-    unit = latin_hypercube(data["n_samples"], seed=data["seed"])
+    # Compute Spearman per anchor.  Use the per-row parameter values when
+    # present (preferred); otherwise re-derive them from the stored LHS.
+    use_stored = bool(data["raw"]) and "params" in data["raw"][0]
+    if not use_stored:
+        print("  (raw rows lack stored params; re-deriving from LHS seed)")
+        from scripts.uncertainty import latin_hypercube, sample_to_params
+        unit = latin_hypercube(data["n_samples"], seed=data["seed"])
 
     anchor_results = {}
     print()
@@ -167,7 +181,10 @@ def main():
         X = np.zeros((len(rows), len(param_names)))
         cp = np.zeros(len(rows))
         for i, row in enumerate(rows):
-            params = sample_to_params(unit[i])
+            if use_stored:
+                params = row["params"]
+            else:
+                params = sample_to_params(unit[i])
             for j, name in enumerate(param_names):
                 X[i, j] = params[name]
             cp[i] = row["cp"]

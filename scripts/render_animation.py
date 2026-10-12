@@ -20,9 +20,17 @@ from vawt_core import create_sim_from_params
 DESIGN = dict(
     R=0.60, H=0.40, N=3, ar=0.50, sp=0.25,
     c=0.117607, tsr=2.14487, k_load=0.0015,
+    # Blade-unit material properties — must match the reference design
+    # point (scripts/optimization_actuator.json, mc=0.008, dcw=0.50).
+    # Omitting these silently fell back to the dataclass defaults.
+    mb=0.010, xbcg=0.20, mc=0.008, dcw=0.50,
+    balance=0, bias_deg=0.0,
     pp0_deg=+5.156, pp1_deg=-6.329, pp2_deg=+2.758, pp3_deg=-0.085,
     pp_ph_deg=0.0,
     cd_add=0.002,
+    use_dynamic_stall=True, use_flow_curvature=True, use_dmst=True,
+    use_tip_loss=False,
+    win_deg=45.0, cb=2e-5, mu_c=0.0,
     prescribe_pitch=True, free=True,
     T_max=40.0, stride=1,
     w0_frac=0.9,
@@ -33,7 +41,7 @@ def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
     print(f"Running simulation (T_max = {DESIGN['T_max']} s) ...")
     r = create_sim_from_params(DESIGN).run()
     out = r["out"]
-    t, th, w, psi, beta, alpha = out[:, :6].T
+    t, th, w, psi, _beta, alpha = out[:, :6].T
 
     # --- steady-state window ---
     m = th >= th[-1] - n_revs * 2 * np.pi
@@ -53,13 +61,18 @@ def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
     alpha_s = np.concatenate([alpha_w[order], [alpha_w[order][0]]])
 
     # --- geometry ---
-    R, c, H, N = DESIGN["R"], DESIGN["c"], DESIGN["H"], DESIGN["N"]
+    R, c, N = DESIGN["R"], DESIGN["c"], DESIGN["N"]
     ar = DESIGN["ar"] * c
     Rp = R - ar
     xq_local = 0.25 * c - DESIGN["sp"] * c   # 0 for sp=0.25
 
     # --- frame timeline (slow motion) ---
     w_mean = w_w.mean()
+    if not np.isfinite(w_mean) or w_mean <= 1e-6:
+        raise RuntimeError(
+            f"rotor is not turning in the steady window (mean omega = "
+            f"{w_mean:.3e} rad/s); cannot build the animation timeline."
+        )
     rev_period = 2 * np.pi / w_mean
     video_sec_per_rev = 2.0
     n_frames = int(fps * n_revs * video_sec_per_rev)

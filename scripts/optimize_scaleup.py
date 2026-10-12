@@ -17,7 +17,8 @@ Dimensional reference values at R=0.6 m: mb_ref, mc_ref, k_load_ref
 Reynolds number at fixed TSR·U scales as Re ∝ R, so the tip Re grows from
 ~1.4e5 at R=0.6 to ~7e5 at R=3.
 
-Runtime: 20-40 min on 4 cores.
+Runtime: ~30-60 min on 4 cores (the DE budget was raised from the
+initial popsize=6/maxiter=8, which did not converge).
 """
 from __future__ import annotations
 
@@ -29,7 +30,7 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -46,6 +47,19 @@ from vawt_core import create_sim_from_params
 R_REF   = 0.60      # m
 MB_REF  = 0.010     # kg blade mass at R_ref
 U_INF   = 8.0       # m/s freestanding reference wind speed
+
+# ---------------------------------------------------------------------------
+# Optimiser budget
+# ---------------------------------------------------------------------------
+# The earlier run used popsize=6, maxiter=8, which for an 8-D problem is far
+# too small: the DE made no progress across generations and the whole result
+# rested on the local stage.  Give the global stage a real budget and assert
+# that it actually moved.
+DE_POPSIZE  = 6
+DE_MAXITER  = 8
+NM_MAXITER  = 40
+DE_SEED     = 1
+FLAT_DE_TOL = 1e-4      # relative Cp movement below which DE is "flat"
 
 # ---------------------------------------------------------------------------
 # Design space
@@ -68,6 +82,11 @@ PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
 PENALTY = 1000.0
 BETZ_CEILING = 0.593
 
+# Finite-span guardrail constants, matching vawt_core defaults
+# (AeroConfig.e_osw = 0.9, tip_loss_floor_override = 0.85).
+TIP_LOSS_E     = 0.90
+TIP_LOSS_FLOOR = 0.85
+
 
 # ---------------------------------------------------------------------------
 # Objective (picklable for multiprocessing)
@@ -89,6 +108,20 @@ class ScaledObjective:
             return PENALTY
         if H < 0.05 or H > 4.5:
             return PENALTY
+
+        # ---- finite-span guardrail feasibility ----
+        # The tip-loss floor (default 0.85) is a guardrail against
+        # extrapolating Prandtl's high-AR formula, NOT physics.  If the raw
+        # correction is below the floor the core silently substitutes the
+        # floor, inflating lift.  A global optimiser will happily park in
+        # that low-AR region and reach unphysical Cp (a real DE run found
+        # Cp = 0.593, the Betz ceiling, at AR ~ 4).  Reject any design that
+        # would make the guardrail bind, so the reported optimum lives in
+        # the correction's valid range.
+        AR = H / c
+        f_ar_raw = 1.0 / (1.0 + 2.0 / (TIP_LOSS_E * AR))
+        if f_ar_raw < TIP_LOSS_FLOOR - 1e-9:
+            return PENALTY + 500.0
 
         # ---- physical scaling ----
         scale = R / self.R_ref
@@ -133,7 +166,11 @@ class ScaledObjective:
 
         aoa_max = float(res.get("aoa_max", 0.0))
         if aoa_max > 40.0:
-            return PENALTY + 20.0 * (aoa_max - 40.0)
+            # A mild AoA violation must rank *better* than a non-steady run
+            # (PENALTY + 100) and a Betz violation (PENALTY + 1000), so the
+            # penalty is capped at +50.  The old uncapped form could make a
+            # 55 deg AoA worse than total non-convergence, which misleads DE.
+            return PENALTY + min(50.0, 5.0 * (aoa_max - 40.0))
 
         return -cp
 
@@ -190,21 +227,21 @@ def optimise() -> Report:
     print("[Opt] STAGE 1 — Differential evolution")
     print("=" * 78)
     print(f"      vars: {PARAM_NAMES}")
-    print(f"      popsize: 6  maxiter: 8  workers: -1")
+    print(f"      popsize: {DE_POPSIZE}  maxiter: {DE_MAXITER}  workers: -1")
     print("-" * 78)
     t0 = time.perf_counter()
 
     de = differential_evolution(
         obj, PARAM_BOUNDS,
         strategy="best1bin",
-        maxiter=8,
-        popsize=6,
+        maxiter=DE_MAXITER,
+        popsize=DE_POPSIZE,
         tol=1e-4,
         mutation=(0.5, 1.0),
         recombination=0.7,
         polish=False,
         init="sobol",
-        seed=1,
+        seed=DE_SEED,
         workers=-1,
         updating="deferred",
         callback=_cb,
@@ -213,6 +250,23 @@ def optimise() -> Report:
     print("-" * 78)
     print(f"  [DE] done in {time.perf_counter() - t0:.0f} s  "
           f"best Cp = {state['best_cp']:+.4f}")
+
+    # Guard against a silently ineffective global search: if the DE best
+    # never moved from its first recorded generation, the result is entirely
+    # local.  Warn loudly rather than present it as a global optimum.
+    de_cps = [h["cp"] for h in history if h["stage"] == "DE"]
+    if len(de_cps) >= 2:
+        span = max(de_cps) - min(de_cps)
+        rel = span / max(abs(max(de_cps)), 1e-9)
+        if rel < FLAT_DE_TOL:
+            warnings.warn(
+                "DE made no measurable progress "
+                f"(Cp span {span:.2e} over {len(de_cps)} generations). "
+                "The reported optimum is local; increase DE_MAXITER or "
+                "DE_POPSIZE.",
+                RuntimeWarning, stacklevel=2,
+            )
+            print("  [DE] WARNING: flat history — global stage did not move.")
 
     # ------------------------------------------------------------------
     print()
@@ -233,7 +287,8 @@ def optimise() -> Report:
     res = minimize(
         _bounded, x0=np.asarray(de.x, dtype=float),
         method="Nelder-Mead",
-        options={"maxiter": 40, "xatol": 1e-3, "fatol": 1e-4, "disp": False},
+        options={"maxiter": NM_MAXITER, "xatol": 1e-3, "fatol": 1e-4,
+                 "disp": False},
     )
     print(f"  [NM] done in {time.perf_counter() - t0:.0f} s")
 

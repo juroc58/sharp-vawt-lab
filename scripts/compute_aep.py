@@ -74,6 +74,10 @@ HOURS_YEAR     = 8760.0
 P_RATED_W      = 250.0
 ETA_DRIVETRAIN = 0.90
 
+# Cp jump between adjacent 1 m/s free-running samples that flags a
+# possible branch switch at the U ~ 8 m/s bifurcation.
+BRANCH_JUMP_TOL = 0.05
+
 
 # ============================================================================
 # Helpers
@@ -93,15 +97,17 @@ def load_fair_rigid_reference():
     g = data.get("geometries", {}).get("sharp_inspired")
     if not g:
         return None
+    br = g.get("best_rigid") or {}
     return {
         "source":       "aep_rigid_fair.json",
         "geometry":     "sharp_inspired",
-        "psi0_deg":     g["best_rigid"]["psi0_deg"],
-        "k_load":       g["best_rigid"]["k_load"],
-        "cp_design":    g["best_rigid"]["cp_design"],
-        "aep_kWh":      g["best_rigid"]["aep_kWh"],
-        "cf":           g["best_rigid"]["cf"],
-        "gain_percent": g["gain_percent"],
+        "psi0_deg":     br.get("psi0_deg"),
+        "k_load":       br.get("k_load"),
+        "cp_design":    br.get("cp_design"),
+        "viable":       bool(br.get("viable", True)),
+        "aep_kWh":      br.get("aep_kWh"),
+        "cf":           br.get("cf"),
+        "gain_percent": g.get("gain_percent"),
     }
 
 
@@ -231,8 +237,11 @@ def main():
     # --- free-running reference speeds ---
     # Sample every 1 m/s. The free-running equilibrium is bistable near
     # U ~ 8 m/s (a saddle-node bifurcation between a high-TSR and a low-TSR
-    # branch), so a sparse grid linearly interpolates across the jump and
-    # fabricates a false Cp valley. Dense sampling localises it.
+    # branch). Each sampled point is an independent attractor started from
+    # the same initial condition; linear interpolation between them can
+    # still fabricate a shallow Cp valley if adjacent samples land on
+    # different branches, so we detect and report any large jump rather
+    # than hide it.
     print()
     U_ref = np.arange(CUT_IN, CUT_OUT + 1.0, 1.0).tolist()
 
@@ -255,13 +264,30 @@ def main():
     tsr_fixed  = np.clip(tsr_design * U_MEAN / U_grid, tsrs[0], tsrs[-1])
     cp_fixed   = np.interp(tsr_fixed, tsrs, cps_passive_tsr)
 
-    # passive free-running: interpolate Cp(U) from reference runs
+    # passive free-running: interpolate Cp(U) from reference runs.
+    # If fewer than two points converged there is no curve to integrate;
+    # falling back to a flat "max fixed-rpm Cp" would silently fabricate
+    # an operating point, so that is an error, not a fallback.
+    branch_jumps = []
     if len(free_passive) >= 2:
         U_s  = np.array([f['U'] for f in free_passive])
         cp_s = np.array([f['cp'] for f in free_passive])
+        dcp = np.diff(cp_s)
+        for i, j in enumerate(dcp):
+            if abs(j) > BRANCH_JUMP_TOL:
+                branch_jumps.append(
+                    (float(U_s[i]), float(U_s[i + 1]),
+                     float(cp_s[i]), float(cp_s[i + 1])))
+                print(f"    NOTE: Cp jump of {j:+.3f} between U = "
+                      f"{U_s[i]:.0f} and {U_s[i+1]:.0f} m/s "
+                      f"(possible branch switch)")
         cp_passive = np.interp(U_grid, U_s, cp_s)
     else:
-        cp_passive = np.full_like(U_grid, float(cps_passive_tsr.max()))
+        raise RuntimeError(
+            f"only {len(free_passive)} free-running equilibria converged; "
+            f"need >= 2 to build the passive power curve. Check the "
+            f"stability of the design point."
+        )
 
     # --- integrate ---
     res_passive = integrate_aep(U_grid, cp_passive, U_MEAN, K_WEIBULL,
@@ -300,18 +326,25 @@ def main():
     print(f"  {'Passive CPPC, fixed rpm':<40} "
           f"{res_fixed['aep']:>14.1f} {res_fixed['cf']*100:>11.2f}%")
     if rigid_ref:
-        print(f"  {'Rigid blade, best fixed pitch':<40} "
-              f"{rigid_ref['aep_kWh']:>14.1f} {rigid_ref['cf']*100:>11.2f}%"
-              f"   (from aep_rigid_fair.json)")
+        if rigid_ref.get("viable", True) and rigid_ref.get("aep_kWh") is not None:
+            print(f"  {'Rigid blade, best fixed pitch':<40} "
+                  f"{rigid_ref['aep_kWh']:>14.1f} {rigid_ref['cf']*100:>11.2f}%"
+                  f"   (from aep_rigid_fair.json)")
+        else:
+            print(f"  {'Rigid blade, best fixed pitch':<40} "
+                  f"{'(no viable baseline)':>14}")
     else:
         print(f"  {'Rigid blade, best fixed pitch':<40} "
               f"{'(run compute_aep_rigid_fair.py)':>14}")
     print()
     gain_fixed = (res_passive['aep'] / max(res_fixed['aep'], 1e-9) - 1.0) * 100
     print(f"  Passive CPPC vs fixed-rpm, same physics : {gain_fixed:+6.1f} %")
-    if rigid_ref:
+    if rigid_ref and rigid_ref.get("gain_percent") is not None:
         print(f"  Passive CPPC vs fair rigid baseline    : "
               f"{rigid_ref['gain_percent']:+6.1f} %")
+    elif rigid_ref is not None:
+        print(f"  Passive CPPC vs fair rigid baseline    : "
+              f"n/a (no viable rigid configuration)")
 
     # --- plot ---
     out_path = os.path.join(_ROOT, "docs", "aep.png")
@@ -327,7 +360,8 @@ def main():
                  "p_rated_W": P_RATED_W},
         "results": {
             "passive_k_load":    {"aep_kWh": res_passive['aep'],
-                                  "cf": res_passive['cf']},
+                                  "cf": res_passive['cf'],
+                                  "branch_jumps": branch_jumps},
             "passive_fixed_rpm": {"aep_kWh": res_fixed['aep'],
                                   "cf": res_fixed['cf']},
         },
@@ -337,7 +371,9 @@ def main():
     }
     if rigid_ref:
         summary["rigid_fair_ref"] = rigid_ref
-        summary["gains_percent"]["passive_vs_rigid_fair"] = rigid_ref["gain_percent"]
+        if rigid_ref.get("gain_percent") is not None:
+            summary["gains_percent"]["passive_vs_rigid_fair"] = \
+                rigid_ref["gain_percent"]
 
     json_path = os.path.join(_HERE, "aep_results.json")
     with open(json_path, "w") as fh:

@@ -59,7 +59,11 @@ TURB_I  = 0.12
 TURB_L  = 30.0
 N_SEEDS = 10
 
-U_REF = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
+# Sample the power curve every 1 m/s out to cut-out.  A coarser grid
+# (e.g. 8 points) leaves np.interp to flat-extrapolate the high-wind tail
+# and to bridge the free-running bifurcation near U ~ 8 m/s, both of
+# which bias the AEP.  This matches compute_aep.py's sampling.
+U_REF = [float(u) for u in np.arange(CUT_IN, CUT_OUT + 1.0, 1.0)]
 
 
 # ----------------------------------------------------------------------------
@@ -76,8 +80,13 @@ def cp_from_power(P_mech, U, R, H, rho=RHO):
     A = 0.5 * rho * (2 * R) * H * (U ** 3)
     return P_mech / A if A > 0 else 0.0
 
-def mean_power_last40(r, T_used):
-    """Mean mechanical power over the last 40 % of the run, in W."""
+def mean_power_last40(r):
+    """Mean mechanical power over the last 40 % of the run, in W.
+
+    Returns (P_mean, omega_mean).  Turbulent runs never satisfy the core's
+    steady-state check, so the last 40 % of the time series is used as the
+    quasi-stationary window for both the mean power and the mean speed.
+    """
     out = r['out']
     if len(out) < 10:
         return float('nan'), float('nan')
@@ -98,12 +107,16 @@ def run_one(U, seed, turbulent):
     try:
         r = create_sim_from_params(params).run()
     except Exception as e:
+        print(f"      run_one failed (U={U}, seed={seed}): {e!r}")
         return None
     # never use r['steady'] here — turbulent runs are never stationary
-    P, w = mean_power_last40(r, BASE['T_max'])
+    P, w = mean_power_last40(r)
     if not np.isfinite(P) or w <= 1.0:
         return None
-    return dict(P=P, w=w, cp=float(r['cp']),
+    # Cp is derived from the *same* last-40 % window as P, so the mean and
+    # the standard deviation reported together describe one quantity.
+    cp = cp_from_power(P, U, BASE['R'], BASE['H'])
+    return dict(P=P, w=w, cp=cp,
                 tsr=float(r['tsr_eq']),
                 rpm=float(r['rpm']),
                 aoa_max=float(r['aoa_max']))
@@ -129,10 +142,9 @@ def main():
     for U in U_REF:
         r = run_one(U, 0, turbulent=False)
         if r:
-            cp_ws = cp_from_power(r['P'], U, BASE['R'], BASE['H'])
-            steady_rows.append((U, r['P'], cp_ws, r['tsr']))
+            steady_rows.append((U, r['P'], r['cp'], r['tsr']))
             print(f"    U = {U:4.1f}   P = {r['P']:7.2f} W   "
-                  f"Cp = {cp_ws:+.4f}   TSR = {r['tsr']:5.2f}")
+                  f"Cp = {r['cp']:+.4f}   TSR = {r['tsr']:5.2f}")
 
     print()
     print(f"  Turbulent (I = {TURB_I*100:.0f} %, {N_SEEDS} seeds):")
@@ -172,7 +184,8 @@ def main():
 
     cf_s = aep_s * 1000.0 / (P_RATED_W * HOURS_YEAR)
     cf_t = aep_t * 1000.0 / (P_RATED_W * HOURS_YEAR)
-    loss = (aep_s - aep_t) / aep_s * 100.0 if aep_s > 0 else 0.0
+    # Signed turbulence effect on AEP (positive = turbulence increases AEP).
+    effect = (aep_t - aep_s) / aep_s * 100.0 if aep_s > 0 else 0.0
 
     print()
     print("=" * 74)
@@ -180,9 +193,8 @@ def main():
     print("=" * 74)
     print(f"  Steady-wind AEP    : {aep_s:7.1f} kWh/yr   CF = {cf_s*100:5.2f} %")
     print(f"  Turbulent-wind AEP : {aep_t:7.1f} kWh/yr   CF = {cf_t*100:5.2f} %")
-    delta = (aep_t - aep_s) / aep_s * 100.0 if aep_s > 0 else 0.0
-    label = "gain" if delta >= 0 else "loss"
-    print(f"  Turbulence effect  : {delta:+5.1f} % ({label})")
+    label = "gain" if effect >= 0 else "loss"
+    print(f"  Turbulence effect  : {effect:+5.1f} % ({label})")
 
     # ------------------------------------------------------------------
     # Plot
@@ -225,7 +237,7 @@ def main():
     a.plot(U_grid, dE_s, "-", color="C0", lw=1.8, label="steady")
     a.plot(U_grid, dE_t, "-", color="C3", lw=1.8, label="turbulent")
     a.fill_between(U_grid, dE_s, dE_t, color="C3", alpha=0.2,
-                   label=f"loss = {loss:.1f} %")
+                   label=f"effect = {effect:+.1f} %")
     a.set_xlabel("U [m/s]")
     a.set_ylabel("d(AEP)/dU  [kWh/yr per m/s]")
     a.set_title("AEP per wind bin")
@@ -244,6 +256,9 @@ def main():
     # JSON
     # ------------------------------------------------------------------
     out_json = os.path.join(_HERE, "aep_turbulent.json")
+    steady_by_u = {row[0]: row for row in steady_rows}
+    turb_by_u   = {row[0]: row for row in turb_rows}
+    common_u = [u for u in U_REF if u in steady_by_u and u in turb_by_u]
     with open(out_json, "w") as fh:
         json.dump({
             "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
@@ -252,16 +267,15 @@ def main():
                      "p_rated_W": P_RATED_W, "eta_drivetrain": ETA_DRIVETRAIN},
             "steady":    {"aep_kWh": aep_s, "cf": cf_s},
             "turbulent": {"aep_kWh": aep_t, "cf": cf_t},
-            "turbulence_loss_pct": loss,
+            "turbulence_effect_pct": effect,
             "per_wind_speed": [
                 {
-                    "U":              float(su),
-                    "P_steady_W":     float(sp),
-                    "P_turb_mean_W":  float(tp),
-                    "P_turb_std_W":   float(tps),
+                    "U":              float(u),
+                    "P_steady_W":     float(steady_by_u[u][1]),
+                    "P_turb_mean_W":  float(turb_by_u[u][1]),
+                    "P_turb_std_W":   float(turb_by_u[u][2]),
                 }
-                for (su, sp, _, _), (tu, tp, tps, _, _, _) in
-                    zip(steady_rows, turb_rows)
+                for u in common_u
             ],
         }, fh, indent=2)
     print(f"  Wrote {out_json}")

@@ -38,6 +38,15 @@ from compute_aep import (
 U_DESIGN = 6.0
 U_REF    = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
 
+# A rigid configuration only counts as a *fair* baseline if it actually
+# extracts power and spins.  Below these floors the rotor is effectively
+# dead: at low aspect ratio the uncapped induced drag (Cd_i ~ 1/(pi e AR))
+# kills fixed-pitch operation entirely, and quoting a percentage gain
+# against a barely-turning blade is meaningless.  The floors are reported
+# explicitly rather than hidden inside a max().
+MIN_RIGID_CP  = 0.05
+MIN_RIGID_TSR = 1.0
+
 GEOMETRIES = {
     "sharp_inspired": {
         "base": {**BASE},   # already the Sharp-inspired config
@@ -93,10 +102,12 @@ def sweep_rigid(base, psi_grid, kl_grid, label):
     if not results:
         raise RuntimeError(f"no steady rigid configs at {label}")
     best = max(results, key=lambda r: r['cp'])
+    viable = bool(best['cp'] >= MIN_RIGID_CP and best['tsr'] >= MIN_RIGID_TSR)
+    tag = "" if viable else "   [BELOW VIABILITY FLOOR]"
     print(f"    best: psi0 = {best['psi0']:+.1f} deg, "
           f"k_load = {best['k_load']:.4f}, Cp = {best['cp']:.4f}, "
-          f"TSR = {best['tsr']:.2f}")
-    return best
+          f"TSR = {best['tsr']:.2f}{tag}")
+    return dict(best, viable=viable)
 
 
 def sweep_passive(base, kl_grid, label):
@@ -154,17 +165,7 @@ def main():
         best_r = sweep_rigid(base, cfg["pitch_grid"], cfg["kload_grid"], label)
         best_p = sweep_passive(base, cfg["kload_grid"], label)
 
-        print(f"    AEP for rigid at (psi0 = {best_r['psi0']:+.1f}, "
-              f"k_load = {best_r['k_load']:.4f}):")
-        rp = rigid_params(base, best_r['psi0']); rp['k_load'] = best_r['k_load']
         rated = cfg.get("rated_power_override", P_RATED_W)
-        aep_r = aep_for(base, {k: rp[k] for k in
-                               ['prescribe_pitch', 'pp0_deg', 'pp1_deg',
-                                'pp2_deg', 'pp3_deg', 'pp_ph_deg',
-                                'k_load']}, f"{label}/rigid",
-                        rated_power=rated)
-        print(f"      AEP = {aep_r['aep']:.1f} kWh/yr "
-              f"(CF {aep_r['cf']*100:.2f} %)")
 
         print(f"    AEP for passive at k_load = {best_p['k_load']:.4f}:")
         aep_p = aep_for(base, {'k_load': best_p['k_load']},
@@ -173,8 +174,29 @@ def main():
         print(f"      AEP = {aep_p['aep']:.1f} kWh/yr "
               f"(CF {aep_p['cf']*100:.2f} %)")
 
-        gain = (aep_p['aep'] / max(aep_r['aep'], 1e-9) - 1.0) * 100
-        print(f"    -> passive vs rigid at this geometry: {gain:+.1f} %")
+        if best_r['viable']:
+            print(f"    AEP for rigid at (psi0 = {best_r['psi0']:+.1f}, "
+                  f"k_load = {best_r['k_load']:.4f}):")
+            rp = rigid_params(base, best_r['psi0']); rp['k_load'] = best_r['k_load']
+            aep_r = aep_for(base, {k: rp[k] for k in
+                                   ['prescribe_pitch', 'pp0_deg', 'pp1_deg',
+                                    'pp2_deg', 'pp3_deg', 'pp_ph_deg',
+                                    'k_load']}, f"{label}/rigid",
+                            rated_power=rated)
+            print(f"      AEP = {aep_r['aep']:.1f} kWh/yr "
+                  f"(CF {aep_r['cf']*100:.2f} %)")
+            gain = (aep_p['aep'] / max(aep_r['aep'], 1e-9) - 1.0) * 100
+            print(f"    -> passive vs rigid at this geometry: {gain:+.1f} %")
+        else:
+            aep_r = None
+            gain = None
+            print(f"    No viable rigid baseline at this geometry: the best")
+            print(f"    fixed-pitch config reaches only Cp = {best_r['cp']:.4f} "
+                  f"(TSR {best_r['tsr']:.2f}), below the")
+            print(f"    Cp >= {MIN_RIGID_CP:.2f} / TSR >= {MIN_RIGID_TSR:.1f} "
+                  f"viability floor. A percentage")
+            print(f"    gain measured against a dead rotor is not meaningful "
+                  f"and is reported as null.")
 
         output["geometries"][label] = {
             "R": base['R'], "c": base['c'], "H": base['H'],
@@ -183,8 +205,10 @@ def main():
                 "psi0_deg": best_r['psi0'],
                 "k_load":   best_r['k_load'],
                 "cp_design": best_r['cp'],
-                "aep_kWh":  aep_r['aep'],
-                "cf":       aep_r['cf'],
+                "tsr":      best_r['tsr'],
+                "viable":   best_r['viable'],
+                "aep_kWh":  aep_r['aep'] if aep_r else None,
+                "cf":       aep_r['cf'] if aep_r else None,
             },
             "best_passive": {
                 "k_load":    best_p['k_load'],

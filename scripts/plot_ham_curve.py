@@ -40,39 +40,47 @@ CONFIGS = [
 
 TSRS = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5)
 
-# Ham 1979 experimental points (approximate, digitised from Fig. 8)
+# Ham 1979 experimental points (approximate, digitised from Fig. 8).
+# Exposed at module level so plot_validation.py reuses the same data
+# instead of keeping a second, drift-prone copy.
 HAM_TSR = np.array([1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
 HAM_CP  = np.array([0.22, 0.35, 0.43, 0.44, 0.38, 0.12])
 HAM_ERR = np.array([0.02, 0.03, 0.03, 0.03, 0.04, 0.03])
 
-fig, ax = plt.subplots(figsize=(7.5, 5))
 
-# Ham's measured points
-ax.errorbar(HAM_TSR, HAM_CP, yerr=HAM_ERR, fmt='s', capsize=4,
-            color='black', label="Ham 1979 (measured, R = 1.83 m)", zorder=5)
+def main():
+    fig, ax = plt.subplots(figsize=(7.5, 5))
 
-# Model curves at Ham's geometry
-for label, flags, color, ls in CONFIGS:
-    cps = []
-    for tsr in TSRS:
-        r = create_sim_from_params({**COMMON, **flags, 'tsr': tsr}).run()
-        cps.append(r['cp'])
-    cps = np.array(cps)
-    ax.plot(TSRS, cps, marker='o', lw=2, ls=ls, color=color, label=label)
-    print(f"{label:20s} peak Cp = {cps.max():.4f} "
-          f"at TSR = {TSRS[int(cps.argmax())]:.1f}")
+    # Ham's measured points
+    ax.errorbar(HAM_TSR, HAM_CP, yerr=HAM_ERR, fmt='s', capsize=4,
+                color='black', label="Ham 1979 (measured, R = 1.83 m)", zorder=5)
 
-ax.axhline(0, color='grey', lw=0.5)
-ax.set_xlabel('tip-speed ratio')
-ax.set_ylabel('power coefficient Cp')
-ax.set_xlim(1.2, 4.7)
-ax.set_ylim(-0.05, 0.55)
-ax.grid(alpha=0.3)
-ax.legend(loc='upper right', fontsize=9)
-ax.set_title("Ham 1979 reproduction: peak matches, shape does not")
-fig.tight_layout()
+    # Model curves at Ham's geometry
+    for label, flags, color, ls in CONFIGS:
+        cps = []
+        for tsr in TSRS:
+            r = create_sim_from_params({**COMMON, **flags, 'tsr': tsr}).run()
+            cps.append(r['cp'])
+        cps = np.array(cps)
+        ax.plot(TSRS, cps, marker='o', lw=2, ls=ls, color=color, label=label)
+        print(f"{label:20s} peak Cp = {cps.max():.4f} "
+              f"at TSR = {TSRS[int(cps.argmax())]:.1f}")
 
-out = os.path.join(ROOT, "docs", "ham_curve.png")
-fig.savefig(out, dpi=200)
-plt.close(fig)
-print(f"Wrote {out}")
+    ax.axhline(0, color='grey', lw=0.5)
+    ax.set_xlabel('tip-speed ratio')
+    ax.set_ylabel('power coefficient Cp')
+    ax.set_xlim(1.2, 4.7)
+    ax.set_ylim(-0.05, 0.55)
+    ax.grid(alpha=0.3)
+    ax.legend(loc='upper right', fontsize=9)
+    ax.set_title("Ham 1979 reproduction: peak matches, shape does not")
+    fig.tight_layout()
+
+    out = os.path.join(ROOT, "docs", "ham_curve.png")
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
+    print(f"Wrote {out}")
+
+
+if __name__ == "__main__":
+    main()

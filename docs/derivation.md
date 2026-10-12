@@ -167,9 +167,12 @@ $$
 
 with $\nu = 1.5\times 10^{-5}$ m²/s (air at sea level, 15 °C).
 
-The database source is the Sheldahl & Klimas (1981) report SAND80-2114,
-tabulated for NACA 0012 at four Reynolds numbers
-($10^5, 2\times10^5, 4\times10^5, 10^6$), spanning $\alpha \in [-180°, 180°]$.
+The database is a set of **synthetic** NACA 0012 tables approximating the
+Sheldahl & Klimas (1981) report SAND80-2114, generated for four Reynolds
+numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
+$\alpha \in [-180°, 180°]$. They are not digitised from the report; see
+`polars/README.md` for exactly what the surrogate does and does not
+capture (in particular `Cm = 0` everywhere).
 
 ---
 
@@ -632,9 +635,9 @@ limitations in the README:
 Additional known-good behaviours:
 
 - The dynamic-stall increment is designed so that steady flow reproduces
-  the static polar exactly. Turning `use_dynamic_stall=False` at a fixed
-  point changes Cp by 2.1 % — a good sign the DS model is not being
-  exploited by the optimiser.
+  the static polar exactly. Turning `use_dynamic_stall=False` at the
+  prescribed-pitch design point changes Cp by ≈2 % — a good sign the DS
+  model is not being exploited by the optimiser.
 - The Adams curvature cap $s_c \le 1$ was added after discovering that
   the uncapped version over-corrected at high chord-to-radius ratio and
   drove the Ham 1979 reproduction Cp negative.

@@ -68,7 +68,7 @@ class TestHamReproduction:
 
 @pytest.mark.slow
 class TestDynamicStallSensitivity:
-    """Turning DS off should change Cp by less than 5 % at the design point."""
+    """Turning DS off should change Cp by less than 3 % at the design point."""
 
     # Prescribed-pitch design at the actuator optimiser's best point.
     # The passive optimiser's optimum is different; see
@@ -90,14 +90,14 @@ class TestDynamicStallSensitivity:
         w0_frac=0.9, k_load=0.0015, tsr=2.14,
     )
 
-    def test_ds_sensitivity_under_5_percent(self):
-        """The README claims ΔCp < 5 % when the dynamic-stall model is
+    def test_ds_sensitivity_under_3_percent(self):
+        """The README claims ΔCp < 3 % when the dynamic-stall model is
         turned off at the optimiser's prescribed-pitch design point."""
         r_ds = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': True}).run()
         r_nods = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': False}).run()
         delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
-        assert delta < 0.05, \
-            f"DS sensitivity {delta*100:.1f}% > 5% " \
+        assert delta < 0.03, \
+            f"DS sensitivity {delta*100:.1f}% > 3% " \
             f"(Cp with DS = {r_ds['cp']:.4f}, without = {r_nods['cp']:.4f})"
 
     def test_passive_ds_sensitivity_is_larger(self):

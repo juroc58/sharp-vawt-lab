@@ -162,15 +162,15 @@ def run_one_task(args):
         r = create_sim_from_params(params).run()
         cp = float(r["cp"])
         if not np.isfinite(cp) or cp <= 0.0:
-            return (anchor_name, None, "non-positive Cp")
+            return (anchor_name, None, "non-positive Cp", uq_params)
         return (anchor_name,
                 dict(cp=cp,
                      tsr=float(r["tsr_eq"]),
                      aoa_max=float(r["aoa_max"]),
                      steady=bool(r.get("steady", True))),
-                None)
+                None, uq_params)
     except Exception as e:
-        return (anchor_name, None, str(e)[:80])
+        return (anchor_name, None, str(e)[:80], uq_params)
 
 
 # ============================================================================
@@ -209,7 +209,7 @@ def main():
         futures = [ex.submit(run_one_task, t) for t in tasks]
         done = 0
         for fut in as_completed(futures):
-            anchor_name, res, err = fut.result()
+            anchor_name, res, err, uq_params = fut.result()
             done += 1
             if res is not None:
                 results_by_anchor[anchor_name].append(res["cp"])
@@ -219,6 +219,7 @@ def main():
                     "tsr": res["tsr"],
                     "aoa_max": res["aoa_max"],
                     "steady": res["steady"],
+                    "params": {k: float(v) for k, v in uq_params.items()},
                 })
             else:
                 failures[anchor_name] += 1

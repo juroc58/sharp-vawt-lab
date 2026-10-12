@@ -31,8 +31,9 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 
 The confidence intervals come from a Latin-hypercube sampling over eight
 uncalibrated model constants (`scripts/uncertainty.py`). All Sharp-machine
-numbers use the bounded tip-loss correction; the Ham reproduction uses
-Ham's own model class (single-streamtube, no tip loss). See the
+numbers use the bounded tip-loss correction; the Ham reproduction is run
+without one and without the curvature correction, using
+double-multiple-streamtube induction and Ham's cosine pitch law. See the
 [Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
 **Convention.** The headline Cp for each machine is the **UQ mean with
@@ -229,7 +230,7 @@ For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.17):
 | Fixed-rpm generator | 94 kWh/yr | 4.3 % |
 <!-- END GENERATED: aep_steady -->
 
-The passive machine produces **2.3× more energy** than the same rotor on
+The passive machine produces **1.75× more energy** than the same rotor on
 a fixed-rpm generator because the k_load·ω² torque tracks the wind's
 power curve: the rotor speed adjusts so the tip-speed ratio stays near
 its optimum at every wind speed. A fixed-speed generator drifts far from
@@ -261,21 +262,18 @@ uncertainty through each headline case:
 | `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
 <!-- END GENERATED: uq_params -->
 
-The 90 % confidence width is **0.032–0.042 in Cp** across all four anchors
-(3–4 % of the mean). No single parameter dominates — the model is well-
-conditioned. The widest band is on the Ham reproduction, which is nearly
-single-parameter in `tau_rev` (ρ = +0.89); the LHS samples that
-parameter over a wide range.
+The 90 % confidence width is **0.041–0.042 in Cp** for the Ham, Sharp-CPPC
+and scale-up anchors (≈8–25 % of their means). The optimised-passive anchor
+is much wider, **0.15**, because its optimum sits on the edge of the design
+space (arm ratio near its upper bound) where the equilibrium Cp is sensitive
+to the DS time constants. No single parameter dominates every anchor, but
+the model is *not* uniformly well-conditioned: `tau_rev` explains most of
+the Ham and optimised-passive spread (see the Spearman section below).
 
-Two anomalies in the histograms are worth noting. First, one sample in
-the `sharp_cppc` anchor sits at Cp = 0.034 with α_max ≈ 180° — a
-fully-reversed-flow case that passed the `steady` check. Excluding it
-shifts the `sharp_cppc` mean from 0.266 to 0.272 (+2.2 %); both are
-reported and the outlier is retained for transparency. Second, the
-`ham_1979` distribution is bimodal with clusters near 0.465 and 0.500;
-this is likely a bifurcation when a DS time constant crosses a
-threshold. Neither invalidates the wider UQ study, but neither is
-fully explained by it.
+The `ham_1979` distribution is broad with a weak second cluster (values run
+from 0.464 to 0.512 with the mode near 0.49), likely a bifurcation when a DS
+time constant crosses a threshold. Every sample in all four anchors produced
+a finite, positive Cp, so no outlier needed to be excluded.
 
 To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
 
@@ -290,9 +288,9 @@ length scale L = 30 m (Dryden-like AR(1)). See
 <!-- BEGIN GENERATED: aep_turbulent -->
 | | AEP | CF |
 |---|---|---|
-| Steady wind | 281.3 kWh/yr | 12.85 % |
-| Turbulent wind (I = 12 %) | 293.7 kWh/yr | 13.41 % |
-| **Effect** | **+4.4 %** | **+0.57 pp** |
+| Steady wind | 161.4 kWh/yr | 7.37 % |
+| Turbulent wind (I = 12 %) | 175.7 kWh/yr | 8.02 % |
+| **Effect** | **+8.9 %** | **+0.65 pp** |
 <!-- END GENERATED: aep_turbulent -->
 
 ### Why turbulence gives a gain, not a loss
@@ -372,7 +370,8 @@ mechanism of each spelled out, plus a validation against the primary
 literature:
 
 1. **Ham 1979 reproduction (partial).** The same solver, run in the
-   model class Ham used (single-streamtube, static polars, cosine pitch
+   model class Ham used (double-multiple-streamtube induction, static
+   polars, no curvature correction, cosine pitch
    law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** (a single deterministic run; the UQ mean in the headline table is 0.49) — 9 % above
    his measured band of 0.42–0.45. The **shape** of the curve does not
    match: the model over-predicts by ~0.08 at TSR 2, is closest at the
@@ -382,7 +381,8 @@ literature:
    is a residual limitation of the model class, not something the peak
    number captures.
 2. **Dynamic-stall sensitivity.** Turning the (uncalibrated) DS model off
-   changes Cp by **2.1 %** at the design point. The result is driven by
+   changes Cp by **≈2 %** at the design point (the tolerance enforced by
+   `scripts/validate_ds_off.py` is 3 %). The result is driven by
    steady blade forces, not by fitting the unsteady model.
 3. **Pitch-torque sign check.** `scripts/diag_qa.py` reconstructs the aero
    pitch torque from the pitch equation and **exits non-zero** if it is not
@@ -589,8 +589,12 @@ sharp-vawt-lab/
     3D flow. No tip vortices, no spanwise flow, no tower shadow.
   A bounded finite-span correction (max 15 % lift reduction) is
   available via `use_tip_loss=True`; the optimisation results are
-  2D upper bounds. With the correction on, the scale-up Cp drops
-  from 0.53 to 0.46.
+  2D upper bounds. At the current scale-up optimum (AR 10.5) the
+  correction is nearly inactive (f_ar ≈ 0.86, floor not binding), so
+  it barely moves Cp. It matters most at low aspect ratio: it was
+  enabling the correction that moved the optimum away from a short,
+  fat rotor (AR ≈ 3), where the floor had removed the induced-drag
+  penalty and inflated Cp.
 
     Active Lift (detail). The Coriolis contribution from the blade unit's
     radial CG motion is present in the model via the relative-motion
