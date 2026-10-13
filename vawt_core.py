@@ -473,6 +473,7 @@ class SimConfig:
     gust_tg: float = 0.0
     turb_I: float = 0.0
     turb_L: float = 30.0
+    turb_model: str = "dryden"   # "dryden" or "vonkarman"
     k_load: float = 4.164352
     rho: float = 1.225
     seed: int = 0
@@ -687,11 +688,12 @@ class CycloturbineSim:
     def _make_wind(self, n):
         """Generate wind time series with optional gust and turbulence.
 
-        Turbulence model: Dryden spectrum for longitudinal component.
-        The Dryden spectrum for longitudinal velocity is:
-            Phi(k) = 2 * sigma^2 * L / (1 + (k*L)^2)
+        Supports two turbulence models:
+        - Dryden:    Phi(k) = 2 * sigma^2 * L / (1 + (k*L)^2)
+        - von Karman: Phi(k) = 0.47 * sigma^2 * L / (1 + (k*L)^2)^(5/6)
+
         where k = 2*pi*f / U is the wavenumber, L is integral length scale.
-        This is implemented via a state-space representation (shaping filter).
+        Both implemented via state-space representation (shaping filter).
         """
         sim = self.sim
         dt = sim.dt
@@ -705,30 +707,44 @@ class CycloturbineSim:
         if sim.turb_I > 0:
             rng = np.random.default_rng(sim.seed)
 
-            # Dryden turbulence model for longitudinal component
-            # State-space representation of Dryden shaping filter:
-            # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
-            # where tau = L / U, sigma = turb_I * U
-            # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
             U_mean = sim.U
             L = sim.turb_L
             I = sim.turb_I
+            model = getattr(sim, "turb_model", "dryden")
 
             tau = L / max(U_mean, 1e-3)  # integral time scale
             sigma = I * U_mean
 
-            # Discrete-time AR(1) coefficients matching Dryden spectrum
-            a = math.exp(-dt / tau) if tau > 0 else 0.0
-            b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+            if model == "vonkarman":
+                # von Karman spectrum: variance is 0.47 * Dryden variance (same sigma, L)
+                # So we generate Dryden turbulence and scale by sqrt(0.47) ≈ 0.6856
+                vk_scale = 0.6856
+                a = math.exp(-dt / tau) if tau > 0 else 0.0
+                b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
 
-            rng = np.random.default_rng(sim.seed)
-            x = np.zeros(n)
-            if b > 0:
-                x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
-                for i in range(1, n):
-                    x[i] = a * x[i - 1] + b * rng.standard_normal()
+                rng = np.random.default_rng(sim.seed)
+                x = np.zeros(n)
+                if b > 0:
+                    x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                    for i in range(1, n):
+                        x[i] = a * x[i - 1] + b * rng.standard_normal()
+                x *= vk_scale
             else:
-                x[:] = 0.0
+                # Dryden spectrum shaping filter (1st order)
+                # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
+                # where tau = L / U, sigma = turb_I * U
+                # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
+                a = math.exp(-dt / tau) if tau > 0 else 0.0
+                b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+
+                rng = np.random.default_rng(sim.seed)
+                x = np.zeros(n)
+                if b > 0:
+                    x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                    for i in range(1, n):
+                        x[i] = a * x[i - 1] + b * rng.standard_normal()
+                else:
+                    x[:] = 0.0
 
             U += x
             U = np.maximum(0.3 * U_mean, U)  # prevent negative wind
