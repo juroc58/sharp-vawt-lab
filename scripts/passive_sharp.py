@@ -24,14 +24,14 @@ from vawt_core import create_sim_from_params
 # We take the optimiser's geometry (c = 0.118 m) and scale the CPPC hardware
 # to Sharp's design rules.
 BASE = dict(
-    R=2.7179, H=4.0568, N=3,
-    c=0.3861,               # from the scale-up optimiser
-    ar=0.3121,              # rocking arm / chord
-    sp=0.2181,              # spar position from LE / chord
-    # Scale-up balance
-    mb=0.92954, xbcg=0.20,  # blade CG at 20% chord
-    mc=2.69306, dcw=-0.1935, # counterweight mass, offset
-    balance=0,              # use mc, dcw directly
+    R=0.60, H=0.40, N=3,
+    c=0.1176,               # from the optimiser
+    ar=0.50,                # rocking arm / chord
+    sp=0.25,                # spar position from LE / chord
+    # Sharp balance: counterweight roughly compensates blade pitching moment
+    mb=0.010, xbcg=0.20,    # blade CG at 20% chord
+    mc=0.008, dcw=0.50,     # counterweight mass, offset 0.5c ahead of LE
+    balance=1,              # solve for dcw from bias_deg
     bias_deg=0.0,
     # passive mode — NO prescribed schedule
     prescribe_pitch=False,
@@ -48,8 +48,8 @@ BASE = dict(
     # simulation
     free=True, T_max=40.0, stride=5,
     w0_frac=0.9,
-    k_load=4.164352,
-    tsr=2.5,
+    k_load=0.0015,
+    tsr=2.14,
 )
 
 print("=" * 74)

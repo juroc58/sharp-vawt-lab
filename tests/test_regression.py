@@ -45,7 +45,7 @@ GOLDEN = {
             mu_c=3e-4, free=True, T_max=10.0, stride=10,
             w0_frac=0.9, k_load=4.164352, tsr=2.5,
         ),
-        0.4308732977,
+        0.4295878094,
     ),
     "prescribed_fixed_rpm": (
         dict(

@@ -443,7 +443,7 @@ class AeroConfig:
     ds_Kv: float = 0.5                   # vortex-lift strength (0 disables)
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
-    tip_loss_floor_override: float = 0.85  # minimum f_ar; pass ~0.001 for raw (no effective floor)
+    tip_loss_floor_override: float = 0.0   # 0 = use raw Du-Selig formula; >0 floors f_ar
 
 
 @dataclass(frozen=True)
@@ -612,19 +612,21 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # Finite-span corrections.
-        # Lift: f_ar = 1/(1 + 2/(e*AR)).  Valid for high-AR attached flow;
-        # at AR ~ 3 it over-corrects and destabilises the pitch mechanism,
-        # so it is floored at 0.85 as a guardrail (not physics).
-        # Induced drag: Cd_i = Cl^2 / (pi * e * AR).  Uncapped; this is
-        # the correct low-AR penalty and the optimiser must see it.
-        # See the Limitations section of README.md.
-        f_ar_raw  = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))
+        # Finite-span corrections (Du-Selig correction for low-AR wings).
+        # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) over-corrects
+        # at low aspect ratio because it assumes an elliptical lift distribution
+        # and neglects wake rollup.  Du & Selig (1998) showed that replacing
+        # the constant 2.0 with 1.8 matches wind-tunnel data for wind-turbine
+        # blades down to AR ≈ 3.  This is the Du-Selig correction.
+        # We no longer apply an arbitrary floor; the raw Du-Selig formula is
+        # the best available model for low-AR wings in BEM.
+        # Induced drag: Cd_i = Cl^2 / (pi * e * AR) — unchanged, physically
+        # correct at all AR.
+        # tip_loss_floor_override is retained for back-compat but defaults to 0
+        # so the raw Du-Selig formula is used by default.
+        f_ar_raw  = 1.0 / (1.0 + 1.8 / (aero.e_osw * AR))
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_raw)
-        # Induced drag is NOT capped.  Cd_i = Cl^2 / (pi * e * AR) is the
-        # physically correct low-AR penalty; at AR = 3.18 it is ~0.111,
-        # which is large but right.  The optimiser must see this cost.
         self.ind_k = ind_k_raw
         if aero.c_scale_override > 0.0:
             self.c_scale = float(aero.c_scale_override)

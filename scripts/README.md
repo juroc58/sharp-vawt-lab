@@ -48,7 +48,7 @@ assumed to be a bug.
 | Sharp-inspired CPPC | `compute_aep*.py`, UQ `sharp_cppc` | 0.60 | 0.14 | 0.50 | 0.25 | 0.002 | 0.30 | headline CPPC geometry |
 | CPPC pitch-sign case | `diag_qa.py` (fixed at mc=0.004, dcw=−0.10); `passive_sweeps.py` sweeps dcw | 0.60 | 0.1176 | 0.50 | 0.25 | 0.004 | −0.10 | manual-sweep optimum, Cp ≈ 0.36 |
 | Sharp-spec sweep case | `passive_sharp.py` | 0.60 | 0.1176 | 0.50 | 0.25 | 0.008 | 0.50 | Sharp's published cw range |
-| Passive optimum | `optimize_passive.py`, UQ `optimised_passive` | 0.60 | 0.157 | 0.797 | 0.153 | 0.0165 | 0.012 | mass-balanced optimum |
+| Passive optimum | `optimize_passive.py`, UQ `optimised_passive` | 0.60 | 0.157 | 0.797 | 0.153 | 0.0165 | 0.012 | mass-balanced optimum; ar pinned near upper bound (0.80) |
 | Scale-up optimum | `optimize_scaleup.py`, UQ `scaleup` | 2.72 | 0.386 | 0.312 | 0.218 | 2.69 | −0.194 | H/R at upper bound; k_load = 4.16 N·m·s² |
 | Actuator / DS case | `optimize_actuator.py`, `validate_ds_off.py`, `render_animation.py` | 0.60 | 0.1176 | 0.50 | 0.25 | 0.008 | 0.50 | prescribed-pitch upper bound |
 | Ham 1979 rig | `validate_ham.py`, UQ `ham_1979` | 1.83 | 0.305 | 0.0 | 0.25 | — | — | Ham's own model class |

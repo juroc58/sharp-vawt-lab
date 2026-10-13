@@ -86,7 +86,10 @@ speeds — see the AEP section below.
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with the counterweight near the pitch
 pivot that reaches **Cp = 0.24 [0.15, 0.30]** with the finite-span correction
-active in the optimiser.
+active in the optimiser. The optimised arm ratio is **ar = 0.797**, which
+sits on the **upper bound (0.80)** of the search space; the UQ spread is
+wide (CI width 0.15) because the optimum is pinned on this boundary where
+Cp is sensitive to the dynamic-stall time constants.
 
 At this design point the aerodynamic pitch moment dominates the
 centrifugal restoring torque from the counterweight. The blade pitches
@@ -599,9 +602,22 @@ sharp-vawt-lab/
     Active Lift (detail). The Coriolis contribution from the blade unit's
     radial CG motion is present in the model via the relative-motion
     term in the blade's air velocity, but it is not quantitatively
-    isolated by the current diagnostic — see the Active Lift section.
-    The specific L-shaped bellcrank geometry of Sharp's later machines
-    is not modelled separately.
+    isolated by the current diagnostic. Earlier versions of this README
+    quoted a +7 % figure from a rocking-velocity-suppression experiment
+    and a +0.0002 Cp net-energy figure from an integral of the
+    Lagrangian `sumL` term; both are retracted and no script currently
+    produces them — see the Active Lift section. The specific L-shaped
+    bellcrank geometry of Sharp's later machines is not modelled
+    separately.
+
+    Pitching moment (Cm = 0). The polar tables enforce Cm = 0 at all
+    angles. The passive CPPC mechanism relies on the centre-of-pressure
+    shift in stall, which in reality is driven by the pitching moment
+    coefficient Cm. With Cm = 0 the model approximates this via a fixed
+    centre-of-pressure shift (x_cp = 0.25c → 0.5c in stall), but this
+    is a significant simplification. Real SAND80-2114 data has a
+    non-zero Cm that moves the centre of pressure. See
+    `polars/README.md` for full discussion and the path to real data.
 
     Flux-line optimal pitch. Adams's inverse method for computing the
     maximum-power pitch schedule from first principles is not implemented. The
