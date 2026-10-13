@@ -685,22 +685,58 @@ class CycloturbineSim:
 
     # ---------------------------------------------------------------- wind
     def _make_wind(self, n):
+        """Generate wind time series with optional gust and turbulence.
+
+        Turbulence model: Dryden spectrum for longitudinal component.
+        The Dryden spectrum for longitudinal velocity is:
+            Phi(k) = 2 * sigma^2 * L / (1 + (k*L)^2)
+        where k = 2*pi*f / U is the wavenumber, L is integral length scale.
+        This is implemented via a state-space representation (shaping filter).
+        """
         sim = self.sim
         dt = sim.dt
         t = np.arange(n) * dt
         U = np.full(n, sim.U)
+
         if sim.gust_g > 0 and sim.gust_tg > 0:
             m = (t >= sim.gust_t0) & (t <= sim.gust_t0 + sim.gust_tg)
             U[m] *= 1.0 + sim.gust_g * 0.5 * (1.0 - np.cos(TWO_PI * (t[m] - sim.gust_t0) / sim.gust_tg))
+
         if sim.turb_I > 0:
             rng = np.random.default_rng(sim.seed)
-            tl = sim.turb_L / sim.U
+
+            # Dryden turbulence model for longitudinal component
+            # State-space representation of Dryden shaping filter:
+            # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
+            # where tau = L / U, sigma = turb_I * U
+            # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
+            U_mean = sim.U
+            L = sim.turb_L
+            I = sim.turb_I
+
+            tau = L / max(U_mean, 1e-3)  # integral time scale
+            sigma = I * U_mean
+
+            # Discrete-time AR(1) coefficients matching Dryden spectrum
+            a = math.exp(-dt / tau) if tau > 0 else 0.0
+            b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+
+            rng = np.random.default_rng(sim.seed)
             x = np.zeros(n)
-            sd = sim.turb_I * sim.U * math.sqrt(2.0 * dt / tl)
-            r = rng.standard_normal(n)
-            for i in range(1, n):
-                x[i] = x[i - 1] * (1.0 - dt / tl) + sd * r[i]
-            U = np.maximum(0.3 * sim.U, U + x)
+            if b > 0:
+                x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                for i in range(1, n):
+                    x[i] = a * x[i - 1] + b * rng.standard_normal()
+            else:
+                x[:] = 0.0
+
+            U += x
+            U = np.maximum(0.3 * U_mean, U)  # prevent negative wind
+
+        if sim.gust_g > 0 and sim.gust_tg > 0:
+            m = (t >= sim.gust_t0) & (t <= sim.gust_t0 + sim.gust_tg)
+            U[m] *= 1.0 + sim.gust_g * 0.5 * (1.0 - np.cos(TWO_PI * (t[m] - sim.gust_t0) / sim.gust_tg))
+
         return t, U
 
     # ---------------------------------------------------------------- run

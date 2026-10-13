@@ -52,7 +52,7 @@ PARAM_BOUNDS = (
     (0.0005, 0.0050),  # k_load
     (0.001, 0.040),    # mc
     (-0.30, 0.60),     # dcw
-    (0.20, 0.80),      # ar
+    (0.20, 1.50),      # ar  -- widened to search for interior optimum
     (0.15, 0.35),      # sp
     (-5.0, 5.0),       # bias
 )

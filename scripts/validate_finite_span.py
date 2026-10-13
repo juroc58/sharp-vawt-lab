@@ -3,6 +3,11 @@ Validate finite-span correction against wind-tunnel data for AR 3-10.
 
 Compares the Du-Selig correction (k=1.8) and Prandtl (k=2.0) against
 experimental data for NACA 0012 wings at various aspect ratios.
+
+References:
+- Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics"
+- NASA TM 4075 (low-AR wind-tunnel data)
+- Abbott & von Doenhoff (airfoil theory)
 """
 from __future__ import annotations
 
@@ -38,6 +43,10 @@ def f_ar(AR, e=0.9, k=2.0):
     return 1.0 / (1.0 + k / (e * AR))
 
 
+def f_ar_vec(AR, k):
+    return np.array([f_ar(ar, k=k) for ar in AR])
+
+
 def main():
     print("=" * 70)
     print("Finite-Span Correction Validation")
@@ -49,9 +58,6 @@ def main():
     ARs_fine = np.linspace(1.0, 20.0, 200)
 
     # Evaluate corrections
-    def f_ar_vec(AR, k):
-        return np.array([f_ar(ar, k=k) for ar in AR])
-
     prandtl = f_ar_vec(ARs_fine, 2.0)
     du_selig = f_ar_vec(ARs_fine, 1.8)
     k15 = f_ar_vec(ARs_fine, 1.5)
@@ -87,8 +93,8 @@ def main():
         return np.sqrt(np.mean((pred - actual)**2))
 
     print("\nRMSE vs Experimental Data (AR 1-15):")
-    print(f"  Prandtl (k=2.0):    {rmse(CLA_2D * prandtl_exp, cla_exp):.3f}")
-    print(f"  Modified k=1.5:     {rmse(cla_k15_exp, cla_exp):.3f}")
+    print(f"  Prandtl (k=2.0):    {rmse(cla_prandtl_exp, cla_exp):.3f}")
+    print(f"  Modified k=1.5:     {rmse(CLA_2D * k15_exp, cla_exp):.3f}")
     print(f"  Du-Selig (k=1.8):   {rmse(cla_du_selig_exp, cla_exp):.3f}")
     print(f"  Modified k=2.0:     {rmse(cla_k20_exp, cla_exp):.3f}")
     print(f"  Modified k=2.2:     {rmse(cla_k22_exp, cla_exp):.3f}")
@@ -98,19 +104,19 @@ def main():
     for ar, exp in zip(ARs_exp, cla_exp):
         p2 = CLA_2D * f_ar(ar, k=2.0)
         ds = CLA_2D * f_ar(ar, k=1.8)
-        k18 = CLA_2D * f_ar(ar, k=1.8)
-        k15 = CLA_2D * f_ar(ar, k=1.5)
-        k22 = CLA_2D * f_ar(ar, k=2.2)
-        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {ds:>10.2f} {k18:>8.2f} {k15:>8.2f} {k22:>8.2f}")
+        k18_val = CLA_2D * f_ar(ar, k=1.8)
+        k15_val = CLA_2D * f_ar(ar, k=1.5)
+        k22_val = CLA_2D * f_ar(ar, k=2.2)
+        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {ds:>10.2f} {k18_val:>8.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
 
     # Plot
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-    ax1.plot(ARs_fine, CLA_2D * prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
-    ax1.plot(ARs_fine, CLA_2D * du_selig, 'b-', lw=2, label='Du-Selig (k=1.8)')
-    ax1.plot(ARs_fine, CLA_2D * k15, 'g--', lw=1.5, label='k=1.5')
-    ax1.plot(ARs_fine, CLA_2D * k18, 'r-', lw=2, label='k=1.8 (our default)')
-    ax1.plot(ARs_fine, CLA_2D * k22, 'm--', lw=1.5, label='k=2.2')
+    ax1.plot(ARs_fine, cla_prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
+    ax1.plot(ARs_fine, cla_du_selig, 'b-', lw=2, label='Du-Selig (k=1.8)')
+    ax1.plot(ARs_fine, cla_k15, 'g--', lw=1.5, label='k=1.5')
+    ax1.plot(ARs_fine, cla_k18, 'r-', lw=2, label='k=1.8 (our default)')
+    ax1.plot(ARs_fine, cla_k22, 'm--', lw=1.5, label='k=2.2')
     ax1.scatter(ARs_exp, cla_exp, color='black', s=60, zorder=5, label='Experimental')
     ax1.axhline(CLA_2D, color='gray', ls=':', lw=1, label='2D limit (2π)')
     ax1.set_xlabel('Aspect Ratio (AR)')
