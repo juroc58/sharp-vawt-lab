@@ -716,8 +716,10 @@ class CycloturbineSim:
             sigma = I * U_mean
 
             if model == "vonkarman":
-                # von Karman spectrum: variance is 0.47 * Dryden variance (same sigma, L)
-                # So we generate Dryden turbulence and scale by sqrt(0.47) ≈ 0.6856
+                # von Kármán spectrum: Phi(f) = 0.47 * sigma^2 * L/U / (1 + (2*pi*f*L/U)^2)^(5/6)
+                # Use a stable 1st-order filter with correct variance scaling.
+                # The von Kármán spectrum has variance 0.47 * Dryden variance.
+                # So we generate Dryden turbulence and scale by sqrt(0.47) ≈ 0.6856.
                 vk_scale = 0.6856
                 a = math.exp(-dt / tau) if tau > 0 else 0.0
                 b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
@@ -730,21 +732,21 @@ class CycloturbineSim:
                         x[i] = a * x[i - 1] + b * rng.standard_normal()
                 x *= vk_scale
             else:
-                # Dryden spectrum shaping filter (1st order)
-                # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
-                # where tau = L / U, sigma = turb_I * U
-                # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
-                a = math.exp(-dt / tau) if tau > 0 else 0.0
-                b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+                    # Dryden spectrum shaping filter (1st order)
+                    # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
+                    # where tau = L / U, sigma = turb_I * U
+                    # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
+                    a = math.exp(-dt / tau) if tau > 0 else 0.0
+                    b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
 
-                rng = np.random.default_rng(sim.seed)
-                x = np.zeros(n)
-                if b > 0:
-                    x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
-                    for i in range(1, n):
-                        x[i] = a * x[i - 1] + b * rng.standard_normal()
-                else:
-                    x[:] = 0.0
+                    rng = np.random.default_rng(sim.seed)
+                    x = np.zeros(n)
+                    if b > 0:
+                        x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                        for i in range(1, n):
+                            x[i] = a * x[i - 1] + b * rng.standard_normal()
+                    else:
+                        x[:] = 0.0
 
             U += x
             U = np.maximum(0.3 * U_mean, U)  # prevent negative wind

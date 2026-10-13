@@ -3,19 +3,21 @@ Uncertainty quantification for the Sharp cycloturbine model.
 
 Eight model constants are uncalibrated (they come from the literature but
 are not fitted to this specific machine).  We sample them over their
-plausible ranges with Latin hypercube sampling and propagate through the
-four anchor cases documented in the README.
+plausible ranges with Latin hypercube sampling (default) or Saltelli
+sampling (for Sobol indices) and propagate through the four anchor
+cases documented in the README.
 
 Outputs
 -------
 * Terminal table: Cp mean, median, 5 %, 95 % per anchor
 * docs/uncertainty.png: histogram per anchor
-* scripts/uncertainty_results.json: raw samples + Cp values
+* scripts/uncertainty_results.json: raw samples + Cp values (+ Sobol indices if Saltelli used)
 
-Runtime: ~5 min on 4 cores.
+Runtime: ~5 min on 4 cores (LHS) or ~40 min on 4 cores (Saltelli, N=1024).
 """
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
@@ -30,6 +32,13 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
+try:
+    from SALib.sample import saltelli
+    from SALib.analyze import sobol
+    HAS_SALIB = True
+except ImportError:
+    HAS_SALIB = False
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
@@ -151,6 +160,17 @@ def sample_to_params(unit_row: np.ndarray) -> Dict[str, float]:
     return {name: float(v) for name, v in zip(UQ_NAMES, values)}
 
 
+def sample_to_params_saltelli(unit_row: np.ndarray) -> Dict[str, float]:
+    """Map a Saltelli sample in [0,1]^d to physical parameter values.
+    
+    Saltelli samples can go slightly outside [0,1] due to the way
+    Saltelli sampling extends the LHS. We clip to [0,1] before mapping.
+    """
+    unit_row = np.clip(unit_row, 0.0, 1.0)
+    values = UQ_LOW + unit_row * (UQ_HIGH - UQ_LOW)
+    return {name: float(v) for name, v in zip(UQ_NAMES, values)}
+
+
 # ============================================================================
 # 4. WORKER
 # ============================================================================
@@ -177,12 +197,46 @@ def run_one_task(args):
 # 5. MAIN
 # ============================================================================
 def main():
+    parser = argparse.ArgumentParser(
+        description="Uncertainty quantification for the Sharp cycloturbine model"
+    )
+    parser.add_argument(
+        "--saltelli",
+        action="store_true",
+        help="Use Saltelli sampling for Sobol indices (requires SALib). "
+             "N_SAMPLES becomes the base N; total runs = N * (D + 2).",
+    )
+    parser.add_argument(
+        "--saltelli-n",
+        type=int,
+        default=None,
+        help="Base N for Saltelli sampling (default: use N_SAMPLES). "
+             "Total runs = N * (D + 2) where D is number of parameters.",
+    )
+    args = parser.parse_args()
+
+    use_saltelli = args.saltelli
+    saltelli_n = args.saltelli_n if args.saltelli_n is not None else N_SAMPLES
+
     print("=" * 74)
     print("Uncertainty quantification — Sharp cycloturbine model")
     print("=" * 74)
-    print(f"  Samples per anchor : {N_SAMPLES}")
+    
+    if use_saltelli:
+        if not HAS_SALIB:
+            print("ERROR: SALib not installed. Install with: pip install SALib")
+            return 1
+        D = len(UQ_SPEC)
+        total_runs = saltelli_n * (len(UQ_SPEC) + 2)
+        print(f"  Saltelli sampling: N={saltelli_n}, D={len(UQ_SPEC)}")
+        print(f"  Total runs per anchor: {total_runs}")
+    else:
+        print(f"  Samples per anchor : {N_SAMPLES}")
     print(f"  Anchors            : {len(ANCHORS)}")
-    print(f"  Total runs         : {N_SAMPLES * len(ANCHORS)}")
+    if use_saltelli:
+        print(f"  Total runs         : {saltelli_n * (len(UQ_SPEC) + 2) * len(ANCHORS)}")
+    else:
+        print(f"  Total runs         : {N_SAMPLES * len(ANCHORS)}")
     print()
     print("  Uncertain parameters and ranges:")
     for name, lo, hi in UQ_SPEC:
@@ -190,8 +244,20 @@ def main():
     print()
 
     # Generate samples
-    unit = latin_hypercube(N_SAMPLES, SEED)
-    samples = [sample_to_params(unit[i]) for i in range(N_SAMPLES)]
+    if use_saltelli:
+        problem = {
+            'num_vars': len(UQ_SPEC),
+            'names': UQ_NAMES,
+            'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
+        }
+        # Saltelli sampling
+        unit = saltelli.sample(problem, saltelli_n, calc_second_order=True)
+        samples = [sample_to_params_saltelli(row) for row in unit]
+        print(f"  Generated {len(samples)} Saltelli samples")
+    else:
+        unit = latin_hypercube(N_SAMPLES, SEED)
+        samples = [sample_to_params(unit[i]) for i in range(N_SAMPLES)]
+        print(f"  Generated {len(samples)} LHS samples")
 
     # Build task list
     tasks = []
@@ -229,7 +295,7 @@ def main():
     # Summary
     print()
     print("=" * 74)
-    print(f"RESULTS  (N = {N_SAMPLES} samples per anchor)")
+    print(f"RESULTS  (N = {len(samples)} samples per anchor)")
     print("=" * 74)
     print(f"{'anchor':<22} {'N_ok':>5} {'fail':>5} "
           f"{'mean':>8} {'median':>8} {'5%':>8} {'95%':>8} {'95%-5%':>8}")
@@ -251,6 +317,37 @@ def main():
                              n_fail=failures[name])
         print(f"{name:<22} {len(cps):>5} {failures[name]:>5} "
               f"{m:>8.4f} {med:>8.4f} {p5:>8.4f} {p95:>8.4f} {width:>8.4f}")
+
+    # Compute Sobol indices if using Saltelli
+    sobol_results = {}
+    if use_saltelli and HAS_SALIB:
+        print("\nComputing Sobol indices...")
+        # Group raw data by anchor for Sobol analysis
+        for anchor_name in ANCHOR_NAMES:
+            anchor_rows = [r for r in raw_rows if r["anchor"] == anchor_name]
+            if len(anchor_rows) < 10:
+                continue
+            # Extract X matrix and Y vector
+            X = np.zeros((len(anchor_rows), len(UQ_NAMES)))
+            Y = np.zeros(len(anchor_rows))
+            for i, row in enumerate(anchor_rows):
+                for j, name in enumerate(UQ_NAMES):
+                    X[i, j] = row["params"][name]
+                Y[i] = row["cp"]
+            # Compute Sobol indices
+            problem = {
+                'num_vars': len(UQ_SPEC),
+                'names': UQ_NAMES,
+                'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
+            }
+            Si = sobol.analyze(problem, Y, calc_second_order=True, print_to_console=False)
+            sobol_results[anchor_name] = {
+                'S1': {name: float(Si['S1'][i]) for i, name in enumerate(UQ_NAMES)},
+                'ST': {name: float(Si['ST'][i]) for i, name in enumerate(UQ_NAMES)},
+                'S1_conf': {name: float(Si['S1_conf'][i]) for i, name in enumerate(UQ_NAMES)},
+                'ST_conf': {name: float(Si['ST_conf'][i]) for i, name in enumerate(UQ_NAMES)},
+            }
+            print(f"  {anchor_name}: S1 dominant = {max(Si['S1']):.4f}")
 
     # -------- figure --------
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
@@ -287,14 +384,24 @@ def main():
     out_json = os.path.join(_HERE, "uncertainty_results.json")
     with open(out_json, "w") as fh:
         json.dump({
-            "n_samples": N_SAMPLES,
+            "n_samples": len(samples),
             "seed": SEED,
+            "method": "saltelli" if use_saltelli else "lhs",
             "parameters": UQ_SPEC,
             "summary": summary,
+            "sobol": sobol_results,
             "raw": raw_rows,
         }, fh, indent=2)
     print(f"Wrote {out_json}")
 
+    # Print Sobol summary if available
+    if sobol_results:
+        print("\nSobol indices (first-order S1 and total-order ST):")
+        for anchor, res in sobol_results.items():
+            print(f"\n  {anchor}:")
+            for name in UQ_NAMES:
+                s1 = res['S1'][name]
+                st = res['ST'][name]
+                print(f"    {name:>24s}: S1 = {s1:.4f}, ST = {st:.4f}")
 
-if __name__ == "__main__":
-    main()
+    return 0
