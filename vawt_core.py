@@ -70,8 +70,8 @@ def _wrap(a):
 
 
 @njit(cache=True)
-def _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t):
-    """Bilinear lookup on a uniform alpha grid and a uniform log-Re grid. Returns Cl, Cd, Cl_alpha."""
+def _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t=None):
+    """Bilinear lookup on a uniform alpha grid and a uniform log-Re grid. Returns Cl, Cd, Cm, Cl_alpha."""
     nRe = Cl_t.shape[0]
     nA = Cl_t.shape[1]
     a = min(max(alpha, alpha_grid[0]), alpha_grid[nA - 1])
@@ -93,8 +93,12 @@ def _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t):
           + Cl_t[j1, i0] * (1.0 - wa) * wr + Cl_t[j1, i1] * wa * wr)
     Cd = (Cd_t[j0, i0] * (1.0 - wa) * (1.0 - wr) + Cd_t[j0, i1] * wa * (1.0 - wr)
           + Cd_t[j1, i0] * (1.0 - wa) * wr + Cd_t[j1, i1] * wa * wr)
+    Cm = 0.0
+    if Cm_t is not None:
+        Cm = (Cm_t[j0, i0] * (1.0 - wa) * (1.0 - wr) + Cm_t[j0, i1] * wa * (1.0 - wr)
+              + Cm_t[j1, i0] * (1.0 - wa) * wr + Cm_t[j1, i1] * wa * wr)
     cla = cla_re[j0] * (1.0 - wr) + cla_re[j1] * wr
-    return Cl, Cd, cla
+    return Cl, Cd, Cm, cla
 
 
 @njit(cache=True)
@@ -111,9 +115,9 @@ def _fstat(alpha, Cl_tab, cla):
 
 @njit(cache=True)
 def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
-                 logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t):
+                 logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t=None):
     """
-    Returns (Cl, Cd, Cl_nc, f).  Cl excludes the apparent-mass term Cl_nc (added once by the caller).
+    Returns (Cl, Cd, Cl_nc, f, Cm).  Cl excludes the apparent-mass term Cl_nc (added once by the caller).
     ds = [alpha_eff, f_dyn, v_vortex, alpha_prev, initialised].
     dyn = 0 : static table lookup.
     dyn = 1 : delayed separation / vortex lift written as increments on the static polar, so that
@@ -121,12 +125,12 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     """
     logRe = math.log(max(Re, 1e3))
     if dyn == 0:
-        Cl, Cd, cla = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t)
+        Cl, Cd, Cm, cla = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
         f, Clatt, Clsep = _fstat(alpha, Cl, cla)
-        return Cl, Cd, 0.0, f
+        return Cl, Cd, 0.0, f, Cm
 
     if ds[4] < 0.5:  # first call: start from the steady state (no start-up spike)
-        Cl0, Cd0, cla0 = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t)
+        Cl0, Cd0, Cm0, cla0 = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
         f0, a0, b0 = _fstat(alpha, Cl0, cla0)
         ds[0] = alpha
         ds[1] = f0
@@ -140,7 +144,7 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     ds[0] = _wrap(ds[0] + _wrap(alpha - ds[0]) * min(1.0, dt / (Ta * tau)))   # attached-flow lag, kept in [-pi, pi]
     ae = ds[0]
 
-    Cl_s, Cd_s, cla = _lookup(logRe, ae, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t)
+    Cl_s, Cd_s, Cm_s, cla = _lookup(logRe, ae, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
     fst, Clatt, Clsep = _fstat(ae, Cl_s, cla)
     ds[1] += (fst - ds[1]) * min(1.0, dt / (Tf * tau))            # separation-point lag
     fd = ds[1]
@@ -148,6 +152,10 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     Cl = Cl_s + (fd - fst) * (Clatt - Clsep)
     cdsep = 1.98 * math.sin(ae) ** 2
     Cd = Cd_s + (fst - fd) * (cdsep - Cd_s)
+
+    # Cm in dynamic stall: blend between static Cm and separated Cm
+    # In deep stall, Cm becomes more negative (nose-down)
+    Cm = Cm_s + (fst - fd) * (-0.05 - Cm_s)  # blend toward -0.05 in deep stall
 
     # vortex lift: only while separation is lagging, decays to zero in steady flow
     sg = 1.0 if ae >= 0.0 else -1.0
@@ -158,7 +166,7 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     Cd += 0.5 * abs(ds[2]) * abs(math.sin(ae))
 
     Cl_nc = 0.5 * PI * tau * adot                # Theodorsen apparent-mass lift, (pi/2)(c/W) alpha_dot
-    return Cl, Cd, Cl_nc, fd
+    return Cl, Cd, Cl_nc, fd, Cm
 
 
 @njit(cache=True)
@@ -186,7 +194,7 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             win, ks, cs, cb, kc, mu_c, r_b, arm_k, k_load, free, w_init, psi0,
             prescribe, pp0, pp1, pp2, pp3, ppph, dmst, tau_rev, a_fix, dyn, Tf, Tv, Ta, Kv,
             curv, c_scale, fin_span, f_ar, ind_k, cd_add, Clmax, Knc,
-            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t):
+            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t):
     n = U_arr.shape[0]
     nb = 180
     atab = np.full(nb, 0.2)
@@ -284,8 +292,8 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
                 a_in = alpha + pe * (-0.0742) * c_scale
                 dCl = pe * (-0.402) * c_scale
                 dCd = pe * 0.0156 * c_scale
-            Cl, Cd, Clnc, wt = _aero_coeffs(ds[k], a_in, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
-                                            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t)
+            Cl, Cd, Clnc, wt, Cm = _aero_coeffs(ds[k], a_in, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
+                                            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
             Clnc *= Knc
             Cl += dCl
             Cd += dCd
@@ -299,13 +307,17 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             Fnt = q * Clnc * math.sin(pf)          # apparent-mass force, acts at mid-chord
             Fnr = q * Clnc * math.cos(pf)
 
+            # Pitch moment from Cm: Qa_cm = q * Cm * c * H
+            # This is the direct pitching moment from the airfoil's Cm
+            Qa_cm = q * Cm * c * H
+
             xcp = (0.25 + 0.25 * (1.0 - wt)) * c - sp      # centre of pressure moves aft in stall
             stc = -xcp * cp_ - ar * sn_
             src = -xcp * sn_ + ar * cp_
             stm = -xm * cp_ - ar * sn_
             srm = -xm * sn_ + ar * cp_
             Tk = (Rp + src) * Ft - stc * Fr + (Rp + srm) * Fnt - stm * Fnr
-            Qa = stc * Fr - src * Ft + stm * Fnr - srm * Fnt
+            Qa = stc * Fr - src * Ft + stm * Fnr - srm * Fnt + Qa_cm
             Fx = -(Ft + Fnt) * sphi + (Fr + Fnr) * cphi
             Fxp[k] = Fx
             Fxs += Fx
@@ -546,7 +558,7 @@ class PolarDatabase:
         return self
 
     def _load_csv(self, files):
-        res, cls_, cds = [], [], []
+        res, cls_, cds, cms = [], [], [], []
         ag = np.degrees(self.alpha_grid)
         for f in files:
             m = re.search(r"[Rr][Ee]_(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", os.path.basename(f))
@@ -556,14 +568,17 @@ class PolarDatabase:
             d = np.genfromtxt(f, delimiter=",", comments="#")
             d = d[~np.isnan(d).any(axis=1)] if d.ndim == 2 else d
             a, cl, cd = d[:, 0], d[:, 1], d[:, 2]
+            cm = d[:, 3] if d.shape[1] >= 4 else np.zeros_like(a)
             o = np.argsort(a)
             res.append(Re)
             cls_.append(np.interp(ag, a[o], cl[o], period=None))
             cds.append(np.interp(ag, a[o], cd[o]))
+            cms.append(np.interp(ag, a[o], cm[o]))
         o = np.argsort(res)
         self.logRe_grid = np.log(np.array(res)[o])
         self.Cl = np.array(cls_)[o]
         self.Cd = np.array(cds)[o]
+        self.Cm = np.array(cms)[o]
         sel = np.abs(ag) <= 4.0
         self.cla_re = np.array([np.polyfit(self.alpha_grid[sel], self.Cl[r][sel], 1)[0]
                                 for r in range(len(res))])
@@ -575,12 +590,15 @@ class PolarDatabase:
                                      for i in range(self.Cl.shape[1])] for l in lg])
                 self.Cd = np.array([[np.interp(l, self.logRe_grid, self.Cd[:, i])
                                      for i in range(self.Cd.shape[1])] for l in lg])
+                self.Cm = np.array([[np.interp(l, self.logRe_grid, self.Cm[:, i])
+                                     for i in range(self.Cm.shape[1])] for l in lg])
                 self.cla_re = np.interp(lg, self.logRe_grid, self.cla_re)
                 self.logRe_grid = lg
 
     def _finish(self):
         self.Cl = np.ascontiguousarray(self.Cl, dtype=np.float64)
         self.Cd = np.ascontiguousarray(self.Cd, dtype=np.float64)
+        self.Cm = np.ascontiguousarray(self.Cm, dtype=np.float64)
         self.logRe_grid = np.ascontiguousarray(self.logRe_grid, dtype=np.float64)
         self.cla_re = np.ascontiguousarray(self.cla_re, dtype=np.float64)
         sel = np.abs(self.alpha_grid) <= math.radians(30.0)
@@ -711,7 +729,7 @@ class CycloturbineSim:
             ae.tau_rev if ae.use_dynamic_inflow else 0.02, ae.a_fix, int(ae.use_dynamic_stall),
             ae.ds_Tf, ae.ds_Tv, ae.ds_Ta, ae.ds_Kv, bool(ae.use_flow_curvature), self.c_scale,
             bool(ae.use_tip_loss), self.f_ar, self.ind_k, ae.cd_add, pdb.Cl_max, ae.ds_Knc,
-            pdb.logRe_grid, pdb.alpha_grid, pdb.cla_re, pdb.Cl, pdb.Cd)
+            pdb.logRe_grid, pdb.alpha_grid, pdb.cla_re, pdb.Cl, pdb.Cd, pdb.Cm)
         return self._post(out, led, t_arr, U_arr, store_history)
 
     def _post(self, out, led, t_arr, U_arr, store_history):

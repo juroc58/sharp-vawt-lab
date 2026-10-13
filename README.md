@@ -22,11 +22,11 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.39, 0.43] | ~71 % of Betz |
-| **Sharp-inspired CPPC** | **0.17** | [0.15, 0.19] | — |
-| Optimised passive (mass-balanced) | **0.24** | [0.15, 0.30] | — |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.43** | [0.41, 0.45] | ~71 % of Betz |
+| **Sharp-inspired CPPC** | **0.16** | [0.13, 0.20] | — |
+| Optimised passive (mass-balanced) | **0.25** | [0.16, 0.32] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
-| Ham 1979 reproduction | **0.49** | [0.46, 0.51] | matches Ham's method |
+| Ham 1979 reproduction | **0.50** | [0.48, 0.52] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
 
 The confidence intervals come from a Latin-hypercube sampling over eight
@@ -57,14 +57,14 @@ This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
 control) but not his **geometry**. It uses a light counterweight 0.30
 chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
 At R = 0.60 m, with the finite-span correction on and the UQ spread
-over eight uncalibrated constants, it reaches **Cp = 0.17 [0.15, 0.19]**.
+over eight uncalibrated constants, it reaches **0.16 [[0.13, 0.20]]**.
 
 **The mechanism fails inside Sharp's own parameter range.** Running the
 same solver at a counterweight offset of 0.5 chords — Sharp's lower
 bound — gives **Cp = 0.0571**, with the blade reaching 50° angle of
 attack and spending 9 % of each revolution against the mechanical
 stops. At 0.6 chords the rotor barely turns (Cp = 0.017, TSR = 0.90).
-The successful design (0.30 chords, Cp = 0.17) sits *below* Sharp's
+The successful design (0.30 chords, 0.16) sits *below* Sharp's
 range, not inside it.
 
 `scripts/passive_sharp.py` sweeps both the counterweight mass and
@@ -85,7 +85,7 @@ speeds — see the AEP section below.
 
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with the counterweight near the pitch
-pivot that reaches **Cp = 0.24 [0.15, 0.30]** with the finite-span correction
+pivot that reaches **0.25 [[0.16, 0.32]]** with the finite-span correction
 active in the optimiser. The optimised arm ratio is **ar = 0.797**, which
 sits on the **upper bound (0.80)** of the search space; the UQ spread is
 wide (CI width 0.15) because the optimum is pinned on this boundary where
@@ -103,7 +103,7 @@ Extending the joint optimiser to radius R ∈ [0.6, 3.0] m now finds
 **R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
 enabled *inside the optimiser*, the optimum sits on the **upper bound**
 of the height-to-radius band (H/R = 1.49, i.e. H/D = 0.75). UQ mean:
-**Cp = 0.42 [0.39, 0.43]**.
+**0.43 [[0.41, 0.45]]**.
 
 The movement is the point: with the correction hidden (the pre-fix
 configuration), the optimiser preferred a short fat cylinder
@@ -116,7 +116,7 @@ one.
 ### Prescribed pitch (upper bound)
 
 For reference, running the same rotor with an ideal actuator commanding
-ψ(φ) directly reaches Cp = 0.48 — the same class of machine as Ham's
+ψ(φ) directly reaches 0.47 -- the same class of machine as Ham's
 cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 ---
@@ -136,14 +136,14 @@ rigidly locked at its time-mean pitch:
 
 | Case | Cp | Notes |
 |---|---|---|
-| **A. Passive** | **0.2728** | blade rocks freely, ψ ∈ [−11.5°, +24.3°] |
-| B. Rigid at time-mean pitch | 0.2313 | locked at ψ = +6.4° |
-| C. Rigid at ψ = 0 | 0.1426 | locked flat |
+| **A. Passive** | **158.69** | blade rocks freely, ψ ∈ [−11.5°, +24.3°] |
+| B. Rigid at time-mean pitch | 93.71 | locked at ψ = +6.4° |
+| C. Rigid at ψ = 0 | 93.71 | locked flat |
 
 | Effect | ΔCp | Relative |
 |---|---|---|
-| **Mean pitch offset (B − C)** | +0.0888 | **+62 %** |
-| **Dynamic pitch (A − B)** | +0.0414 | **+18 %** |
+| **Mean pitch offset (B − C)** | 69.3** |
+| **Dynamic pitch (A − B)** | 69.3** |
 
 That A−B difference is the ordinary benefit of *any* time-varying pitch
 schedule on a VAWT. It is not specific to Sharp's mechanism, and labelling
@@ -156,7 +156,7 @@ same TSR and the same load:
 
 | Case | Cp |
 |---|---|
-| A. Passive (blade rocks freely) | 0.2728 |
+| A. Passive (blade rocks freely) | 158.69 |
 | B. Rigid, locked at the time-mean pitch | 0.2313 |
 | C. Rigid, locked at ψ = 0 | 0.1426 |
 
@@ -178,7 +178,7 @@ does not currently confirm or refute.
 
 The dominant benefit of pitch control here is the **mean pitch offset**
 (B − C = +62 %): a rigid blade sitting at the right bias angle is much
-better than one at ψ = 0. The rocking motion adds a further **+18 %**
+better than one at ψ = 0. The rocking motion adds a further **69.3**
 (A − B), which is the ordinary cyclic-pitch benefit and includes any
 Coriolis contribution alongside the non-Coriolis effects. The model does
 not currently separate the two.
@@ -200,8 +200,8 @@ comparison at both design points:
 
 | Geometry | AR | Passive CPPC | Best rigid | Gain |
 |---|---|---|---|---|
-| **Sharp-inspired (R = 0.60 m)** | 2.86 | **162 kWh/yr** | 7.6 kWh/yr | **+2048 %** |
-| **Scale-up (R = 2.72 m)** | 10.5 | **18 792 kWh/yr** | 15 246 kWh/yr | **+23.3 %** |
+| **Sharp-inspired (R = 0.60 m)** | 2.86 | **158.69 kWh/yr** | 93.71 kWh/yr | **+n/a** |
+| **Scale-up (R = 2.72 m)** | 10.5 | **158.69 kWh/yr** | 93.71 kWh/yr | **+n/a** |
 
 Sharp's published claim is **25–30 % more energy than a fixed-blade
 rotor**. The model gives **+23 %** at the scale-up geometry, where a
@@ -224,7 +224,7 @@ likely do better than 15 246 kWh/yr at AR 10.5.
 
 ### Fixed-rpm penalty
 
-For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.17):
+For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.16):
 
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
@@ -265,7 +265,7 @@ uncertainty through each headline case:
 | `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
 <!-- END GENERATED: uq_params -->
 
-The 90 % confidence width is **0.041–0.042 in Cp** for the Ham, Sharp-CPPC
+The 90 % confidence width is **0.042–0.164 in Cp** for the Ham, Sharp-CPPC
 and scale-up anchors (≈8–25 % of their means). The optimised-passive anchor
 is much wider, **0.15**, because its optimum sits on the edge of the design
 space (arm ratio near its upper bound) where the equilibrium Cp is sensitive
@@ -375,7 +375,7 @@ literature:
 1. **Ham 1979 reproduction (partial).** The same solver, run in the
    model class Ham used (double-multiple-streamtube induction, static
    polars, no curvature correction, cosine pitch
-   law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** (a single deterministic run; the UQ mean in the headline table is 0.49) — 9 % above
+   law with θ₁c = −10°), peaks at **Cp = 0.47 at TSR = 2.5** (a single deterministic run; the UQ mean in the headline table is 0.50) — 9 % above
    his measured band of 0.42–0.45. The **shape** of the curve does not
    match: the model over-predicts by ~0.08 at TSR 2, is closest at the
    peak, and with the Adams curvature correction active it under-predicts
