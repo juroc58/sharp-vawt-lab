@@ -171,19 +171,34 @@ class TestWorkingDirectoryIndependence:
         
         # Run a quick simulation from a temp directory
         with tempfile.TemporaryDirectory() as tmpdir:
+            # Write the test script to a file to avoid shell quoting issues
+            script_path = os.path.join(tmpdir, 'test_run.py')
+            script_content = (
+                'import sys\n'
+                'sys.path.insert(0, {0!r})\n'
+                'from vawt_core import create_sim_from_params\n'
+                'r = create_sim_from_params({{\n'
+                '    "R": 0.6, "c": 0.14, "H": 0.4, "N": 3,\n'
+                '    "ar": 0.5, "sp": 0.25, "mb": 0.01, "xbcg": 0.2,\n'
+                '    "mc": 0.002, "dcw": 0.3, "balance": 0, "bias_deg": 0.0,\n'
+                '    "prescribe_pitch": True,\n'
+                '    "pp0_deg": 0.0, "pp1_deg": -10.0, "pp2_deg": 0.0,\n'
+                '    "pp3_deg": 0.0, "pp_ph_deg": 0.0, "free": False,\n'
+                '    "tsr": 2.5, "T_max": 5.0, "stride": 5,\n'
+                '    "use_dynamic_stall": True, "use_flow_curvature": True,\n'
+                '    "use_tip_loss": True, "use_dmst": True,\n'
+                '    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,\n'
+                '    "k_load": 0.0025\n'
+                '}}).run()\n'
+                'print("Cp={{\" + str(r[\"cp\"])[:6] + \"}}")\n'
+            ).format(repo_root)
+            
+            script_path = os.path.join(tmpdir, 'test_run.py')
+            with open(script_path, 'w') as f:
+                f.write(script_content)
+            
             result = subprocess.run([
-                sys.executable, '-c',
-                f'import sys; sys.path.insert(0, {repo_root!r}); '
-                'from vawt_core import create_sim_from_params; '
-                'r = create_sim_from_params({"R": 0.6, "c": 0.14, "H": 0.4, "N": 3, '
-                '"ar": 0.5, "sp": 0.25, "mb": 0.01, "xbcg": 0.2, "mc": 0.002, '
-                '"dcw": 0.3, "balance": 0, "bias_deg": 0.0, "prescribe_pitch": True, '
-                '"pp0_deg": 0.0, "pp1_deg": -10.0, "pp2_deg": 0.0, "pp3_deg": 0.0, '
-                '"pp_ph_deg": 0.0, "free": False, "tsr": 2.5, "T_max": 5.0, "stride": 5, '
-                '"use_dynamic_stall": True, "use_flow_curvature": True, "use_tip_loss": True, '
-                '"use_dmst": True, "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4, '
-                '"k_load": 0.0025}).run(); '
-                f'print(f"Cp={{r[\"cp\"]:.4f}}")'
+                sys.executable, script_path
             ], cwd=tmpdir, capture_output=True, text=True, timeout=30)
             
             assert result.returncode == 0, f"Failed: {result.stderr}"
