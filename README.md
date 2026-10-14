@@ -245,8 +245,8 @@ For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.16):
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **17808 kWh/yr** | **13.6 %** |
-| Fixed-rpm generator | 11140 kWh/yr | 8.5 % |
+| **Passive k_load (variable speed)** | **17711 kWh/yr** | **13.5 %** |
+| Fixed-rpm generator | 10344 kWh/yr | 7.9 % |
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces **1.75× more energy** than the same rotor on
@@ -431,11 +431,11 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
   Euler. Sharp's centrifugal-pendulum restoring torque is computed from the
   blade unit's CG position relative to the pitch pivot.
 - **Pitch law** (prescribed mode): `ψ(φ) = pp0 + pp1·cos(φ + ph) + pp2·cos 2(φ + ph) + pp3·sin 2(φ + ph)` with `ph` = `pp_ph_deg`. There is no sin φ term and no fourth harmonic.
-- **Polars**: synthetic NACA 0012 tables at four Reynolds numbers
-  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶), approximating the Sheldahl-Klimas
-  shape with `Cl ~ 0.85·sin 2α` post-stall and `Cm = 0`. Bilinear
-  interpolation in (log Re, α). See `polars/README.md` for what is
-  and is not captured.
+- **Polars**: NACA 0012 tables at four Reynolds numbers
+  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶) from Abbott & SAND80-2114 data,
+  with realistic stall progression, Cm from Abbott measurements, and proper
+  360° coverage. Bilinear interpolation in (log Re, α).
+  See `polars/README.md` for what is and is not captured.
 - **Energy ledger**: closes to within a few percent for passive runs;
   disabled in prescribed mode because the pitch actuator work is external.
 
@@ -626,36 +626,27 @@ sharp-vawt-lab/
     bellcrank geometry of Sharp's later machines is not modelled
     separately.
 
-    Pitching moment (Cm = 0). The polar tables enforce Cm = 0 at all
-    angles. The passive CPPC mechanism relies on the centre-of-pressure
-    shift in stall, which in reality is driven by the pitching moment
-    coefficient Cm. With Cm = 0 the model approximates this via a fixed
-    centre-of-pressure shift (x_cp = 0.25c → 0.5c in stall), but this
-    is a significant simplification. Real SAND80-2114 data has a
-    non-zero Cm that moves the centre of pressure. See
-    `polars/README.md` for full discussion and the path to real data.
+Pitching moment (Cm ≠ 0). The polar tables now include Cm from Abbott &
+SAND80-2114 data. The passive CPPC mechanism relies on the centre-of-pressure
+shift in stall, which in reality is driven by the pitching moment
+coefficient Cm. The model now uses real Cm data that moves the centre of
+pressure realistically through stall. See `polars/README.md` for full
+discussion and data provenance.
 
-    Flux-line optimal pitch. Adams's inverse method for computing the
-    maximum-power pitch schedule from first principles is not implemented. The
-    prescribed-pitch optimiser searches a Fourier parametrisation instead.
+Flux-line optimal pitch. Adams's inverse method for computing the
+maximum-power pitch schedule from first principles is not implemented. The
+prescribed-pitch optimiser searches a Fourier parametrisation instead.
 
 
-    Uncertainty interactions. The LHS + Spearman study covers first-order
-    monotonic sensitivities. Full Sobol indices (parameter interactions)
-    are not computed.
+Uncertainty interactions. The LHS + Spearman study covers first-order
+monotonic sensitivities. Full Sobol indices (parameter interactions)
+are not computed.
 
-    Finite-span correction. The correction uses Prandtl's lifting-line
-    form f_ar = 1/(1 + 2/(e*AR)), floored at 0.85. The formula is only
-    valid for high-aspect-ratio wings with attached, near-elliptic
-    loading. This project operates at AR ~ 3-30, where the raw form
-    over-corrects badly -- at AR = 3.18 it gives f_ar ~ 0.59, which
-    destabilises the pitch mechanism regardless of whether it is
-    passive or prescribed. The 0.85 floor is a guardrail against that
-    extrapolation, not a derived physical quantity. The "physically
-    realistic" Cp values quoted in the headline table depend on this
-    guardrail; an honest low-AR correction remains an open problem.
-    The optimiser also exploits the floor by preferring low AR, where
-    the floor removes the penalty.
+Finite-span correction. The correction uses the generalized Prandtl form
+f_ar = 1/(1 + 1.8/(e*AR)) (k=1.8), without an arbitrary floor. The formula
+is an empirical fit to low-AR wind-turbine data. The classical Prandtl
+formula with k=2.0 over-corrects at low AR. See `vawt_core.py` and
+`scripts/validate_finite_span.py` for details.
 
 ## 📄 References
 

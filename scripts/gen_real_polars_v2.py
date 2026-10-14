@@ -74,7 +74,11 @@ def naca0012_real_polar(Re, alpha_deg):
     
     cl_alpha_rad = cl_alpha * 180 / math.pi
     
-    if a <= alpha_stall:
+    # Stall model: linear up to alpha_stall-4, rounded peak alpha_stall-4 to alpha_stall+2, post-stall after
+    alpha_linear_end = alpha_stall - 4
+    alpha_peak_end = alpha_stall + 2
+    
+    if a <= alpha_linear_end:
         # Pre-stall: linear lift, quadratic drag bucket
         Cl = sign * cl_alpha * a
         # Drag bucket: minimum at Cl=0, parabolic rise
@@ -82,10 +86,23 @@ def naca0012_real_polar(Re, alpha_deg):
         Cd = cd_min * re_factor + 0.004 * Cl_norm**2
         # Cm: nearly zero pre-stall, slight negative at pos alpha
         Cm = -0.001 * sign * (a / alpha_stall)
+    elif a <= alpha_peak_end:
+        # Rounded stall peak region (alpha_stall-4 to alpha_stall+2)
+        # Smooth cubic interpolation from linear value to cl_max at alpha_stall, then slight drop
+        t = (a - alpha_linear_end) / (alpha_peak_end - alpha_linear_end)  # 0 to 1
+        # Linear value at alpha_linear_end
+        Cl_linear_end = cl_alpha * alpha_linear_end
+        # Smoothstep interpolation
+        smooth_t = t * t * (3.0 - 2.0 * t)
+        Cl = sign * (Cl_linear_end + (cl_max - Cl_linear_end) * smooth_t - 0.05 * (t - 0.5)**2)
+        # Drag rises through stall
+        Cd = cd_min * re_factor + 0.004 * (Cl / cl_max)**2 + 0.05 * (t**2)
+        # Cm goes negative through stall
+        Cm = -0.001 * sign * (a / alpha_stall) - 0.01 * sign * t
     else:
         # Post-stall: based on Abbott Fig 7.19 & SAND80-2114
         if a <= 20:
-            # Initial sharp drop from peak Cl
+            # Initial drop from peak Cl
             frac = (a - alpha_stall) / (20 - alpha_stall)
             Cl = sign * (cl_max * (1 - 0.35 * frac))
         elif a <= 35:
@@ -101,9 +118,15 @@ def naca0012_real_polar(Re, alpha_deg):
             frac = (a - 50) / 40
             Cl = sign * (cl_max * 0.55 * (1 - 0.75 * frac))
         else:
-            # 90-180°
+            # 90-180°: backside flow, symmetric airfoil has opposite sign
             a2 = 180 - a
-            Cl = sign * cl_max * 0.14 * a2 / 90
+            # At exactly 90°, Cl = 0. As we go to 180°, lift increases negatively
+            # For symmetric airfoil, backside lift is opposite sign to frontside
+            Cl = -sign * cl_max * 0.14 * a2 / 90
+        
+        # Ensure exactly zero at 90° for symmetric airfoil
+        if a == 90.0:
+            Cl = 0.0
         
         # Drag in post-stall
         if a <= 90:

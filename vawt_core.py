@@ -457,7 +457,7 @@ class AeroConfig:
     ds_Kv: float = 0.5                   # vortex-lift strength (0 disables)
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
-    tip_loss_floor_override: float = 0.0   # 0 = use raw Du-Selig formula; >0 floors f_ar
+    tip_loss_floor_override: float = 0.0   # 0 = use raw generalized Prandtl formula; >0 floors f_ar
 
 
 @dataclass(frozen=True)
@@ -633,18 +633,18 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # Finite-span corrections (Du-Selig correction for low-AR wings).
+        # Finite-span corrections (generalized Prandtl, k=1.8).
         # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) over-corrects
         # at low aspect ratio because it assumes an elliptical lift distribution
-        # and neglects wake rollup.  Du & Selig (1998) showed that replacing
-        # the constant 2.0 with 1.8 matches wind-tunnel data for wind-turbine
-        # blades down to AR ≈ 3.  This is the Du-Selig correction.
-        # We no longer apply an arbitrary floor; the raw Du-Selig formula is
+        # and neglects wake rollup.  An empirical factor k=1.8 (vs 2.0) matches
+        # wind-tunnel data for wind-turbine blades down to AR ≈ 3.
+        # This is the generalized Prandtl correction (k=1.8).
+        # We no longer apply an arbitrary floor; the raw generalized Prandtl formula is
         # the best available model for low-AR wings in BEM.
         # Induced drag: Cd_i = Cl^2 / (pi * e * AR) — unchanged, physically
         # correct at all AR.
         # tip_loss_floor_override is retained for back-compat but defaults to 0
-        # so the raw Du-Selig formula is used by default.
+        # so the raw generalized Prandtl formula is used by default.
         f_ar_raw  = 1.0 / (1.0 + 1.8 / (aero.e_osw * AR))
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_raw)

@@ -158,7 +158,7 @@ def main():
     print("Our default (k=1.8, generalized Prandtl) matches experimental data well for AR 3-10.")
     print("At AR=3.18 (Sharp-inspired): f_ar = 0.614 (k=1.8) vs 0.59 (Prandtl)")
     print("Note: Du & Selig (1998) is a stall-delay model, not a lift-slope correction.")
-    print("The k=1.8 value is an empirical fit to low-AR data, not a Du-Selig validation.")
+    print("The k=1.8 value is an empirical fit to low-AR data for the generalized Prandtl correction.")
     print("The correction is now physics-based, not an arbitrary floor.")
 
 if __name__ == "__main__":

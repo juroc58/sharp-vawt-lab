@@ -33,7 +33,7 @@ GOLDEN = {
             use_tip_loss=False, use_dmst=True,
             win_deg=89.0, cb=2e-5, mu_c=0.0, k_load=0.0004,
         ),
-        0.4870595205,
+        0.4786334614,
     ),
     "passive_short_free": (
         dict(
@@ -45,7 +45,7 @@ GOLDEN = {
             mu_c=3e-4, free=True, T_max=10.0, stride=10,
             w0_frac=0.9, k_load=4.164352, tsr=2.5,
         ),
-        0.4169647288,
+        0.4157939854,
     ),
     "prescribed_fixed_rpm": (
         dict(
@@ -59,7 +59,7 @@ GOLDEN = {
             use_dynamic_stall=True, use_dmst=True, use_tip_loss=False,
             cb=2e-5, mu_c=3e-4, k_load=0.00149992,
         ),
-        0.4967825115,
+        0.4991233393,
     ),
 }
 
