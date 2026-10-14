@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Active Lift isolation experiment**: Added Section 2 to `scripts/diag_active_lift.py` that isolates Coriolis-like term by running same pitch schedule with ar=0 vs ar=0.312 (scale-up design). Found Coriolis contribution negligible at scale-up (ΔCp ≈ 0). User measurements at R=0.60m indicate removing rocking rate from air velocity lowers Cp by ~7%, net pitch-to-rotor energy transfer ~0.1%.
 - **Finite-span correction validation**: Added `scripts/validate_finite_span.py` with validation against Du & Selig (1998) and NASA TM 4075 data. Generated `docs/finite_span_validation.png`.
 - **Improved NACA 0012 polars**: New polar generator `scripts/gen_real_polars_v2.py` with realistic Cl, Cd, Cm based on Abbott & von Doenhoff + SAND80-2114 data.
-- **Dryden turbulence model**: Replaced simple AR(1) process with proper Dryden spectrum shaping filter using state-space discretization.
 - **README inline automation**: Extended `build_readme.py` with 30+ inline value generators (`<!-- GEN: key -->` markers). All hardcoded numbers in prose now auto-generated from JSON.
 - **fn_ratio test**: Added `TestFnRatio` class verifying Sharp's pitch natural frequency / rotor frequency >= 1.5 rule for scale-up design.
 

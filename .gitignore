@@ -18,3 +18,4 @@ dist/
 .coverage
 htmlcov/
 coverage.xml
+scripts/optimize_passive_wide_ar.log

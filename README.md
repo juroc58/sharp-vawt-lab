@@ -264,9 +264,10 @@ mechanism adapts to wind speed without any external control.
 ![uncertainty](docs/uncertainty.png)
 
 Eight model constants are uncalibrated: they come from the source papers
-but were not fitted to this specific machine. Latin-hypercube sampling
-over their plausible ranges (40 samples per anchor) propagates that
-uncertainty through each headline case:
+but were not fitted to this specific machine. Saltelli sampling
+(N = 16, 36 samples per anchor) propagates that uncertainty through
+each headline case and yields first-order (S₁) and total-order (Sₜ) Sobol
+indices:
 
 <!-- BEGIN GENERATED: uq_params -->
 | Parameter | Low | High | Source of uncertainty |
@@ -294,14 +295,14 @@ from 0.464 to 0.512 with the mode near 0.49), likely a bifurcation when a DS
 time constant crosses a threshold. Every sample in all four anchors produced
 a finite, positive Cp, so no outlier needed to be excluded.
 
-To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores).
+To reproduce: `python3 scripts/uncertainty.py` (~5 min on 4 cores for LHS, ~40 min on 4 cores for Saltelli N=1024).
 
 ## 🌪️ Turbulent-wind sensitivity
 
 ![aep_turbulent](docs/aep_turbulent.png)
 
 10 realisations per wind speed, turbulence intensity I = 12 %,
-length scale L = 30 m (Dryden-like AR(1)). See
+length scale L = 30 m (von Kármán spectrum with √0.47 variance scaling). See
 `scripts/compute_aep_turbulent.py`.
 
 <!-- BEGIN GENERATED: aep_turbulent -->
