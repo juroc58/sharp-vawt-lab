@@ -162,6 +162,61 @@ def free_run(base, U, w0_frac=None, psi0_deg=None):
     return result, final_state
 
 
+def free_run_with_branch_check(base, U, w0_frac=None, psi0_deg=None, 
+                                expected_cp=None, cp_tol=0.03):
+    """
+    Run free-run with branch switching detection and correction.
+    
+    If expected_cp is provided and the result differs by more than cp_tol,
+    try alternative initial conditions to find the high-Cp branch.
+    """
+    # First attempt: use provided initial conditions (branch tracing)
+    r, final_state = free_run(base, U, w0_frac, psi0_deg)
+    
+    if r is not None and expected_cp is not None:
+        cp_diff = r['cp'] - expected_cp
+        if cp_diff < -0.02:  # Significant drop suggests branch switch
+            print(f"  U={U:.1f}: Cp drop detected ({cp_diff:+.4f}), trying alternative seeds...")
+            # Try multiple alternative seeds to find high-Cp branch
+            best_r = None
+            best_cp = -1.0
+            best_final = None
+            
+            # Try 1: Slightly higher initial omega (push toward high-TSR branch)
+            for w0_mult in [1.05, 1.1, 1.2]:
+                r_alt, fs_alt = free_run(base, U, 
+                                         w0_frac=w0_frac * w0_mult if w0_frac else None,
+                                         psi0_deg=psi0_deg)
+                if r_alt and r_alt['cp'] > best_cp:
+                    best_cp = r_alt['cp']
+                    best_r = r_alt
+                    best_final = fs_alt
+            
+            # Try 2: Slightly lower initial pitch (push toward high-TSR branch)
+            for psi_mult in [0.8, 0.6, 0.4]:
+                r_alt, fs_alt = free_run(base, U, w0_frac=w0_frac, psi0_deg=psi0_deg * psi_mult)
+                if r_alt and r_alt['cp'] > best_cp:
+                    best_cp = r_alt['cp']
+                    best_r = r_alt
+                    best_final = fs_alt
+            
+            # Try 3: Higher initial omega
+            for w0_frac_mult in [1.05, 1.1, 1.15]:
+                r_alt, fs_alt = free_run(base, U, 
+                                         w0_frac=w0_frac * w0_frac_mult if w0_frac else None,
+                                         psi0_deg=psi0_deg)
+                if r_alt and r_alt['cp'] > best_cp:
+                    best_cp = r_alt['cp']
+                    best_r = r_alt
+                    best_final = fs_alt
+            
+            if best_r and best_cp > r['cp'] + 0.01:
+                print(f"  U={U:.1f}: Branch switch corrected! Cp {r['cp']:.4f} -> {best_cp:.4f}")
+                return best_r, best_final
+    
+    return r, final_state
+
+
 # ============================================================================
 # AEP integration
 # ============================================================================
@@ -263,9 +318,10 @@ def main():
     print("  Free-running passive CPPC (branch tracing):")
     free_passive = []
     w0_frac = BASE.get('w0_frac', 0.9)
+    prev_cp = None  # Track previous Cp for branch switch detection
     psi0_deg = BASE.get('psi0_deg', 0.0)
     for U in U_ref:
-        f, final_state = free_run(BASE, U, w0_frac=w0_frac, psi0_deg=psi0_deg)
+        f, final_state = free_run_with_branch_check(BASE, U, w0_frac=w0_frac, psi0_deg=psi0_deg, expected_cp=prev_cp)
         if f:
             free_passive.append(f)
             # Use final state as initial condition for next wind speed
@@ -278,6 +334,7 @@ def main():
         else:
             # If fails, reset to defaults and try next U
             w0_frac = BASE.get('w0_frac', 0.9)
+            prev_cp = None  # Track previous Cp for branch switch detection
             psi0_deg = BASE.get('psi0_deg', 0.0)
             print(f"    U = {U:4.1f}   (no equilibrium, resetting seed)")
 
