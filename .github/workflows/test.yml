@@ -12,21 +12,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 3.14 is tested but non-blocking: numba wheel availability at the
-        # newest CPython release can lag. 3.11-3.13 are blocking.
         python-version: ["3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache numba
-        id: numba-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/numba
-          key: numba-${{ matrix.python-version }}-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
-          restore-keys: |
-            numba-${{ matrix.python-version }}-${{ runner.os }}-
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -38,13 +27,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
-
-      - name: Pre-compile numba (warm up cache)
-        if: matrix.python-version != '3.14'
-        continue-on-error: true
-        run: |
-          python -c "from vawt_core import create_sim_from_params; create_sim_from_params({'R': 0.6, 'c': 0.14, 'H': 0.4, 'N': 3, 'ar': 0.5, 'sp': 0.25, 'mb': 0.01, 'xbcg': 0.2, 'mc': 0.002, 'dcw': 0.3, 'balance': 0, 'bias_deg': 0.0, 'prescribe_pitch': True, 'pp0_deg': 0.0, 'pp1_deg': -10.0, 'pp2_deg': 0.0, 'pp3_deg': 0.0, 'pp_ph_deg': 0.0, 'free': False, 'tsr': 2.5, 'T_max': 5.0, 'stride': 5, 'use_dynamic_stall': True, 'use_flow_curvature': True, 'use_tip_loss': True, 'use_dmst': True, 'win_deg': 45.0, 'cb': 2e-5, 'mu_c': 3e-4, 'k_load': 0.0025}).run()"
-          echo "Numba warm-up complete"
 
       - name: Run fast tests (with coverage)
         run: pytest -m "not slow" --cov --cov-report=term-missing
