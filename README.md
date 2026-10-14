@@ -116,8 +116,24 @@ one.
 ### Prescribed pitch (upper bound)
 
 For reference, running the same rotor with an ideal actuator commanding
-ψ(φ) directly reaches 0.47 -- the same class of machine as Ham's
+ψ(φ) directly reaches 0.48 -- the same class of machine as Ham's
 cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
+
+---
+
+### ⚠ Important: Two different geometries compared
+
+**aep.png (left panel)** and **validation.png** show Cp(TSR) curves for **two different geometries**:
+
+| Panel | Geometry | R | H | c | AR | Mode |
+|-------|----------|---|---|---|-----|-------|
+| **aep.png (left)** | Scale-up passive CPPC | 2.72 m | 4.06 m | 0.386 m | 10.5 | Passive CPPC |
+| **validation.png** | Ham 1979 Pinson C2E rig | 1.83 m | 1.37 m | 0.305 m | 4.5 | Prescribed pitch (Ham's cosine law) |
+
+The **aep.png left panel** shows our scale-up passive CPPC design (R=2.72m, AR=10.5) with free pitch.
+The **validation.png** panel shows Ham's 1979 Pinson C2E rig (R=1.83m, AR=4.5) with *prescribed* cosine pitch law (θ́c = -10°).
+
+These are **different machines** -- do not directly compare their Cp values.
 
 ---
 

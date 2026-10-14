@@ -35,6 +35,7 @@ COMMON = dict(
     prescribe_pitch=True,
     pp0_deg=0.0, pp2_deg=0.0, pp3_deg=0.0,
     use_dmst=True, cd_add=0.005,
+    use_tip_loss=False,  # Disable tip loss for Ham - floor too aggressive for AR=4.5
 )
 
 CONFIGS = [
