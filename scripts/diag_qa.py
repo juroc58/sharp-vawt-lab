@@ -46,7 +46,7 @@ BASE = dict(
     use_dmst=True,
     use_tip_loss=True,
     win_deg=45.0, cb=2e-5, mu_c=3e-4,
-    free=True, T_max=20.0, stride=5,
+    free=True, T_max=20.0, stride=1,  # stride=1 for smooth Qa reconstruction
     w0_frac=0.9, k_load=4.164352, tsr=2.5,
 )
 
@@ -193,6 +193,7 @@ def _make_plot(out, sim, out_path="docs/diag_qa.png"):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from scipy.signal import savgol_filter
 
     th = out[:, 1]
     m = th >= th[-1] - 2.0 * np.pi
@@ -201,6 +202,13 @@ def _make_plot(out, sim, out_path="docs/diag_qa.png"):
     alpha = np.degrees(out[m, 5])
     qa = reconstruct_qa(out, sim)[m]
     order = np.argsort(phi)
+
+    # Smooth Qa in TIME domain (before phi-sorting) to remove numerical noise
+    # from gradient-based reconstruction, then sort for plotting
+    # Use a large window to suppress high-frequency numerical artifacts
+    if len(qa) > 401:
+        qa = savgol_filter(qa, window_length=401, polyorder=3)
+    qa = qa[order]
 
     fig, ax = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
     ax[0].plot(phi[order], psi[order], "b-", lw=1.6)
@@ -219,7 +227,7 @@ def _make_plot(out, sim, out_path="docs/diag_qa.png"):
     ax[1].legend(loc="upper right", fontsize=8)
     ax[1].grid(alpha=0.3)
 
-    ax[2].plot(phi[order], qa[order], color="purple", lw=1.6)
+    ax[2].plot(phi[order], qa, color="purple", lw=1.6)
     ax[2].axhline(0, color="k", lw=0.5)
     ax[2].set_ylabel("Qa [N m]")
     ax[2].set_xlabel("rotor angle [deg]   (0 = with wind,  180 = upwind)")

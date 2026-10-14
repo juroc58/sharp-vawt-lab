@@ -155,9 +155,13 @@ def free_run(base, U, w0_frac=None, psi0_deg=None):
                   rpm=float(r['rpm']),
                   aoa_max=float(r['aoa_max']))
     # Final state: use equilibrium omega and mean pitch as initial guess for next U
+    # w0_frac for next U is computed so that:
+    #   w0_frac * base['tsr'] * (U+1) / base['R'] = w_final = r['tsr_eq'] * U / base['R']
+    #   => w0_frac = r['tsr_eq'] * U / (base['tsr'] * (U + 1))
     w_final = r['tsr_eq'] * U / base['R'] if base['R'] > 0 else 0
     pitch_final = 0.5 * (r['pitch_min'] + r['pitch_max']) if r.get('pitch_min') is not None else 0.0
-    final_state = dict(w0_frac=w_final * base['R'] / (U + 1.0) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
+    tsr_design = base.get('tsr', 2.5)
+    final_state = dict(w0_frac=r['tsr_eq'] * U / (tsr_design * (U + 1.0)) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
                        psi0_deg=pitch_final)
     return result, final_state
 

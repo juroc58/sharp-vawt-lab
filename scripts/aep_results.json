@@ -14,24 +14,17 @@
   },
   "results": {
     "passive_k_load": {
-      "aep_kWh": 15260.61490952836,
-      "cf": 0.11613862183811537,
-      "branch_jumps": [
-        [
-          3.0,
-          4.0,
-          0.4031078689440883,
-          0.3447069838852747
-        ]
-      ]
+      "aep_kWh": 18169.1896175518,
+      "cf": 0.13827389358867428,
+      "branch_jumps": []
     },
     "passive_fixed_rpm": {
-      "aep_kWh": 9813.981249538836,
-      "cf": 0.0746878329493062
+      "aep_kWh": 12333.809997168506,
+      "cf": 0.09386461185059745
     }
   },
   "gains_percent": {
-    "passive_vs_fixed_rpm": 55.49871679493441
+    "passive_vs_fixed_rpm": 47.312060277586035
   },
   "rigid_fair_ref": {
     "source": "aep_rigid_fair.json",
