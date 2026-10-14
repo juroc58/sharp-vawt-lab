@@ -53,14 +53,18 @@ from vawt_core import create_sim_from_params
 # Each entry is (name, low, high).  Names must match AeroConfig fields
 # (after the two overrides added in Step 1).
 UQ_SPEC = [
-    ("cd_add",                   0.001, 0.005),   # parasitic drag
+    ("cd_add",                   0.001, 0.005),   # parasitic drag (strut/interference)
     ("ds_Tf",                    1.5,   4.5),     # separation lag  (default 3)
     ("ds_Tv",                    3.0,   9.0),     # vortex lag      (default 6)
     ("ds_Ta",                    0.05,  0.15),    # attached lag    (default 0.10)
     ("ds_Kv",                    0.25,  0.75),    # vortex strength (default 0.50)
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
+    ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_floor_override",  0.80,  1.00),    # guardrail; see Limitations
+    ("tip_loss_floor_override",  0.00,  1.00),    # finite-span correction floor (0=raw, >0 floors f_ar)
+    ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
+    ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
+    ("cd_add",                   0.001, 0.005),   # strut/interference drag (AeroConfig)
 ]
 UQ_NAMES = [s[0] for s in UQ_SPEC]
 UQ_LOW   = np.array([s[1] for s in UQ_SPEC])
@@ -89,6 +93,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_dmst=True,
         win_deg=89.0, cb=2e-5, mu_c=0.0,
         k_load=0.0004,
+        arm_cd=1.0,
     ),
     # Sharp-inspired CPPC at R = 0.60 m
     "sharp_cppc": dict(
@@ -104,6 +109,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
         k_load=0.0025,
+        arm_cd=1.0,
     ),
     # Optimised passive (mass-balanced) at R = 0.60 m
     "optimised_passive": dict(
@@ -119,6 +125,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
         k_load=0.001909,
+        arm_cd=1.0,
     ),
     # Scale-up R = 2.26 m with tip loss on
     "scaleup": dict(
@@ -134,6 +141,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
         k_load=4.164352,
+        arm_cd=1.0,
     ),
 }
 ANCHOR_NAMES = list(ANCHORS.keys())

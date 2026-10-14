@@ -14,9 +14,6 @@ tip-loss floor (tip_loss_floor_override ∈ [0.80, 1.00] in UQ runs).
 
 The net pitch-to-rotor energy transfer is measured as the difference
 in Cp between the same pitch schedule with and without radial CG motion.
-Based on user measurements at R=0.60m: removing the rocking rate from
-the air velocity lowered Cp by ~7%, and the net pitch-to-rotor energy
-transfer was ~0.1%.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -145,8 +142,6 @@ print("CORIOLIS ISOLATION RESULT:")
 print(f"  ΔCp (ar=real - ar=0) = {coriolis_delta:+.4f}  ({coriolis_pct:+.1f}%)")
 print("  This isolates the Coriolis-like term (radial CG motion)")
 print("  from the ordinary cyclic pitch benefit.")
-print("  User measurement: removing rocking rate from air velocity")
-print("  lowered Cp by ~7%; net pitch-to-rotor energy transfer ~0.1%")
 print("=" * 72)
 print()
 
