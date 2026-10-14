@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Real NACA 0012 polars with Cm**: Generated 4 polar files (Re=1e5, 2e5, 4e5, 1e6) with 4 columns (alpha, Cl, Cd, Cm) based on Abbott & von Doenhoff + SAND80-2114 data. The pitch moment coefficient Cm is now properly modeled and contributes to the aerodynamic pitch torque Qa.
-- **Du-Selig finite-span correction**: Replaced arbitrary 0.85 floor with physics-based Du-Selig correction (k=1.8). Validated against experimental data from Du & Selig (1998) and NASA TM 4075. RMSE improved from 0.744 (Prandtl) to 0.633 (Du-Selig).
+- **Generalized Prandtl finite-span correction**: Replaced arbitrary 0.85 floor with generalized Prandtl formula (k=1.8). Compared against experimental data from Du & Selig (1998) and NASA TM 4075. Note: Du & Selig (1998) is a rotating-blade stall-delay model, not a finite-wing lift-slope correction; the k=1.8 value is an empirical fit to low-AR data.
 - **Dryden turbulence model**: Replaced simple AR(1) process with proper Dryden spectrum shaping filter for longitudinal turbulence. Uses proper state-space discretization of Dryden shaping filter.
 - **Sobol sensitivity proxy**: Added `scripts/sobol_sensitivity.py` using Spearman rank correlation as proxy for first-order Sobol indices. True Sobol indices require Saltelli sampling (future work).
 - **Optimize passive bounds widening**: Widened `ar` bounds from [0.2, 0.8] to [0.2, 1.5]. Found interior optimum at ar=0.266 (not boundary-constrained).
-- **Active Lift isolation experiment**: Added Section 2 to `scripts/diag_active_lift.py` that isolates Coriolis-like term by running same pitch schedule with ar=0 vs ar=0.5. Found Coriolis contribution of +0.0510 Cp (+39.4%).
+- **Active Lift isolation experiment**: Added Section 2 to `scripts/diag_active_lift.py` that isolates Coriolis-like term by running same pitch schedule with ar=0 vs ar=0.312 (scale-up design). Found Coriolis contribution negligible at scale-up (ΔCp ≈ 0). User measurements at R=0.60m indicate removing rocking rate from air velocity lowers Cp by ~7%, net pitch-to-rotor energy transfer ~0.1%.
 - **Finite-span correction validation**: Added `scripts/validate_finite_span.py` with validation against Du & Selig (1998) and NASA TM 4075 data. Generated `docs/finite_span_validation.png`.
 - **Improved NACA 0012 polars**: New polar generator `scripts/gen_real_polars_v2.py` with realistic Cl, Cd, Cm based on Abbott & von Doenhoff + SAND80-2114 data.
 - **Dryden turbulence model**: Replaced simple AR(1) process with proper Dryden spectrum shaping filter using state-space discretization.
@@ -54,12 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Scale-up AEP analysis**: `scripts/compute_aep_scaleup.py` with branch-traced free-running equilibria.
 - **Scale-up optimization**: `scripts/optimize_scaleup.py` with DE budget increase, finite-span guardrail check, capped AoA penalty, flat-DE-history warning.
 - **Scale-up AEP results**: 18.3 MWh/yr (CF=13.9%) vs 0.159 MWh/yr for R=0.6m.
-- **Active Lift analysis**: Isolated Coriolis contribution in `diag_active_lift.py` (+0.0510 Cp, +39.4%).
+- **Active Lift analysis**: Coriolis contribution isolated in `diag_active_lift.py` (negligible at scale-up; user measurements at R=0.60m: -7% Cp without rocking rate, ~0.1% net energy transfer).
 
 ### Changed
 - **Default geometry**: Updated to scale-up design (R=2.72m, AR=10.5) across core, scripts, and tests.
-- **Finite-span correction**: Du-Selig (k=1.8) replaces Prandtl (k=2.0) with 0.85 floor removed.
-- **Active Lift documentation**: Retracted +7%/+0.0002 Cp claims; clarified Coriolis not isolated.
+- **Finite-span correction**: Generalized Prandtl (k=1.8) replaces Prandtl (k=2.0) with 0.85 floor removed.
+- **Active Lift documentation**: Retracted +7%/+0.0002 Cp claims; clarified Coriolis not isolated at R=0.60m; scale-up Coriolis effect negligible.
 
 ### Fixed
 - **Fixed 2048% artifact**: Added viability floors (Cp≥0.05, TSR≥1.0) in `compute_aep_rigid_fair.py`.

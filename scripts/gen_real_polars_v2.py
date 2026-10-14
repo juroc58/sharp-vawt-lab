@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-Generate improved NACA 0012 polar tables with Cm based on real aerodynamic data.
+Generate NACA 0012 polar tables with Cm based on real aerodynamic data.
 
-This version uses more accurate NACA 0012 characteristics from:
+This version uses NACA 0012 characteristics from:
 - Abbott & von Doenhoff (1959) - Theory of Wing Sections
 - Sheldahl & Klimas (1981) SAND80-2114
-- Abbott et al. NASA reports
 - Modern CFD/experimental validation data
 
-Key improvements over v1:
+Key improvements:
 1. Realistic Cl_alpha variation with Re
-2. Accurate stall characteristics (onset, peak, post-stall)
+2. Accurate stall characteristics (onset ~12-14°, peak, post-stall)
 3. Realistic Cd polar (laminar bucket, turbulent rise)
-3. Non-zero Cm from Abbott data (NACA 0012 has Cm ~ -0.02 to -0.05 at stall)
-4. Proper deep-stall behavior (Cl drop, Cd rise, Cm negative peak)
+4. Non-zero Cm from Abbott data (NACA 0012 has Cm ~ -0.02 to -0.05 at stall)
+5. Proper deep-stall behavior (Cl drop, Cd rise, Cm negative peak)
 """
 
 import numpy as np
@@ -40,36 +39,36 @@ def naca0012_real_polar(Re, alpha_deg):
     if Re <= 1e5:
         # Re = 1e5 (low Re, significant laminar separation)
         cl_alpha = 0.100  # per degree
-        cl_max = 0.95
-        alpha_stall = 10.5
+        cl_max = 1.00
+        alpha_stall = 12.0
         cd_min = 0.012
         re_factor = 1.0
     elif Re <= 2e5:
         # Re = 2e5
         cl_alpha = 0.105
-        cl_max = 1.05
-        alpha_stall = 11.5
+        cl_max = 1.10
+        alpha_stall = 13.0
         cd_min = 0.010
         re_factor = 1.1
     elif Re <= 4e5:
         # Re = 4e5
         cl_alpha = 0.108
-        cl_max = 1.15
-        alpha_stall = 12.5
+        cl_max = 1.20
+        alpha_stall = 14.0
         cd_min = 0.0085
         re_factor = 1.2
     elif Re <= 1e6:
         # Re = 1e6
         cl_alpha = 0.110
         cl_max = 1.25
-        alpha_stall = 13.5
+        alpha_stall = 15.0
         cd_min = 0.007
         re_factor = 1.3
     else:
         # High Re extrapolation
         cl_alpha = 0.111
         cl_max = 1.3
-        alpha_stall = 14.0
+        alpha_stall = 16.0
         cd_min = 0.0065
         re_factor = 1.35
     
@@ -86,27 +85,27 @@ def naca0012_real_polar(Re, alpha_deg):
     else:
         # Post-stall: based on Abbott Fig 7.19 & SAND80-2114
         if a <= 20:
-            # Initial sharp drop
+            # Initial sharp drop from peak Cl
             frac = (a - alpha_stall) / (20 - alpha_stall)
-            Cl = sign * (cl_max * (1 - 0.45 * frac))
+            Cl = sign * (cl_max * (1 - 0.35 * frac))
         elif a <= 35:
             # Secondary hump (vortex lift)
             frac = (a - 20) / 15
-            Cl = sign * (cl_max * (0.55 + 0.25 * frac))
+            Cl = sign * (cl_max * (0.65 + 0.20 * frac))
         elif a <= 50:
             # Gradual decline
             frac = (a - 35) / 15
-            Cl = sign * (cl_max * 0.8 * (1 - 0.4 * frac))
+            Cl = sign * (cl_max * 0.85 * (1 - 0.35 * frac))
         elif a <= 90:
             # Steady decline to 90°
             frac = (a - 50) / 40
-            Cl = sign * (cl_max * 0.48 * (1 - 0.8 * frac))
+            Cl = sign * (cl_max * 0.55 * (1 - 0.75 * frac))
         else:
             # 90-180°
             a2 = 180 - a
-            Cl = sign * cl_max * 0.1 * a2 / 90
+            Cl = sign * cl_max * 0.14 * a2 / 90
         
-        # Drag in stall
+        # Drag in post-stall
         if a <= 90:
             Cd = 0.02 * re_factor + 1.5 * math.sin(alpha)**2
         else:
@@ -118,14 +117,14 @@ def naca0012_real_polar(Re, alpha_deg):
         elif a <= 35:
             # Peak negative Cm around 25-30°
             frac = (a - 15) / 20
-            Cm = sign * (-0.005 - 0.06 * frac)
+            Cm = sign * (-0.005 - 0.055 * frac)
         elif a <= 50:
             # Cm recovers slightly
             frac = (a - 35) / 15
-            Cm = sign * (-0.065 + 0.02 * frac)
+            Cm = sign * (-0.06 + 0.02 * frac)
         elif a <= 90:
             frac = (a - 50) / 40
-            Cm = sign * (-0.045 + 0.035 * frac)
+            Cm = sign * (-0.04 + 0.03 * frac)
         else:
             Cm = sign * (-0.01)
     

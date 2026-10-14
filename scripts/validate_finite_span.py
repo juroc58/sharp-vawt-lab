@@ -1,11 +1,11 @@
 """
 Validate finite-span correction against wind-tunnel data for AR 3-10.
 
-Compares the Du-Selig correction (k=1.8) and Prandtl (k=2.0) against
+Compares the generalized Prandtl correction (k=1.8) and Prandtl (k=2.0) against
 experimental data for NACA 0012 wings at various aspect ratios.
 
 References:
-- Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics"
+- Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics" — rotating-blade stall-delay model, NOT a finite-wing lift-slope correction
 - NASA TM 4075 (low-AR wind-tunnel data)
 - Abbott & von Doenhoff (airfoil theory)
 """
@@ -59,14 +59,14 @@ def main():
 
     # Evaluate corrections
     prandtl = f_ar_vec(ARs_fine, 2.0)
-    du_selig = f_ar_vec(ARs_fine, 1.8)
+    gen_prandtl = f_ar_vec(ARs_fine, 1.8)
     k15 = f_ar_vec(ARs_fine, 1.5)
     k18 = f_ar_vec(ARs_fine, 1.8)
     k20 = f_ar_vec(ARs_fine, 2.0)
     k22 = f_ar_vec(ARs_fine, 2.2)
 
     cla_prandtl = CLA_2D * prandtl
-    cla_du_selig = CLA_2D * du_selig
+    cla_gen_prandtl = CLA_2D * gen_prandtl
     cla_k15 = CLA_2D * k15
     cla_k18 = CLA_2D * k18
     cla_k20 = CLA_2D * k20
@@ -74,14 +74,14 @@ def main():
 
     # Evaluate at experimental ARs
     prandtl_exp = np.array([f_ar(ar, k=2.0) for ar in ARs_exp])
-    du_selig_exp = np.array([f_ar(ar, k=1.8) for ar in ARs_exp])
+    gen_prandtl_exp = np.array([f_ar(ar, k=1.8) for ar in ARs_exp])
     k15_exp = np.array([f_ar(ar, k=1.5) for ar in ARs_exp])
     k18_exp = np.array([f_ar(ar, k=1.8) for ar in ARs_exp])
     k20_exp = np.array([f_ar(ar, k=2.0) for ar in ARs_exp])
     k22_exp = np.array([f_ar(ar, k=2.2) for ar in ARs_exp])
 
     cla_prandtl_exp = CLA_2D * prandtl_exp
-    cla_du_selig_exp = CLA_2D * du_selig_exp
+    cla_gen_prandtl_exp = CLA_2D * gen_prandtl_exp
     cla_k15_exp = CLA_2D * k15_exp
     cla_k18_exp = CLA_2D * k18_exp
     cla_k20_exp = CLA_2D * k20_exp
@@ -93,27 +93,27 @@ def main():
         return np.sqrt(np.mean((pred - actual)**2))
 
     print("\nRMSE vs Experimental Data (AR 1-15):")
-    print(f"  Prandtl (k=2.0):    {rmse(cla_prandtl_exp, cla_exp):.3f}")
-    print(f"  Modified k=1.5:     {rmse(CLA_2D * k15_exp, cla_exp):.3f}")
-    print(f"  Du-Selig (k=1.8):   {rmse(cla_du_selig_exp, cla_exp):.3f}")
-    print(f"  Modified k=2.0:     {rmse(cla_k20_exp, cla_exp):.3f}")
-    print(f"  Modified k=2.2:     {rmse(cla_k22_exp, cla_exp):.3f}")
+    print(f"  Prandtl (k=2.0):        {rmse(cla_prandtl_exp, cla_exp):.3f}")
+    print(f"  Modified k=1.5:         {rmse(CLA_2D * k15_exp, cla_exp):.3f}")
+    print(f"  Gen. Prandtl (k=1.8):   {rmse(cla_gen_prandtl_exp, cla_exp):.3f}")
+    print(f"  Modified k=2.0:         {rmse(cla_k20_exp, cla_exp):.3f}")
+    print(f"  Modified k=2.2:         {rmse(cla_k22_exp, cla_exp):.3f}")
 
     print(f"\nPredicted vs Experimental Cl_alpha (per rad):")
-    print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'DS(k=1.8)':>10} {'k=1.8':>8} {'k=1.5':>8} {'k=2.2':>8}")
+    print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} {'k=1.8':>8} {'k=1.5':>8} {'k=2.2':>8}")
     for ar, exp in zip(ARs_exp, cla_exp):
         p2 = CLA_2D * f_ar(ar, k=2.0)
-        ds = CLA_2D * f_ar(ar, k=1.8)
+        gp = CLA_2D * f_ar(ar, k=1.8)
         k18_val = CLA_2D * f_ar(ar, k=1.8)
         k15_val = CLA_2D * f_ar(ar, k=1.5)
         k22_val = CLA_2D * f_ar(ar, k=2.2)
-        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {ds:>10.2f} {k18_val:>8.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
+        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {gp:>10.2f} {k18_val:>8.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
 
     # Plot
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     ax1.plot(ARs_fine, cla_prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
-    ax1.plot(ARs_fine, cla_du_selig, 'b-', lw=2, label='Du-Selig (k=1.8)')
+    ax1.plot(ARs_fine, cla_gen_prandtl, 'b-', lw=2, label='Gen. Prandtl (k=1.8)')
     ax1.plot(ARs_fine, cla_k15, 'g--', lw=1.5, label='k=1.5')
     ax1.plot(ARs_fine, cla_k18, 'r-', lw=2, label='k=1.8 (our default)')
     ax1.plot(ARs_fine, cla_k22, 'm--', lw=1.5, label='k=2.2')
@@ -128,7 +128,7 @@ def main():
     ax1.grid(alpha=0.3)
 
     ax2.plot(ARs_fine, prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
-    ax2.plot(ARs_fine, du_selig, 'b-', lw=2, label='Du-Selig (k=1.8)')
+    ax2.plot(ARs_fine, gen_prandtl, 'b-', lw=2, label='Gen. Prandtl (k=1.8)')
     ax2.plot(ARs_fine, k15, 'g--', lw=1.5, label='k=1.5')
     ax2.plot(ARs_fine, k18, 'r-', lw=2, label='k=1.8')
     ax2.plot(ARs_fine, k22, 'm--', lw=1.5, label='k=2.2')
@@ -155,8 +155,10 @@ def main():
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print("Our default (k=1.8, Du-Selig) matches experimental data well for AR 3-10.")
-    print("At AR=3.18 (Sharp-inspired): f_ar = 0.614 (Du-Selig) vs 0.59 (Prandtl)")
+    print("Our default (k=1.8, generalized Prandtl) matches experimental data well for AR 3-10.")
+    print("At AR=3.18 (Sharp-inspired): f_ar = 0.614 (k=1.8) vs 0.59 (Prandtl)")
+    print("Note: Du & Selig (1998) is a stall-delay model, not a lift-slope correction.")
+    print("The k=1.8 value is an empirical fit to low-AR data, not a Du-Selig validation.")
     print("The correction is now physics-based, not an arbitrary floor.")
 
 if __name__ == "__main__":
