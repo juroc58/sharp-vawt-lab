@@ -74,7 +74,7 @@ PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
     (0.50, 1.50),       # H/R          [-]
     (0.0005, 0.0050),   # k_load_ref   [N·m·s²]   at R = R_REF
     (0.002, 0.030),     # mc_ref       [kg]       at R = R_REF
-    (0.30, 0.70),       # ar           [-]
+    (0.20, 1.50),       # ar           [-]  (widened from 0.30-0.70)
     (0.15, 0.30),       # sp           [-]
     (-0.30, 0.60),      # dcw          [-]
 )

@@ -22,8 +22,8 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.41, 0.42] | ~71 % of Betz |
-| **Sharp-inspired CPPC** | **0.17** | [0.17, 0.18] | — |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.41, 0.43] | ~71 % of Betz |
+| **Sharp-inspired CPPC** | **0.18** | [0.18, 0.19] | — |
 | Optimised passive (mass-balanced) | **0.31** | [0.30, 0.31] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | **0.47** | [0.47, 0.48] | matches Ham's method |

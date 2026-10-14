@@ -717,32 +717,40 @@ class CycloturbineSim:
 
             if model == "vonkarman":
                 # von Kármán spectrum: Phi(f) = 0.47 * sigma^2 * L/U / (1 + (2*pi*f*L/U)^2)^(5/6)
-                # Use a stable 1st-order filter with correct variance scaling.
-                # The von Kármán spectrum has variance 0.47 * Dryden variance.
-                # So we generate Dryden turbulence and scale by sqrt(0.47) ≈ 0.6856.
-                vk_scale = 0.6856
+                # Use Dryden shaping filter with variance scaled by sqrt(0.47) to match von Kármán variance.
+                # The von Kármán spectrum has variance 0.47 * Dryden variance for same sigma, L.
+                # This gives correct turbulence intensity with a slightly different spectral shape
+                # (Dryden rolls off as f^-2, von Kármán as f^-5/3).
+                # For engineering purposes, the variance match is the most important.
+                
+                # Generate Dryden turbulence with sigma_vk = sqrt(0.47) * sigma
+                vk_sigma = sigma * math.sqrt(0.47)
                 a = math.exp(-dt / tau) if tau > 0 else 0.0
-                b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+                b = vk_sigma * math.sqrt(1.0 - a * a) if tau > 0 else 0.0
 
                 rng = np.random.default_rng(sim.seed)
                 x = np.zeros(n)
                 if b > 0:
-                    x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                    x[0] = rng.normal(0.0, vk_sigma)
                     for i in range(1, n):
                         x[i] = a * x[i - 1] + b * rng.standard_normal()
-                x *= vk_scale
+                else:
+                    x[:] = 0.0
             else:
                     # Dryden spectrum shaping filter (1st order)
-                    # dx/dt = -x/tau + w,  u = sigma*sqrt(2/tau) * x
+                    # dx/dt = -x/tau + w,  u = x  (no output scaling needed)
                     # where tau = L / U, sigma = turb_I * U
-                    # Discretized: x[k+1] = x[k] * exp(-dt/tau) + w[k] * sigma * sqrt((1-exp(-2*dt/tau))/2)
+                    # Continuous-time w has intensity Q = 2*sigma^2/tau
+                    # Discrete-time: x[k] = a*x[k-1] + b*w[k-1]
+                    # a = exp(-dt/tau), b = sigma * sqrt(1 - a^2)
+                    # This gives exact stationary variance sigma^2
                     a = math.exp(-dt / tau) if tau > 0 else 0.0
-                    b = sigma * math.sqrt((1.0 - a * a) / 2.0) if tau > 0 else 0.0
+                    b = sigma * math.sqrt(1.0 - a * a) if tau > 0 else 0.0
 
                     rng = np.random.default_rng(sim.seed)
                     x = np.zeros(n)
                     if b > 0:
-                        x[0] = rng.normal(0.0, sigma / math.sqrt(2.0))
+                        x[0] = rng.normal(0.0, sigma)
                         for i in range(1, n):
                             x[i] = a * x[i - 1] + b * rng.standard_normal()
                     else:
