@@ -166,12 +166,14 @@ class TestWorkingDirectoryIndependence:
         import subprocess
         import sys
         
+        # Get the repo root directory dynamically
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
         # Run a quick simulation from a temp directory
         with tempfile.TemporaryDirectory() as tmpdir:
-            # Copy the minimal needed files or just use the installed module
             result = subprocess.run([
                 sys.executable, '-c',
-                'import sys; sys.path.insert(0, "/home/duer3rw01f/Documents/sharp_proj"); '
+                f'import sys; sys.path.insert(0, {repo_root!r}); '
                 'from vawt_core import create_sim_from_params; '
                 'r = create_sim_from_params({"R": 0.6, "c": 0.14, "H": 0.4, "N": 3, '
                 '"ar": 0.5, "sp": 0.25, "mb": 0.01, "xbcg": 0.2, "mc": 0.002, '
@@ -181,7 +183,7 @@ class TestWorkingDirectoryIndependence:
                 '"use_dynamic_stall": True, "use_flow_curvature": True, "use_tip_loss": True, '
                 '"use_dmst": True, "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4, '
                 '"k_load": 0.0025}).run(); '
-                'print(f"Cp={r[\"cp\"]:.4f}")'
+                f'print(f"Cp={{r[\"cp\"]:.4f}}")'
             ], cwd=tmpdir, capture_output=True, text=True, timeout=30)
             
             assert result.returncode == 0, f"Failed: {result.stderr}"
