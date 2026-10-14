@@ -22,11 +22,11 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.41** | [0.39, 0.43] | ~71 % of Betz |
-| **Sharp-inspired CPPC** | **0.14** | [0.11, 0.17] | — |
-| Optimised passive (mass-balanced) | **0.23** | [0.15, 0.30] | — |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.41, 0.42] | ~71 % of Betz |
+| **Sharp-inspired CPPC** | **0.18** | [0.18, 0.19] | — |
+| Optimised passive (mass-balanced) | **0.31** | [0.30, 0.31] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
-| Ham 1979 reproduction | **0.49** | [0.46, 0.50] | matches Ham's method |
+| Ham 1979 reproduction | **0.47** | [0.47, 0.48] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
 
 The confidence intervals come from a Latin-hypercube sampling over eight
@@ -245,8 +245,8 @@ For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.16):
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **18169 kWh/yr** | **13.8 %** |
-| Fixed-rpm generator | 12334 kWh/yr | 9.4 % |
+| **Passive k_load (variable speed)** | **17808 kWh/yr** | **13.6 %** |
+| Fixed-rpm generator | 11140 kWh/yr | 8.5 % |
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces **1.75× more energy** than the same rotor on

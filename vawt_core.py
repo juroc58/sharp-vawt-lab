@@ -1,5 +1,5 @@
 """
-vawt_core.py  --  Sharp cycloturbine (centrifugal-pendulum pitch control) physics core, v3.1
+vawt_core.py  --  Sharp cycloturbine (centrifugal-pendulum pitch control) physics core, v3.2
 
 2D blade-element model of a 3-blade H-rotor whose blades rock about a pivot at the end of the
 support arm (Sharp geometry).  The rotor and the rocking blade units are fully coupled through
@@ -10,17 +10,17 @@ What is modelled
   * double-multiple-streamtube induction with a one-revolution-scale relaxation and the
     Sharpe/Glauert empirical correction at high loading
   * static polars as tables over (log Re, alpha); analytic NACA-0012-like surrogate or CSV files
-  * optional dynamic stall: lag-based, Beddoes-Leishman-style, written as an INCREMENT on the static
+  * optional dynamic stall: lag-based, modified MIT-style, written as an INCREMENT on the static
     polar, so steady flow reproduces the static polar exactly (constants are literature-typical,
     NOT fitted to data)
   * optional apparent-mass (non-circulatory) lift, counted once
   * optional Adams (2018) curvilinear-flow shifts, scaled by c/R / 0.418 (scaling is an assumption)
-  * optional finite-span correction (lift-slope reduction + induced drag)
+  * optional finite-span correction (generalized Prandtl, k=1.8; lift-slope reduction + induced drag)
   * arm drag, strut/interference drag (cd_add), viscous + Coulomb pivot friction, limit lines
-  * gusts / turbulence, prescribed-pitch mode (Ham 1979 style), energy ledger
+  * gusts / turbulence (Dryden or von Kármán), prescribed-pitch mode (Ham 1979 style), energy ledger
+  * quarter-chord pitching moment Cm from real polar data
 
 What is NOT modelled (be aware when interpreting results)
-  * quarter-chord pitching moment Cm (stall moment only enters through the centre-of-pressure shift)
   * flow expansion (flux-line theory), 3D flow, tip vortices, blade-wake interaction, gravity
   * unsteady/dynamic-stall constants are uncalibrated; the default analytic polar is a surrogate
 
@@ -154,8 +154,10 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     Cd = Cd_s + (fst - fd) * (cdsep - Cd_s)
 
     # Cm in dynamic stall: blend between static Cm and separated Cm
-    # In deep stall, Cm becomes more negative (nose-down)
-    Cm = Cm_s + (fst - fd) * (-0.05 - Cm_s)  # blend toward -0.05 in deep stall
+    # In deep stall, Cm becomes more negative (nose-down) for positive alpha,
+    # and more positive for negative alpha (odd symmetry)
+    # Use math.copysign for proper odd symmetry: sign of Cm follows -sign(ae)
+    Cm = Cm_s + (fst - fd) * (math.copysign(0.05, -ae) - Cm_s)
 
     # vortex lift: only while separation is lagging, decays to zero in steady flow
     sg = 1.0 if ae >= 0.0 else -1.0
@@ -307,9 +309,9 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             Fnt = q * Clnc * math.sin(pf)          # apparent-mass force, acts at mid-chord
             Fnr = q * Clnc * math.cos(pf)
 
-            # Pitch moment from Cm: Qa_cm = q * Cm * c * H
-            # This is the direct pitching moment from the airfoil's Cm
-            Qa_cm = q * Cm * c * H
+            # Pitch moment from Cm: Qa_cm = q * Cm * c
+            # q = 0.5 * rho * W2 * c * H already contains c * H, so multiply by c only
+            Qa_cm = q * Cm * c
 
             xcp = (0.25 + 0.25 * (1.0 - wt)) * c - sp      # centre of pressure moves aft in stall
             stc = -xcp * cp_ - ar * sn_
@@ -717,25 +719,57 @@ class CycloturbineSim:
 
             if model == "vonkarman":
                 # von Kármán spectrum: Phi(f) = 0.47 * sigma^2 * L/U / (1 + (2*pi*f*L/U)^2)^(5/6)
-                # Use Dryden shaping filter with variance scaled by sqrt(0.47) to match von Kármán variance.
-                # The von Kármán spectrum has variance 0.47 * Dryden variance for same sigma, L.
-                # This gives correct turbulence intensity with a slightly different spectral shape
-                # (Dryden rolls off as f^-2, von Kármán as f^-5/3).
-                # For engineering purposes, the variance match is the most important.
+                # Proper 3rd-order continuous-time model with exact discretization.
+                # Continuous-time shaping filter (MIL-F-8785C standard):
+                # dx/dt = F x + G w,  u = x1
+                # F = [[-beta, 1, 0], [0, -beta, 1], [0, 0, -beta]]
+                # G = [0, 0, g3]^T
+                # H = [1, 0, 0]
+                # where beta = (3*sqrt(3)/2)^(1/3) / tau ≈ 1.370 / tau
+                # g3 = sigma * sqrt(0.47 * 16 * beta^5 / 3)
+                # This gives the correct von Kármán spectrum with variance 0.47*sigma^2.
                 
-                # Generate Dryden turbulence with sigma_vk = sqrt(0.47) * sigma
-                vk_sigma = sigma * math.sqrt(0.47)
-                a = math.exp(-dt / tau) if tau > 0 else 0.0
-                b = vk_sigma * math.sqrt(1.0 - a * a) if tau > 0 else 0.0
-
-                rng = np.random.default_rng(sim.seed)
-                x = np.zeros(n)
-                if b > 0:
-                    x[0] = rng.normal(0.0, vk_sigma)
-                    for i in range(1, n):
-                        x[i] = a * x[i - 1] + b * rng.standard_normal()
+                if tau <= 0:
+                    x = np.zeros(n)
                 else:
-                    x[:] = 0.0
+                    beta = 1.370 / tau
+                    # Discrete-time matrices via matrix exponential
+                    # x[k+1] = Ad * x[k] + Bd * w[k]
+                    # u[k] = Cd * x[k]
+                    dt_b = dt * beta
+                    exp_dt_b = math.exp(-dt_b)
+                    
+                    # Ad = exp(F*dt)
+                    Ad = np.array([
+                        [exp_dt_b, dt_b * exp_dt_b, 0.5 * dt_b * dt_b * exp_dt_b],
+                        [0, exp_dt_b, dt_b * exp_dt_b],
+                        [0, 0, exp_dt_b]
+                    ])
+                    
+                    # Bd = integral_0^dt exp(F*s) G ds
+                    # G = [0, 0, g3]^T
+                    # g3 chosen so continuous-time output variance = 0.47 * sigma^2
+                    g3 = sigma * math.sqrt(0.47 * 16 * beta**5 / 3)
+                    # Bd[2] = g3 * integral_0^dt exp(-beta*s) ds
+                    Bd = np.zeros(3)
+                    Bd[2] = g3 * (1 - exp_dt_b) / beta
+                    # Bd[1] = g3 * integral_0^dt s * exp(-beta*s) ds
+                    Bd[1] = g3 * (1 - exp_dt_b - dt_b * exp_dt_b) / (beta * beta)
+                    # Bd[0] = g3/2 * integral_0^dt s^2 * exp(-beta*s) ds
+                    # integral s^2 exp(-beta*s) ds = 2/beta^3 - exp(-beta*dt)*(2/beta^3 + 2*dt/beta^2 + dt^2/beta)
+                    term = 2/beta**3 - exp_dt_b * (2/beta**3 + 2*dt/beta**2 + dt**2/beta)
+                    Bd[0] = g3 * 0.5 * term
+                    
+                    Cd = np.array([1.0, 0.0, 0.0])
+                    
+                    # Generate state-space process
+                    rng = np.random.default_rng(sim.seed)
+                    x_state = np.zeros(3)
+                    x = np.zeros(n)
+                    for i in range(n):
+                        w = rng.standard_normal()
+                        x[i] = Cd @ x_state
+                        x_state = Ad @ x_state + Bd * w
             else:
                     # Dryden spectrum shaping filter (1st order)
                     # dx/dt = -x/tau + w,  u = x  (no output scaling needed)
