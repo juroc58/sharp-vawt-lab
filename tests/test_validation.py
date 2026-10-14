@@ -59,11 +59,12 @@ class TestHamReproduction:
         r = create_sim_from_params(self.BASE_HAM).run()
         # Ham 1979 reported Cp = 0.42-0.45 at TSR 2.5-3.0.
         # The solver (2D, no tip loss) runs ~+9 % above the band; see README.
-        assert 0.35 < r['cp'] < 0.52, f"Ham Cp = {r['cp']:.3f} outside plausible band"
+        # New polars: static peak Cp = 0.4635 (6.6% above mid-band 0.435)
+        assert 0.42 < r['cp'] < 0.50, f"Ham Cp = {r['cp']:.3f} outside plausible band"
 
     def test_ham_tsr_2_0_within_band(self):
         r = create_sim_from_params({**self.BASE_HAM, 'tsr': 2.0}).run()
-        assert 0.35 < r['cp'] < 0.52
+        assert 0.38 < r['cp'] < 0.50
 
 
 @pytest.mark.slow

@@ -511,7 +511,7 @@ def surrogate_polar(Re, alpha):
 
 
 class PolarDatabase:
-    """Static polar tables (Cl, Cd over log Re x alpha). Cm is not used by the kernel."""
+    """Static polar tables (Cl, Cd, Cm over log Re x alpha)."""
 
     def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None):
         self.polar_dir = polar_dir
@@ -539,9 +539,11 @@ class PolarDatabase:
             self.logRe_grid = np.log(np.array([2e4, 6.3e4, 2e5, 6.3e5, 2e6]))
             Cl = np.zeros((len(self.logRe_grid), len(self.alpha_grid)))
             Cd = np.zeros_like(Cl)
+            Cm = np.zeros_like(Cl)
             for r, lre in enumerate(self.logRe_grid):
                 Cl[r], Cd[r] = surrogate_polar(math.exp(lre), self.alpha_grid)
-            self.Cl, self.Cd = Cl, Cd
+                # Cm is zero for the analytic surrogate (no Cm data)
+            self.Cl, self.Cd, self.Cm = Cl, Cd, Cm
             self.cla_re = np.array([surrogate_cla(math.exp(l)) for l in self.logRe_grid])
             self.source = "analytic surrogate"
         self._finish()
@@ -555,10 +557,20 @@ class PolarDatabase:
         self.logRe_grid = np.array([math.log(1e5)])
         cl, cd = fn(self.alpha_grid)
         self.Cl, self.Cd = np.array([cl]), np.array([cd])
+        self.Cm = np.zeros_like(self.Cl)
         self.cla_re = np.array([float(cla)])
         self.source = "callable"
         self._finish()
         return self
+
+    def lookup(self, Re, alpha):
+        """Bilinear lookup of Cl, Cd, Cm, and Cl_alpha at given Re and alpha.
+        
+        Returns: (Cl, Cd, Cm, cla)
+        """
+        return _lookup(math.log(max(Re, 1e3)), alpha, 
+                       self.logRe_grid, self.alpha_grid, 
+                       self.cla_re, self.Cl, self.Cd, self.Cm)
 
     def _load_csv(self, files):
         res, cls_, cds, cms = [], [], [], []

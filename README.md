@@ -57,7 +57,7 @@ This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
 control) but not his **geometry**. It uses a light counterweight 0.30
 chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
 At R = 0.60 m, with the finite-span correction on and the UQ spread
-over eight uncalibrated constants, it reaches **0.16 [[0.13, 0.20]]**.
+over eight uncalibrated constants, it reaches **0.16 [0.13, 0.20]**.
 
 **The mechanism fails inside Sharp's own parameter range.** Running the
 same solver at a counterweight offset of 0.5 chords — Sharp's lower
@@ -85,7 +85,7 @@ speeds — see the AEP section below.
 
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with the counterweight near the pitch
-pivot that reaches **0.25 [[0.16, 0.32]]** with the finite-span correction
+pivot that reaches **0.25 [0.16, 0.32]** with the finite-span correction
 active in the optimiser. The optimised arm ratio is **ar = 0.797**, which
 sits on the **upper bound (0.80)** of the search space; the UQ spread is
 wide (CI width 0.15) because the optimum is pinned on this boundary where
@@ -103,7 +103,7 @@ Extending the joint optimiser to radius R ∈ [0.6, 3.0] m now finds
 **R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
 enabled *inside the optimiser*, the optimum sits on the **upper bound**
 of the height-to-radius band (H/R = 1.49, i.e. H/D = 0.75). UQ mean:
-**0.43 [[0.41, 0.45]]**.
+**0.43 [0.41, 0.45]**.
 
 The movement is the point: with the correction hidden (the pre-fix
 configuration), the optimiser preferred a short fat cylinder
