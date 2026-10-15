@@ -145,7 +145,7 @@ def main():
     plt.tight_layout()
 
     import os
-    out_dir = "/home/duer3rw01f/Documents/sharp_proj/docs"
+    out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "finite_span_validation.png")
     plt.savefig(out_path, dpi=150)
