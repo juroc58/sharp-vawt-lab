@@ -17,6 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache numba
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/numba
+          key: numba-${{ matrix.python-version }}-${{ runner.os }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: |
+            numba-${{ matrix.python-version }}-${{ runner.os }}-
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -30,6 +38,10 @@ jobs:
 
       - name: Run fast tests (with coverage)
         run: pytest -m "not slow" --cov --cov-report=term-missing
+        continue-on-error: ${{ matrix.python-version == '3.14' }}
+
+      - name: Run validation suite
+        run: python3 scripts/validate_all.py
         continue-on-error: ${{ matrix.python-version == '3.14' }}
 
       - name: Run slow validation tests
