@@ -731,57 +731,44 @@ class CycloturbineSim:
 
             if model == "vonkarman":
                 # von Kármán spectrum: Phi(f) = 0.47 * sigma^2 * L/U / (1 + (2*pi*f*L/U)^2)^(5/6)
-                # Proper 3rd-order continuous-time model with exact discretization.
-                # Continuous-time shaping filter (MIL-F-8785C standard):
-                # dx/dt = F x + G w,  u = x1
-                # F = [[-beta, 1, 0], [0, -beta, 1], [0, 0, -beta]]
-                # G = [0, 0, g3]^T
-                # H = [1, 0, 0]
-                # where beta = (3*sqrt(3)/2)^(1/3) / tau ≈ 1.370 / tau
-                # g3 = sigma * sqrt(0.47 * 16 * beta^5 / 3)
-                # This gives the correct von Kármán spectrum with variance 0.47*sigma^2.
+                # Generated via FFT synthesis with exact spectral control.
+                # The 0.47 is the spectral amplitude coefficient; the spectrum
+                # integrates to sigma^2 (the target variance). Output is scaled
+                # to have exact standard deviation sigma = I * U_mean.
                 
                 if tau <= 0:
                     x = np.zeros(n)
                 else:
-                    beta = 1.370 / tau
-                    # Discrete-time matrices via matrix exponential
-                    # x[k+1] = Ad * x[k] + Bd * w[k]
-                    # u[k] = Cd * x[k]
-                    dt_b = dt * beta
-                    exp_dt_b = math.exp(-dt_b)
+                    # Frequency axis for rfft (non-negative frequencies)
+                    f = np.fft.rfftfreq(n, d=dt)
                     
-                    # Ad = exp(F*dt)
-                    Ad = np.array([
-                        [exp_dt_b, dt_b * exp_dt_b, 0.5 * dt_b * dt_b * exp_dt_b],
-                        [0, exp_dt_b, dt_b * exp_dt_b],
-                        [0, 0, exp_dt_b]
-                    ])
+                    # One-sided von Kármán spectral shape
+                    k = 2.0 * np.pi * f * L / U_mean
+                    shape = 1.0 / (1.0 + k**2)**(5/6)
                     
-                    # Bd = integral_0^dt exp(F*s) G ds
-                    # G = [0, 0, g3]^T
-                    # g3 chosen so continuous-time output variance = 0.47 * sigma^2
-                    g3 = sigma * math.sqrt(0.47 * 16 * beta**5 / 3)
-                    # Bd[2] = g3 * integral_0^dt exp(-beta*s) ds
-                    Bd = np.zeros(3)
-                    Bd[2] = g3 * (1 - exp_dt_b) / beta
-                    # Bd[1] = g3 * integral_0^dt s * exp(-beta*s) ds
-                    Bd[1] = g3 * (1 - exp_dt_b - dt_b * exp_dt_b) / (beta * beta)
-                    # Bd[0] = g3/2 * integral_0^dt s^2 * exp(-beta*s) ds
-                    # integral s^2 exp(-beta*s) ds = 2/beta^3 - exp(-beta*dt)*(2/beta^3 + 2*dt/beta^2 + dt^2/beta)
-                    term = 2/beta**3 - exp_dt_b * (2/beta**3 + 2*dt/beta**2 + dt**2/beta)
-                    Bd[0] = g3 * 0.5 * term
-                    
-                    Cd = np.array([1.0, 0.0, 0.0])
-                    
-                    # Generate state-space process
+                    # Random phases
                     rng = np.random.default_rng(sim.seed)
-                    x_state = np.zeros(3)
-                    x = np.zeros(n)
-                    for i in range(n):
-                        w = rng.standard_normal()
-                        x[i] = Cd @ x_state
-                        x_state = Ad @ x_state + Bd * w
+                    n_freq = len(f)
+                    
+                    re = rng.standard_normal(n_freq)
+                    im = rng.standard_normal(n_freq)
+                    
+                    # DC and Nyquist: real only
+                    im[0] = 0.0
+                    if n % 2 == 0:
+                        im[-1] = 0.0
+                    
+                    # Apply spectral shaping
+                    X = np.sqrt(shape) * (re + 1j * im)
+                    
+                    # Inverse FFT to get real time series
+                    x = np.fft.irfft(X, n)
+                    
+                    # Remove mean and scale to exact target std
+                    x -= np.mean(x)
+                    x_std = np.std(x)
+                    if x_std > 0:
+                        x = x * sigma / x_std
             else:
                     # Dryden spectrum shaping filter (1st order)
                     # dx/dt = -x/tau + w,  u = x  (no output scaling needed)

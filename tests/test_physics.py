@@ -124,17 +124,15 @@ class TestVonKarmanTurbulence:
             'turb_I': 0.1, 'turb_L': 10.0,
         }
         
-        # Dryden
-        r_dryden = create_sim_from_params({**base, 'turb_model': 'dryden', 'seed': 42}).run()
-        # von Kármán
-        r_vk = create_sim_from_params({**base, 'turb_model': 'vonkarman', 'seed': 42}).run()
-        
-        # Both should run successfully
-        assert r_dryden['steady'] is not None
-        assert r_vk['steady'] is not None
-        # The variance check is more involved; for now just verify both run
-        assert r_vk['cp'] > 0
-        assert r_dryden['cp'] > 0
+        sim = create_sim_from_params({**base, 'turb_model': 'vonkarman', 'seed': 42})
+        t, U = sim._make_wind(50000)
+
+        # Measured turbulence intensity should match target I
+        measured_ti = np.std(U - np.mean(U)) / np.mean(U)
+        target_ti = base['turb_I']
+
+        assert abs(measured_ti - target_ti) < 0.05, \
+            f"von Kármán TI = {measured_ti:.3f}, expected ~{target_ti:.3f}"
 
     def test_vonkarman_runs_without_error(self):
         """von Kármán model runs without crashing."""
