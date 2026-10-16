@@ -323,7 +323,7 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             Fx = -(Ft + Fnt) * sphi + (Fr + Fnr) * cphi
             Fxp[k] = Fx
             Fxs += Fx
-            Tsum += Tk
+            Tsum += Tk - Qa_cm
 
             # ---- pitch (rocking) dynamics -------------------------------------------------------
             s_t = -xg * cp_ - ar * sn_
@@ -344,7 +344,7 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             Jeff += M * Rp * Rp * (1.0 - M * s_r * s_r / Ip)
             Pvis += cb * psd[k] * psd[k]
             Pcou += Qfr * psd[k]
-            Pbl += Tk * w + Qa * psd[k]
+            Pbl += (Tk - Qa_cm) * w + Qa * psd[k]
             if k == 0:
                 al0 = alpha
                 dl0 = math.atan2(stq, Rp + srq)

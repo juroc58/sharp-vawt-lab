@@ -63,27 +63,40 @@ class TestCmDimensions:
         assert Cm > -0.1  # not absurdly large
 
     def test_cm_moment_dimensions(self):
-        """Cm moment Qa_cm = q * Cm * c has correct dimensions [N·m]."""
-        # q = 0.5*rho*W^2*c*H has dimensions [Pa] * [m^2] = [N]
-        # q * Cm * c has dimensions [N] * [m] = [N·m] (torque)
-        # This is a dimensional sanity check
+        """Cm moment per unit span is independent of H (blade height).
+
+        Qa_cm = q * Cm * c where q = 0.5 * rho * W^2 * c * H.
+        So Qa_cm / H = 0.5 * rho * W^2 * c^2 * Cm, independent of H.
+        Changing H should not change Cp dramatically if Cm torque
+        per unit span is correctly implemented.
+        """
         from vawt_core import create_sim_from_params
-        s = create_sim_from_params({
-            'R': 2.0, 'c': 0.5, 'H': 10.0, 'N': 3,
-            'ar': 0.5, 'sp': 0.2,
-            'mb': 1.0, 'xbcg': 0.2, 'mc': 5.0, 'dcw': 0.0,
+
+        base_params = {
+            'R': 0.6, 'c': 0.15, 'H': 0.4, 'N': 3,
+            'ar': 0.5, 'sp': 0.25,
+            'mb': 0.01, 'xbcg': 0.2, 'mc': 0.002, 'dcw': 0.3,
             'balance': 0, 'bias_deg': 0.0,
-            'prescribe_pitch': False, 'cd_add': 0.0,
-            'use_dynamic_stall': False, 'use_flow_curvature': False,
-            'use_dmst': True, 'use_tip_loss': True,
-            'win_deg': 45.0, 'cb': 0.0, 'mu_c': 0.0,
-            'free': False, 'tsr': 2.5, 'T_max': 2.0, 'stride': 5,
-            'k_load': 0.001,
-        })
-        # Just verify it runs without error and Cm is present
-        r = s.run()
-        assert 'cp' in r
-        # Cm is integrated in the run; just verify no crash
+            'prescribe_pitch': False,
+            'cd_add': 0.002,
+            'use_dynamic_stall': True,
+            'use_flow_curvature': True,
+            'use_dmst': True,
+            'use_tip_loss': False,
+            'win_deg': 45.0, 'cb': 2e-5, 'mu_c': 3e-4,
+            'free': False, 'tsr': 2.5, 'T_max': 5.0, 'stride': 5,
+            'k_load': 0.0025,
+        }
+
+        r_h1 = create_sim_from_params({**base_params, 'H': 0.4}).run()
+        r_h2 = create_sim_from_params({**base_params, 'H': 0.8}).run()
+
+        assert r_h1['cp'] > 0
+        assert r_h2['cp'] > 0
+
+        cp_ratio = r_h2['cp'] / r_h1['cp']
+        assert 0.5 < cp_ratio < 2.0,             f"Cp ratio H=0.8/H=0.4 = {cp_ratio:.3f}"
+
 
     def test_cm_odd_symmetry(self):
         """Cm should be an odd function of alpha (sign flip)."""
