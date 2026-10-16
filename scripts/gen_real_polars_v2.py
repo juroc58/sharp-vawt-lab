@@ -60,9 +60,9 @@ def naca0012_real_polar(Re, alpha_deg):
     elif Re <= 1e6:
         # Re = 1e6
         cl_alpha = 0.110
-        cl_max = 1.25
+        cl_max = 1.45  # Real NACA 0012 Cl_max ~1.4-1.5 at Re=1e6
         alpha_stall = 15.0
-        cd_min = 0.007
+        cd_min = 0.0065
         re_factor = 1.3
     else:
         # High Re extrapolation
@@ -101,10 +101,12 @@ def naca0012_real_polar(Re, alpha_deg):
         Cm = -0.001 * sign * (a / alpha_stall) - 0.01 * sign * t
     else:
         # Post-stall: based on Abbott Fig 7.19 & SAND80-2114
+        # Smooth decline from peak at alpha_stall+2
         if a <= 20:
-            # Initial drop from peak Cl
-            frac = (a - alpha_stall) / (20 - alpha_stall)
-            Cl = sign * (cl_max * (1 - 0.35 * frac))
+            # Initial drop from peak Cl, smooth transition from peak region
+            frac = (a - (alpha_stall + 2)) / (20 - (alpha_stall + 2))
+            Cl_peak_end = cl_max * (1 - 0.05 * (1.0 - 0.5)**2)
+            Cl = sign * Cl_peak_end * (1 - 0.35 * frac)
         elif a <= 35:
             # Secondary hump (vortex lift)
             frac = (a - 20) / 15
@@ -122,7 +124,8 @@ def naca0012_real_polar(Re, alpha_deg):
             a2 = 180 - a
             # At exactly 90°, Cl = 0. As we go to 180°, lift increases negatively
             # For symmetric airfoil, backside lift is opposite sign to frontside
-            Cl = -sign * cl_max * 0.14 * a2 / 90
+            # Real NACA 0012 backside Cl reaches about -0.5 to -0.6 at 120-150°
+            Cl = -sign * cl_max * 0.35 * a2 / 90
         
         # Ensure exactly zero at 90° for symmetric airfoil
         if a == 90.0:
