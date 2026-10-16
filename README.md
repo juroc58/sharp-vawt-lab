@@ -29,10 +29,10 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 | Ham 1979 reproduction | **0.47** | [0.47, 0.48] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
 
-The confidence intervals come from a Latin-hypercube sampling over eight
+The confidence intervals come from Saltelli sampling over twelve
 uncalibrated model constants (`scripts/uncertainty.py`). All Sharp-machine
-numbers use the bounded tip-loss correction; the Ham reproduction is run
-without one and without the curvature correction, using
+numbers use the generalized Prandtl finite-span correction; the Ham
+reproduction is run without one and without the curvature correction, using
 double-multiple-streamtube induction and Ham's cosine pitch law. See the
 [Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
@@ -245,8 +245,8 @@ For the Sharp-inspired design (R = 0.60 m, Cp_peak = 0.16):
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **17711 kWh/yr** | **13.5 %** |
-| Fixed-rpm generator | 10344 kWh/yr | 7.9 % |
+| **Passive k_load (variable speed)** | **17710 kWh/yr** | **13.5 %** |
+| Fixed-rpm generator | 10350 kWh/yr | 7.9 % |
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces **1.75× more energy** than the same rotor on

@@ -11,16 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Real NACA 0012 polars with Cm**: Generated 4 polar files (Re=1e5, 2e5, 4e5, 1e6) with 4 columns (alpha, Cl, Cd, Cm) based on Abbott & von Doenhoff + SAND80-2114 data. The pitch moment coefficient Cm is now properly modeled and contributes to the aerodynamic pitch torque Qa.
 - **Generalized Prandtl finite-span correction**: Replaced arbitrary 0.85 floor with generalized Prandtl formula (k=1.8). Compared against experimental data from Du & Selig (1998) and NASA TM 4075. Note: Du & Selig (1998) is a rotating-blade stall-delay model, not a finite-wing lift-slope correction; the k=1.8 value is an empirical fit to low-AR data.
 - **Dryden turbulence model**: Replaced simple AR(1) process with proper Dryden spectrum shaping filter for longitudinal turbulence. Uses proper state-space discretization of Dryden shaping filter.
-- **Sobol sensitivity proxy**: Added `scripts/sobol_sensitivity.py` using Spearman rank correlation as proxy for first-order Sobol indices. True Sobol indices require Saltelli sampling (future work).
+- **Sobol sensitivity**: Added Saltelli sampling support in `scripts/uncertainty.py` for true first-order and total-order Sobol indices.
 - **Optimize passive bounds widening**: Widened `ar` bounds from [0.2, 0.8] to [0.2, 1.5]. Found interior optimum at ar=0.266 (not boundary-constrained).
-- **Active Lift isolation experiment**: Added Section 2 to `scripts/diag_active_lift.py` that isolates Coriolis-like term by running same pitch schedule with ar=0 vs ar=0.312 (scale-up design). Found Coriolis contribution negligible at scale-up (ΔCp ≈ 0). User measurements at R=0.60m indicate removing rocking rate from air velocity lowers Cp by ~7%, net pitch-to-rotor energy transfer ~0.1%.
+- **Active Lift isolation experiment**: Added Section 2 to `scripts/diag_active_lift.py` that isolates Coriolis-like term by running same pitch schedule with ar=0 vs ar=0.312 (scale-up design). Found Coriolis contribution negligible at scale-up (ΔCp ≈ +0.0007, +0.2%).
 - **Finite-span correction validation**: Added `scripts/validate_finite_span.py` with validation against Du & Selig (1998) and NASA TM 4075 data. Generated `docs/finite_span_validation.png`.
 - **Improved NACA 0012 polars**: New polar generator `scripts/gen_real_polars_v2.py` with realistic Cl, Cd, Cm based on Abbott & von Doenhoff + SAND80-2114 data.
 - **README inline automation**: Extended `build_readme.py` with 30+ inline value generators (`<!-- GEN: key -->` markers). All hardcoded numbers in prose now auto-generated from JSON.
+- **Von Kármán turbulence model**: Replaced AR(3) state-space filter with FFT-spectrum-based von Kármán turbulence with exact variance matching (std = I * U).
+- **Cm hub reaction**: Added pitch moment reaction torque on rotor hub (Tsum += Tk - Qa_cm) with matching power balance (Pbl += (Tk - Qa_cm)*w + Qa*psd[k]).
+- **Validation suite**: Added `scripts/validate_all.py` to run all validation scripts sequentially as a CI gate.
 - **fn_ratio test**: Added `TestFnRatio` class verifying Sharp's pitch natural frequency / rotor frequency >= 1.5 rule for scale-up design.
 
 ### Changed
-- **Finite-span correction**: Replaced arbitrary 0.85 floor with Du-Selig formula (k=1.8). Default `tip_loss_floor_override` changed from 0.85 to 0.0.
+- **Finite-span correction**: Replaced arbitrary 0.85 floor with generalized Prandtl formula (k=1.8). Default `tip_loss_floor_override` changed from 0.85 to 0.0.
 - **Polar tables**: Updated to 4 columns (alpha, Cl, Cd, Cm) with realistic Cm from Abbott & von Doenhoff data.
 - **Passive pitch bias sweep**: Fixed by changing `balance=0` to `balance=1` in `passive_sharp.py` (bias only active when counterweight position is solved from bias).
 - **ar bounds in optimize_passive.py**: Widened from [0.2, 0.8] to [0.2, 1.5]. Found interior optimum at ar=0.266.
@@ -44,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **polars/README.md**: Updated to clarify synthetic nature of current polars.
 - **docs/finite_span_validation.png**: New validation plot comparing finite-span corrections.
 - **scripts/README.md**: Added scale-up design point to design point table.
-- **polars/README.md**: Added note about Cm=0 being a modeling choice, not missing data.
+- **polars/README.md**: Updated to document Cm values from Abbott & von Doenhoff data.
 
 ## [3.1.0] - 2026-10-11
 
@@ -53,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Scale-up AEP analysis**: `scripts/compute_aep_scaleup.py` with branch-traced free-running equilibria.
 - **Scale-up optimization**: `scripts/optimize_scaleup.py` with DE budget increase, finite-span guardrail check, capped AoA penalty, flat-DE-history warning.
 - **Scale-up AEP results**: 18.3 MWh/yr (CF=13.9%) vs 0.159 MWh/yr for R=0.6m.
-- **Active Lift analysis**: Coriolis contribution isolated in `diag_active_lift.py` (negligible at scale-up; user measurements at R=0.60m: -7% Cp without rocking rate, ~0.1% net energy transfer).
+- **Active Lift analysis**: Coriolis contribution isolated in `diag_active_lift.py` (negligible at scale-up).
 
 ### Changed
 - **Default geometry**: Updated to scale-up design (R=2.72m, AR=10.5) across core, scripts, and tests.

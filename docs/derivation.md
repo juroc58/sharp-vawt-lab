@@ -172,7 +172,8 @@ Sheldahl & Klimas (1981) report SAND80-2114, generated for four Reynolds
 numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
 $\alpha \in [-180°, 180°]$. They are not digitised from the report; see
 `polars/README.md` for exactly what the surrogate does and does not
-capture (in particular `Cm = 0` everywhere).
+capture (in particular, Cm is non-zero and comes from Abbott & von
+Doenhoff data).
 
 ---
 
