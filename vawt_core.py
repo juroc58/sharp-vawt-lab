@@ -10,7 +10,8 @@ What is modelled
   * double-multiple-streamtube induction with a one-revolution-scale relaxation and the
     Sharpe/Glauert empirical correction at high loading
   * static polars as tables over (log Re, alpha); analytic NACA-0012-like surrogate or CSV files
-  * optional dynamic stall: lag-based, modified MIT-style, written as an INCREMENT on the static
+  * optional dynamic stall: lag-based increment on static polar, loosely after
+    Noll-Ham, written as an INCREMENT on the static
     polar, so steady flow reproduces the static polar exactly (constants are literature-typical,
     NOT fitted to data)
   * optional apparent-mass (non-circulatory) lift, counted once
