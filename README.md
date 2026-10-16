@@ -279,7 +279,7 @@ indices:
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
 | `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_floor_override` | 0.00 | 1.00 | finite-span correction floor |
+| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
 <!-- END GENERATED: uq_params -->
 
 The 90 % confidence width is **0.005–0.007 in Cp** for the Ham, Sharp-CPPC
