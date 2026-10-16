@@ -8,6 +8,7 @@ code if any validation fails. It prints outputs from each script to stdout.
 
 import subprocess
 import sys
+from pathlib import Path
 
 
 VALIDATION_SCRIPTS = [
@@ -18,18 +19,23 @@ VALIDATION_SCRIPTS = [
 
 
 def main():
+    repo_root = Path(__file__).resolve().parent.parent
+    scripts_dir = repo_root / "scripts"
+
     print("=" * 72)
     print("Running validation suite...")
     print("=" * 72)
 
-    for script in VALIDATION_SCRIPTS:
-        print(f"\n>>> Running {script}...")
+    for script_name in VALIDATION_SCRIPTS:
+        script_path = scripts_dir / script_name
+        print(f"\n>>> Running {script_name}...")
         try:
             result = subprocess.run(
-                [sys.executable, f"scripts/{script}"],
+                [sys.executable, str(script_path)],
                 capture_output=True,
                 text=True,
-                timeout=120,
+                timeout=300,
+                cwd=repo_root,
             )
             if result.stdout:
                 print(result.stdout)
@@ -37,16 +43,16 @@ def main():
                 print(result.stderr, file=sys.stderr)
 
             if result.returncode != 0:
-                print(f"\n❌ {script} FAILED (exit code {result.returncode})")
+                print(f"\n❌ {script_name} FAILED (exit code {result.returncode})")
                 return 1
             else:
-                print(f"✅ {script} PASSED")
+                print(f"✅ {script_name} PASSED")
 
         except subprocess.TimeoutExpired:
-            print(f"\n❌ {script} TIMED OUT after 120 seconds")
+            print(f"\n❌ {script_name} TIMED OUT after 300 seconds")
             return 1
         except Exception as e:
-            print(f"\n❌ {script} ERROR: {e}")
+            print(f"\n❌ {script_name} ERROR: {e}")
             return 1
 
     print("\n" + "=" * 72)

@@ -8,7 +8,7 @@ version = "3.2.0"
 description = "2D BEM solver for the Sharp cycloturbine (passive variable-pitch VAWT with centrifugal-pendulum pitch control)"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "juroc58" }]
 keywords = [
     "vawt", "wind-energy", "bem", "cycloturbine", "dynamic-stall",
@@ -41,9 +41,10 @@ Repository = "https://github.com/juroc58/sharp-vawt-lab"
 
 [tool.setuptools]
 py-modules = ["vawt_core"]
+packages = ["polars"]
 
 [tool.setuptools.package-data]
-"*" = ["polars/naca0012/*.csv"]
+polars = ["naca0012/*.csv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
