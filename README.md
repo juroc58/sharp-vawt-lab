@@ -41,15 +41,15 @@ tip loss ON**. Ham is the exception: his model class has no tip loss, so
 the reproduction is run without one. Where the body text quotes the
 optimiser's deterministic `best_cp` (e.g. 0.28 for the passive optimum,
 0.43 for the scale-up), that is a single design point evaluated at the
-optimum; the table gives the UQ mean over eight uncertain constants,
+optimum; the table gives the UQ mean over twelve uncertain constants,
 which is usually lower.
 
 The same distinction explains the two Ham numbers that appear in this
 document. The **body text quotes 0.47** — a single deterministic run of
 `scripts/validate_ham.py` at TSR = 2.5. The **headline table quotes
-0.49** — the UQ mean over the eight uncertain constants, which for the
-Ham anchor sits slightly above the deterministic point. They are not
-in conflict; they are the same case measured two ways.
+0.47** — the UQ mean over twelve uncertain constants, which for the
+Ham anchor matches the deterministic point. They are not in conflict;
+they are the same case measured two ways.
 
 ### Sharp-inspired CPPC
 
@@ -57,14 +57,14 @@ This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
 control) but not his **geometry**. It uses a light counterweight 0.30
 chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
 At R = 0.60 m, with the finite-span correction on and the UQ spread
-over eight uncalibrated constants, it reaches **0.16 [0.13, 0.20]**.
+over twelve uncalibrated constants, it reaches **0.18 [0.18, 0.19]**.
 
 **The mechanism fails inside Sharp's own parameter range.** Running the
 same solver at a counterweight offset of 0.5 chords — Sharp's lower
 bound — gives **Cp = 0.0571**, with the blade reaching 50° angle of
 attack and spending 9 % of each revolution against the mechanical
 stops. At 0.6 chords the rotor barely turns (Cp = 0.017, TSR = 0.90).
-The successful design (0.30 chords, 0.16) sits *below* Sharp's
+The successful design (0.30 chords, 0.18) sits *below* Sharp's
 range, not inside it.
 
 `scripts/passive_sharp.py` sweeps both the counterweight mass and
@@ -85,11 +85,11 @@ speeds — see the AEP section below.
 
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with the counterweight near the pitch
-pivot that reaches **0.25 [0.16, 0.32]** with the finite-span correction
-active in the optimiser. The optimised arm ratio is **ar = 0.797**, which
-sits on the **upper bound (0.80)** of the search space; the UQ spread is
-wide (CI width 0.15) because the optimum is pinned on this boundary where
-Cp is sensitive to the dynamic-stall time constants.
+pivot that reaches **0.31 [0.30, 0.31]** with the finite-span correction
+active in the optimiser. The optimised arm ratio is **ar = 0.260**, which
+sits at the lower bound of c (0.06 m) rather than on the ar upper bound;
+the UQ spread is narrow (**0.0052**) because Cp is not highly sensitive to
+the dynamic-stall time constants near this optimum.
 
 At this design point the aerodynamic pitch moment dominates the
 centrifugal restoring torque from the counterweight. The blade pitches
@@ -101,9 +101,9 @@ CPPC regime.
 
 Extending the joint optimiser to radius R ∈ [0.6, 3.0] m now finds
 **R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
-enabled *inside the optimiser*, the optimum sits on the **upper bound**
-of the height-to-radius band (H/R = 1.49, i.e. H/D = 0.75). UQ mean:
-**0.43 [0.41, 0.45]**.
+enabled *inside the optimiser*, the optimum sits at **H/R = 1.49**, i.e.
+H/D = 0.75. UQ mean:
+**0.42 [0.41, 0.42]**.
 
 The movement is the point: with the correction hidden (the pre-fix
 configuration), the optimiser preferred a short fat cylinder
@@ -217,7 +217,7 @@ comparison at both design points:
 | Geometry | AR | Passive CPPC | Best rigid | Gain |
 |---|---|---|---|---|
 | **Sharp-inspired (R = 0.60 m)** | 2.86 | **158.69 kWh/yr** | 93.71 kWh/yr | **+n/a** |
-| **Scale-up (R = 2.72 m)** | 10.5 | **158.69 kWh/yr** | 93.71 kWh/yr | **+n/a** |
+| **Scale-up (R = 2.72 m)** | 10.5 | **17710 kWh/yr** | 93.71 kWh/yr | **+n/a** |
 
 Sharp's published claim is **25–30 % more energy than a fixed-blade
 rotor**. The model gives **+23 %** at the scale-up geometry, where a
@@ -236,7 +236,7 @@ the passive CPPC machine reaches 0.42.
 fair in the sense of "same rotor, same wind, only the pitch mechanism
 differs" — it is not a claim that rigid VAWTs are useless at other
 geometries. A rotor designed from scratch for fixed-pitch operation would
-likely do better than 15 246 kWh/yr at AR 10.5.
+likely do better than 17 710 kWh/yr at AR 10.5.
 
 ### Fixed-rpm penalty
 
@@ -263,9 +263,9 @@ mechanism adapts to wind speed without any external control.
 
 ![uncertainty](docs/uncertainty.png)
 
-Eight model constants are uncalibrated: they come from the source papers
+Twelve model constants are uncalibrated: they come from the source papers
 but were not fitted to this specific machine. Saltelli sampling
-(N = 16, 36 samples per anchor) propagates that uncertainty through
+(N = 1024, 26624 samples per anchor) propagates that uncertainty through
 each headline case and yields first-order (S₁) and total-order (Sₜ) Sobol
 indices:
 
@@ -279,14 +279,13 @@ indices:
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
 | `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
+| `tip_loss_floor_override` | 0.00 | 1.00 | finite-span correction floor |
 <!-- END GENERATED: uq_params -->
 
-The 90 % confidence width is **0.042–0.164 in Cp** for the Ham, Sharp-CPPC
-and scale-up anchors (≈8–25 % of their means). The optimised-passive anchor
-is much wider, **0.15**, because its optimum sits on the edge of the design
-space (arm ratio near its upper bound) where the equilibrium Cp is sensitive
-to the DS time constants. No single parameter dominates every anchor, but
+The 90 % confidence width is **0.005–0.007 in Cp** for the Ham, Sharp-CPPC
+and scale-up anchors (≈1–2 % of their means). The optimised-passive anchor
+has width **0.0052**, because its optimum sits at the lower bound of c where
+the equilibrium Cp is less sensitive to parameter variation. No single parameter dominates every anchor, but
 the model is *not* uniformly well-conditioned: `tau_rev` explains most of
 the Ham and optimised-passive spread (see the Spearman section below).
 
@@ -340,7 +339,7 @@ rather than "turbulence improves the machine."
 
 ### Which parameter drives the spread?
 
-Spearman rank correlation between each of the 8 uncertain constants and
+Spearman rank correlation between each of the 12 uncertain constants and
 Cp, computed on the 40 LHS samples. Runs in 3 seconds on the already-
 generated data (`scripts/spearman_sensitivity.py`).
 
@@ -479,7 +478,7 @@ model configurations:
 - **+ dynamic stall + curvilinear flow** — Adams shift applied
 
 These are single deterministic runs. The headline table's Ham UQ mean of
-0.49 samples the eight uncertain model constants about this point.
+0.47 samples the twelve uncertain model constants about this point.
 
 Ham 1979 published peak Cp = 0.42–0.45 at TSR = 2.5–3.0. The `+ curv` row
 drops to 0.40 because Adams fitted his coefficients at c/R = 0.418 on a
