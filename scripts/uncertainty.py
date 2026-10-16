@@ -259,7 +259,7 @@ def main():
             'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
         }
         # Saltelli sampling
-        unit = saltelli.sample(problem, saltelli_n, calc_second_order=True)
+        unit = saltelli.sample(problem, saltelli_n, calc_second_order=False)
         samples = [sample_to_params_saltelli(row) for row in unit]
         print(f"  Generated {len(samples)} Saltelli samples")
     else:
@@ -348,7 +348,7 @@ def main():
                 'names': UQ_NAMES,
                 'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
             }
-            Si = sobol.analyze(problem, Y, calc_second_order=True, print_to_console=False)
+            Si = sobol.analyze(problem, Y, calc_second_order=False, print_to_console=False)
             sobol_results[anchor_name] = {
                 'S1': {name: float(Si['S1'][i]) for i, name in enumerate(UQ_NAMES)},
                 'ST': {name: float(Si['ST'][i]) for i, name in enumerate(UQ_NAMES)},
