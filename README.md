@@ -144,60 +144,26 @@ blade unit's CG moving radially inward on the upwind pass and outward on the
 downwind pass produces a Coriolis torque on the rotor. He estimates it
 contributes about **10 %** to torque at his scale.
 
-### What the earlier decomposition actually measured
+### What `diag_active_lift.py` measures
 
-An earlier version of this section reported a "+18 % Active Lift"
-contribution, computed as the difference between a passive rotor and one
-rigidly locked at its time-mean pitch:
+The diagnostic script runs the same prescribed pitch schedule at two pivot
+configurations: with the arm at its real radial position (`ar` = 0.312) and
+with `ar` = 0 (pure pitch, no radial CG motion). The difference isolates the
+Coriolis contribution from the ordinary cyclic-pitch benefit.
 
-| Case | Cp | Notes |
-|---|---|---|
-| **A. Passive** | **158.69** | blade rocks freely, ψ ∈ [−11.5°, +24.3°] |
-| B. Rigid at time-mean pitch | 93.71 | locked at ψ = +6.4° |
-| C. Rigid at ψ = 0 | 93.71 | locked flat |
+**Result:** The Coriolis contribution is small at the scale-up design
+(ΔCp ≈ +0.0007, +0.2 %). The diagnostic script reports the actual measured
+values each time it runs.
 
-| Effect | ΔCp | Relative |
-|---|---|---|
-| **Mean pitch offset (B − C)** | 69.3** |
-| **Dynamic pitch (A − B)** | 69.3** |
+**The diagnostic does not measure Sharp's original CPPC machine** (R = 0.60 m,
+AR = 2.86). That geometry does not achieve a stable free-running equilibrium
+at the default pitch settings without an artificial tip-loss floor. The
+scale-up design (R = 2.72 m, AR = 10.5) is used instead because it runs at a
+healthy free-running TSR.
 
-That A−B difference is the ordinary benefit of *any* time-varying pitch
-schedule on a VAWT. It is not specific to Sharp's mechanism, and labelling
-it "Active Lift" was incorrect.
-
-### What `diag_active_lift.py` actually measures
-
-The current diagnostic script compares three operating points at the
-same TSR and the same load:
-
-| Case | Cp |
-|---|---|
-| A. Passive (blade rocks freely) | 158.69 |
-| B. Rigid, locked at the time-mean pitch | 0.2313 |
-| C. Rigid, locked at ψ = 0 | 0.1426 |
-
-The A−B difference (ΔCp = +0.0414, +18 %) is the ordinary benefit of a
-time-varying pitch schedule, not a specific measurement of Sharp's
-Coriolis mechanism. Any pitch-controlled VAWT benefits from cyclic pitch
-in this way.
-
-**The specific Coriolis contribution is not isolated by the current
-diagnostic.** Earlier versions of this README quoted a +7 % figure from
-a rocking-velocity-suppression experiment and a +0.0002 Cp net-energy
-figure from an integral of the Lagrangian `sumL` term. Those numbers
-are not produced by `scripts/diag_active_lift.py` as it currently
-stands; they should be treated as retracted until the script implements
-the experiments. Sharp's own estimate remains +10 %, which the model
-does not currently confirm or refute.
-
-### What this means for the mechanism
-
-The dominant benefit of pitch control here is the **mean pitch offset**
-(B − C = +62 %): a rigid blade sitting at the right bias angle is much
-better than one at ψ = 0. The rocking motion adds a further **69.3**
-(A − B), which is the ordinary cyclic-pitch benefit and includes any
-Coriolis contribution alongside the non-Coriolis effects. The model does
-not currently separate the two.
+**Sharp's own estimate of +10 %** is not reproduced by this model. The
+simulated Coriolis contribution is about **0.2 %**, which is consistent with
+a small second-order effect rather than a primary mechanism.
 
 ## 📈 Annual energy production
 
