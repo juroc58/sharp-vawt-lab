@@ -1,0 +1,40 @@
+{
+  "geometry": {
+    "R": 2.7179,
+    "c": 0.3861,
+    "N": 3,
+    "sigma": 0.06782779741099465
+  },
+  "wind": {
+    "mean_U": 6.0,
+    "k_weibull": 2.0,
+    "cut_in": 3.0,
+    "cut_out": 25.0,
+    "p_rated_W": 15000.0
+  },
+  "results": {
+    "passive_k_load": {
+      "aep_kWh": 17710.362101151542,
+      "cf": 0.1347820555643192,
+      "branch_jumps": []
+    },
+    "passive_fixed_rpm": {
+      "aep_kWh": 10349.812156475204,
+      "cf": 0.078765693732688
+    }
+  },
+  "gains_percent": {
+    "passive_vs_fixed_rpm": 71.1177153111066
+  },
+  "rigid_fair_ref": {
+    "source": "aep_rigid_fair.json",
+    "geometry": "sharp_inspired",
+    "psi0_deg": 10.0,
+    "k_load": 0.012,
+    "cp_design": 0.0073724739577608325,
+    "viable": false,
+    "aep_kWh": null,
+    "cf": null,
+    "gain_percent": null
+  }
+}

@@ -1,0 +1,6 @@
+# Runtime dependencies for sharp-vawt-lab.
+# For the test suite, see requirements-dev.txt.
+numpy>=1.26
+numba>=0.59
+scipy>=1.11
+matplotlib>=3.8
