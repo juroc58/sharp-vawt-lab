@@ -413,3 +413,8 @@ def main():
                 print(f"    {name:>24s}: S1 = {s1:.4f}, ST = {st:.4f}")
 
     return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
