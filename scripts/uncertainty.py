@@ -64,7 +64,6 @@ UQ_SPEC = [
     ("tip_loss_floor_override",  0.00,  1.00),    # finite-span correction floor (0=raw, >0 floors f_ar)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
     ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
-    ("cd_add",                   0.001, 0.005),   # strut/interference drag (AeroConfig)
 ]
 UQ_NAMES = [s[0] for s in UQ_SPEC]
 UQ_LOW   = np.array([s[1] for s in UQ_SPEC])
@@ -273,18 +272,14 @@ def main():
         for anchor_name, anchor_params in ANCHORS.items():
             tasks.append((anchor_name, anchor_params, uq))
 
-    # Run in parallel
+    # Run in parallel, preserving task order for Sobol compatibility
     print("  Running ...")
     results_by_anchor: Dict[str, List[float]] = {n: [] for n in ANCHOR_NAMES}
     failures: Dict[str, int] = {n: 0 for n in ANCHOR_NAMES}
     raw_rows: List[Dict[str, Any]] = []
 
     with ProcessPoolExecutor(max_workers=4) as ex:
-        futures = [ex.submit(run_one_task, t) for t in tasks]
-        done = 0
-        for fut in as_completed(futures):
-            anchor_name, res, err, uq_params = fut.result()
-            done += 1
+        for i, (anchor_name, res, err, uq_params) in enumerate(ex.map(run_one_task, tasks)):
             if res is not None:
                 results_by_anchor[anchor_name].append(res["cp"])
                 raw_rows.append({
@@ -297,8 +292,8 @@ def main():
                 })
             else:
                 failures[anchor_name] += 1
-            if done % 40 == 0:
-                print(f"    {done}/{len(tasks)} runs complete")
+            if (i + 1) % 40 == 0:
+                print(f"    {i + 1}/{len(tasks)} runs complete")
 
     # Summary
     print()
@@ -348,6 +343,10 @@ def main():
                 'names': UQ_NAMES,
                 'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
             }
+            # Debug: print problem info and Y size
+            from SALib.analyze import sobol as sobol_mod
+            _, D = sobol_mod.extract_group_names(problem)
+            print(f'  Anchor {anchor_name}: D={D}, Y.size={len(Y)}, Y.size%(D+2)={len(Y)%(D+2)}, Y.size%(2*D+2)={len(Y)%(2*D+2)}')
             Si = sobol.analyze(problem, Y, calc_second_order=False, print_to_console=False)
             sobol_results[anchor_name] = {
                 'S1': {name: float(Si['S1'][i]) for i, name in enumerate(UQ_NAMES)},
