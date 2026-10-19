@@ -636,9 +636,18 @@ maximum-power pitch schedule from first principles is not implemented. The
 prescribed-pitch optimiser searches a Fourier parametrisation instead.
 
 
-Uncertainty interactions. The LHS + Spearman study covers first-order
-monotonic sensitivities. Full Sobol indices (parameter interactions)
-are not computed.
+Uncertainty interactions. The Saltelli study (N=64, second-order) computes
+full Sobol S1/ST/S2 indices including parameter interactions. See `scripts/uncertainty_results.json` and the Uncertainty section.
+
+Model-form uncertainty. The model combines literature sources developed
+for different machines and flight regimes (MIT dynamic stall, Adams
+curvilinear flow, DMS induction, generalized Prandtl finite-span). The
+component models each have their own validation ranges, and the combined
+2D BEM prediction error from structural mismatches between them — i.e.,
+model-form uncertainty — is not separately quantified. This is the
+dominant uncertainty for absolute Cp predictions and is not captured by
+the parameter-level UQ study, which only propagates parameter ranges
+through a fixed model structure.
 
 Finite-span correction. The correction uses the generalized Prandtl form
 f_ar = 1/(1 + 1.8/(e*AR)) (k=1.8), without an arbitrary floor. The formula
