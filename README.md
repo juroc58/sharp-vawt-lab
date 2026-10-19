@@ -407,6 +407,17 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
   See `polars/README.md` for what is and is not captured.
 - **Energy ledger**: closes to within a few percent for passive runs;
   disabled in prescribed mode because the pitch actuator work is external.
+- **Pitch-moment coupling**: the blade pitching moment `Cm(α, Re)` from the
+  polar contributes a hub reaction torque `Qa = c̄·Cm·½ρU²c` that enters the
+  rotational energy balance as `Tsum += Tk − Qa`. The model retains the full
+  360° `Cm` curve from the NACA 0012 polar, including the near-zero crossing
+  at α = 90° and the negative `Cm` lobe at α ≈ 150°.
+- **Turbulence synthesis**: von Kármán spectrum with FFT-based phase
+  randomisation. Wind speed standard deviation is `σU = I · U` (turbulence
+  intensity times mean wind speed), and the spectrum integral matches the
+  target variance exactly (verified numerically). Length scale `L = 30 m`
+  is used for the AEP turbulence study; different length scales change the
+  temporal correlation but not the marginal distribution.
 
 ---
 
@@ -625,6 +636,22 @@ formula with k=2.0 over-corrects at low AR. See `vawt_core.py` and
 - Sharp, P.A. (2021). The Sharp Cycloturbine: a summary of how it works.
 - Sheldahl, R.E., Klimas, P.C. (1981). Aerodynamic characteristics of seven symmetrical airfoil sections through 180 degrees angle of attack. Sandia SAND80-2114. *(Reference for the airfoil family; the polar files in this repo are synthetic approximations, not digitised from this report.)*
 - Bayly, D., Kentfield, J. (1981). A vertical axis cyclogiro type wind-turbine with freely-hinged blades. Proc. Intersociety Energy Conversion Conference.
+
+## 📖 How to cite
+
+If you use this software, please cite it as:
+
+    @software{sharp_vawt_lab_2026,
+      author       = {juroc58},
+      title        = {sharp-vawt-lab: a 2D BEM solver for the Sharp cycloturbine},
+      version      = {3.2.0},
+      year         = {2026},
+      url          = {https://github.com/juroc58/sharp-vawt-lab},
+      license      = {MIT},
+    }
+
+A machine-readable citation is available in [`CITATION.cff`](CITATION.cff)
+(`citation-cff` / `cffconvert` can convert it to BibTeX, EndNote, etc.).
 
 ## 📜 License
 

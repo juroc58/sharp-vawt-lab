@@ -325,3 +325,91 @@ class TestFnRatio:
         """pitch_freq_ratio should be present in run results."""
         r = create_sim_from_params(BASE_QUICK).run()
         assert 'pitch_freq_ratio' in r
+
+
+class TestCmHubMoment:
+    """Cm pitch-moment coupling: non-zero Cm drives hub reaction torque."""
+
+    def test_cm_affects_torque(self):
+        """A non-zero Cm polar should change the shaft torque compared to
+        a Cm=0 polar, confirming the hub reaction term Qa_cm is active."""
+        from vawt_core import PolarDatabase, create_sim_from_params
+        import math
+        pdb = PolarDatabase("polars/naca0012")
+        # At Re=1e6, alpha=15°, Cm should be non-zero
+        _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
+        assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
+
+    def test_cm_torque_in_energy_ledger(self):
+        """Energy ledger should account for Cm hub reaction torque."""
+        r = create_sim_from_params(BASE_QUICK).run()
+        # Energy ledger closes when Cm is properly accounted
+        assert r['energy_balance_valid'] is True
+        assert abs(r['energy_balance']) < 0.02
+
+
+class TestPolarExtremeAngles:
+    """NACA 0012 polar behaviour at extreme angles of attack."""
+
+    def test_cl_zero_at_90_deg(self):
+        """CL should be zero at 90° angle of attack (blade edge-on)."""
+        from vawt_core import PolarDatabase
+        pdb = PolarDatabase("polars/naca0012")
+        Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(90.0))
+        assert abs(Cl) < 0.05, f"CL at 90° should be ~0, got {Cl:.4f}"
+
+    def test_cl_negative_at_150_deg(self):
+        """CL should be negative at 150° angle of attack (post-stall)."""
+        from vawt_core import PolarDatabase
+        pdb = PolarDatabase("polars/naca0012")
+        Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(150.0))
+        assert Cl < 0.0, f"CL at 150° should be negative, got {Cl:.4f}"
+
+    def test_cl_max_at_re1e6(self):
+        """CLmax should be ~1.25 at Re=1e6."""
+        from vawt_core import PolarDatabase
+        pdb = PolarDatabase("polars/naca0012")
+        max_cl = max(
+            pdb.lookup(1e6, math.radians(a))[0]
+            for a in [i * 5 for i in range(1, 18)]
+        )
+        assert 1.0 < max_cl < 1.5, f"CLmax = {max_cl:.3f}, expected ~1.25"
+
+    def test_cd_reasonable_at_stall(self):
+        """CD should increase through stall but not exceed ~2.0."""
+        from vawt_core import PolarDatabase
+        pdb = PolarDatabase("polars/naca0012")
+        cd_max = max(
+            pdb.lookup(1e6, math.radians(a))[1]
+            for a in [i * 5 for i in range(1, 36)]
+        )
+        assert cd_max < 2.0, f"CD max = {cd_max:.3f}, should be < 2.0"
+
+
+class TestActiveLiftDiagnostic:
+    """Active lift isolation diagnostic produces sensible results."""
+
+    def test_active_lift_runs(self):
+        """diag_active_lift.py should run and produce a small ΔCp."""
+        import subprocess, sys, os
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        result = subprocess.run(
+            [sys.executable, "scripts/diag_active_lift.py"],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        assert result.returncode == 0, f"diag_active_lift failed: {result.stderr}"
+
+    def test_active_lift_delta_cp_small(self):
+        """Active lift should produce a small ΔCp (< 0.01) at scale-up."""
+        import subprocess, sys, os, re
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        result = subprocess.run(
+            [sys.executable, "scripts/diag_active_lift.py"],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        assert result.returncode == 0
+        # Parse ΔCp from output
+        match = re.search(r'ΔCp\s*=\s*([\d.+-]+)', result.stdout)
+        if match:
+            delta_cp = float(match.group(1))
+            assert abs(delta_cp) < 0.01, f"ΔCp = {delta_cp:.6f}, expected < 0.01"

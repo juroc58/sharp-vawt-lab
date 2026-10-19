@@ -12,18 +12,20 @@ Outputs
 * Terminal table: Cp mean, median, 5 %, 95 % per anchor
 * docs/uncertainty.png: histogram per anchor
 * scripts/uncertainty_results.json: raw samples + Cp values (+ Sobol indices if Saltelli used)
+* .uq_cache/: disk cache of completed runs (resume on interruption)
 
 Runtime: ~5 min on 4 cores (LHS) or ~40 min on 4 cores (Saltelli, N=1024).
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
 import sys
 import warnings
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -71,6 +73,41 @@ UQ_HIGH  = np.array([s[2] for s in UQ_SPEC])
 
 N_SAMPLES = 40
 SEED = 42
+
+# Disk cache for UQ runs (interrupt-safe resume)
+CACHE_DIR = ".uq_cache"
+
+
+def _cache_key(anchor_name: str, anchor_params: dict, uq_params: dict) -> str:
+    """Stable SHA-256-based key for a (anchor, params) task."""
+    key = {
+        "anchor": anchor_name,
+        "anchor_params": {k: float(v) for k, v in anchor_params.items()},
+        "uq_params": {k: float(v) for k, v in uq_params.items()},
+    }
+    return hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def _cache_path(key: str) -> str:
+    return os.path.join(CACHE_DIR, f"{key}.json")
+
+
+def _load_from_cache(key: str) -> Optional[dict]:
+    path = _cache_path(key)
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return None
+    return None
+
+
+def _save_to_cache(key: str, result: dict) -> None:
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    path = _cache_path(key)
+    with open(path, "w") as f:
+        json.dump(result, f)
 
 
 # ============================================================================
@@ -184,18 +221,25 @@ def sample_to_params_saltelli(unit_row: np.ndarray) -> Dict[str, float]:
 def run_one_task(args):
     """Standalone top-level function for pickling."""
     anchor_name, anchor_params, uq_params = args
+    key = _cache_key(anchor_name, anchor_params, uq_params)
+
+    # Check disk cache first (interrupt-safe resume)
+    cached = _load_from_cache(key)
+    if cached is not None:
+        return (anchor_name, cached, None, uq_params)
+
     try:
         params = {**anchor_params, **uq_params}
         r = create_sim_from_params(params).run()
         cp = float(r["cp"])
         if not np.isfinite(cp) or cp <= 0.0:
             return (anchor_name, None, "non-positive Cp", uq_params)
-        return (anchor_name,
-                dict(cp=cp,
-                     tsr=float(r["tsr_eq"]),
-                     aoa_max=float(r["aoa_max"]),
-                     steady=bool(r.get("steady", True))),
-                None, uq_params)
+        result = dict(cp=cp,
+                      tsr=float(r["tsr_eq"]),
+                      aoa_max=float(r["aoa_max"]),
+                      steady=bool(r.get("steady", True)))
+        _save_to_cache(key, result)
+        return (anchor_name, result, None, uq_params)
     except Exception as e:
         return (anchor_name, None, str(e)[:80], uq_params)
 
