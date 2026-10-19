@@ -22,11 +22,11 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.41** | [0.41, 0.42] | ~71 % of Betz |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.41** | [0.40, 0.42] | ~71 % of Betz |
 | **Sharp-inspired CPPC** | **0.13** | [0.10, 0.19] | — |
-| Optimised passive (mass-balanced) | **0.28** | [0.24, 0.32] | — |
+| Optimised passive (mass-balanced) | **0.27** | [0.20, 0.32] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
-| Ham 1979 reproduction | **0.47** | [0.47, 0.48] | matches Ham's method |
+| Ham 1979 reproduction | **0.47** | [0.46, 0.47] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
 
 The confidence intervals come from Saltelli sampling over twelve
