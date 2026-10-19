@@ -430,7 +430,7 @@ class MassProps:
 
 @dataclass(frozen=True)
 class AeroConfig:
-    polar_dir: str = "polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
+    polar_dir: str = "airfoil_polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
     use_dynamic_stall: bool = True
     use_tip_loss: bool = True           # finite-span correction (lift slope + induced drag)
     use_dmst: bool = True
@@ -526,7 +526,7 @@ class PolarDatabase:
             # reproducibility hazard.  If the caller passed a non-empty
             # polar_dir and we found no CSVs, warn loudly.  This
             # distinguishes deliberate surrogate use (polar_dir="") from
-            # a missing-data mistake (polar_dir="polars/naca0012" but the
+            # a missing-data mistake (polar_dir="airfoil_polars/naca0012" but the
             # files are gone).
             if polar_dir:
                 warnings.warn(

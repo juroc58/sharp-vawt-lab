@@ -301,7 +301,7 @@ integral produce a mean power above the power at the mean wind speed:
    convex range and `E[Cp(U)] > Cp(E[U])`. Another ~1 %.
 
 Both effects are captured by the model because it uses polars
-across four Reynolds numbers (synthetic — see `polars/README.md`).
+across four Reynolds numbers (synthetic — see `airfoil_polars/README.md`).
 
 ### Caveat
 
@@ -422,7 +422,7 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
   (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶) from Abbott & SAND80-2114 data,
   with realistic stall progression, Cm from Abbott measurements, and proper
   360° coverage. Bilinear interpolation in (log Re, α).
-  See `polars/README.md` for what is and is not captured.
+  See `airfoil_polars/README.md` for what is and is not captured.
 - **Energy ledger**: closes to within a few percent for passive runs;
   disabled in prescribed mode because the pitch actuator work is external.
 - **Pitch-moment coupling**: the blade pitching moment `Cm(α, Re)` from the
@@ -568,7 +568,7 @@ parameter mismatches surface immediately.
 sharp-vawt-lab/
 |-- vawt_core.py                 # physics engine (single source of truth)
 |-- pyproject.toml               # packaging + pytest config
-|-- polars/naca0012/             # synthetic NACA 0012 polars; see polars/README.md
+|-- airfoil_polars/naca0012/             # synthetic NACA 0012 polars; see airfoil_polars/README.md
 |-- scripts/
 |   |-- build_readme.py          # regenerate README numeric blocks
 |   |-- validate_ham.py          # Ham 1979 benchmark
@@ -628,7 +628,7 @@ Pitching moment (Cm ≠ 0). The polar tables now include Cm from Abbott &
 SAND80-2114 data. The passive CPPC mechanism relies on the centre-of-pressure
 shift in stall, which in reality is driven by the pitching moment
 coefficient Cm. The model now uses real Cm data that moves the centre of
-pressure realistically through stall. See `polars/README.md` for full
+pressure realistically through stall. See `airfoil_polars/README.md` for full
 discussion and data provenance.
 
 Flux-line optimal pitch. Adams's inverse method for computing the

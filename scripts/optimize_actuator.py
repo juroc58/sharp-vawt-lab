@@ -63,7 +63,7 @@ DEFAULT_BASE: Dict[str, Any] = {
     "mb": 0.010, "xbcg": 0.20, "mc": 0.008, "dcw": 0.50,
     "balance": 0, "bias_deg": 0.0, "J_hub": 0.02,
     # --- polar / aero switches -------------------------------------------
-    "polar_dir": "polars/naca0012",
+    "polar_dir": "airfoil_polars/naca0012",
     "use_dynamic_stall": True, "use_tip_loss": False,
     "use_dmst": True, "use_dynamic_inflow": True,
     "use_flow_curvature": True,

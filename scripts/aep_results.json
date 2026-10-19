@@ -29,9 +29,9 @@
   "rigid_fair_ref": {
     "source": "aep_rigid_fair.json",
     "geometry": "sharp_inspired",
-    "psi0_deg": 10.0,
+    "psi0_deg": 5.0,
     "k_load": 0.012,
-    "cp_design": 0.0073724739577608325,
+    "cp_design": 0.005342390019330273,
     "viable": false,
     "aep_kWh": null,
     "cf": null,

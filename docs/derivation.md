@@ -171,7 +171,7 @@ The database is a set of **synthetic** NACA 0012 tables approximating the
 Sheldahl & Klimas (1981) report SAND80-2114, generated for four Reynolds
 numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
 $\alpha \in [-180°, 180°]$. They are not digitised from the report; see
-`polars/README.md` for exactly what the surrogate does and does not
+`airfoil_polars/README.md` for exactly what the surrogate does and does not
 capture (in particular, Cm is non-zero and comes from Abbott & von
 Doenhoff data).
 
@@ -629,9 +629,19 @@ limitations in the README:
 5. **No stall-cell effects.** At low aspect ratio, stall cells can
    occupy part of the span, reducing effective lift further. Not modelled.
 
-6. **Simple atmospheric turbulence.** The `turb_I` implementation is a
-   first-order AR(1) process with a single length scale, not a full
-   Dryden or von Kármán spectrum.
+6. **Simple atmospheric turbulence.** The `turb_I` implementation uses a
+   von Kármán spectrum with FFT-based phase randomisation. The marginal
+   distribution matches $I \times U$ (verified numerically), but the
+   temporal correlation uses a single length scale $L=30$ m, not a full
+   Dryden spectrum with spatially varying length scale.
+
+7. **Model-form uncertainty.** The model combines several literature
+   sources (MIT dynamic stall, Adams curvilinear flow, DMS induction,
+   generalized Prandtl finite-span) that were developed for different
+   machines and flight regimes. The model-form error — how much the
+   combined 2D BEM prediction deviates from reality due to structural
+   mismatches between the component models — is not quantified. This is
+   the dominant uncertainty for absolute Cp predictions.
 
 Additional known-good behaviours:
 
@@ -666,3 +676,13 @@ Additional known-good behaviours:
   Darrieus rotor.* J. Energy 6(6).
 - Leishman, J.G. (2002). *Principles of Helicopter Aerodynamics.*
   Cambridge University Press.
+- Selig, M.S., Ananda, G.K., Su, W.J. (2015). *Measured aerodynamic
+  characteristics of wings at low Reynolds numbers.* Aerospace Science
+  and Technology 45: 388-404. (AR 2-5 rectangular wings; Oswald efficiency
+  factors 0.3-0.8 measured — relevant for pinning finite-span floor values.)
+- Ananda, G.K., Selig, M.S. (2012). *Low-to-Moderate Aspect Ratio Wings
+  Tested at Low Reynolds Numbers.* AIAA 2012-3026. (Experimental data for
+  low-AR wings, including lift curve slope and induced drag.)
+- von Kármán, T. (1941). *The theory of small aspect ratio wings.*
+  Presented at 5th Volta Conference, Rome. (Theoretical foundation for
+  finite-span corrections at AR < 5.)

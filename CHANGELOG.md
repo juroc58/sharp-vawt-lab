@@ -70,10 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - **README.md**: Regenerated with inline GEN markers for 30+ numeric values.
 - **scripts/README.md**: Updated design point table with ar=0.797 pinned on upper bound note.
-- **polars/README.md**: Updated to clarify synthetic nature of current polars.
+- **airfoil_polars/README.md**: Updated to clarify synthetic nature of current polars.
 - **docs/finite_span_validation.png**: New validation plot comparing finite-span corrections.
 - **scripts/README.md**: Added scale-up design point to design point table.
-- **polars/README.md**: Updated to document Cm values from Abbott & von Doenhoff data.
+- **airfoil_polars/README.md**: Updated to document Cm values from Abbott & von Doenhoff data.
 
 ## [3.1.0] - 2026-10-11
 

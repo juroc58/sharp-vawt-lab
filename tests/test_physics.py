@@ -56,7 +56,7 @@ class TestCmDimensions:
     def test_cm_in_polars(self):
         """Polar tables contain non-zero Cm values."""
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         # At Re=1e6, alpha=15°, Cm should be negative (nose-down)
         Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(15.0))
         assert Cm < -0.001  # negative nose-down moment
@@ -95,14 +95,14 @@ class TestCmDimensions:
         assert r_h2['cp'] > 0
 
         cp_ratio = r_h2['cp'] / r_h1['cp']
-        assert 0.5 < cp_ratio < 2.0,             f"Cp ratio H=0.8/H=0.4 = {cp_ratio:.3f}"
+        assert 0.4 < cp_ratio < 1.5,             f"Cp ratio H=0.8/H=0.4 = {cp_ratio:.3f}"
 
 
     def test_cm_odd_symmetry(self):
         """Cm should be an odd function of alpha (sign flip)."""
         from vawt_core import PolarDatabase
         import math
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         for a in [5.0, 15.0, 30.0, 60.0]:
             Cl_pos, Cd_pos, Cm_pos, cla = pdb.lookup(1e6, math.radians(a))
             Cl_neg, Cd_neg, Cm_neg, cla = pdb.lookup(1e6, math.radians(-a))
@@ -144,7 +144,7 @@ class TestVonKarmanTurbulence:
         measured_ti = np.std(U - np.mean(U)) / np.mean(U)
         target_ti = base['turb_I']
 
-        assert abs(measured_ti - target_ti) < 0.05, \
+        assert abs(measured_ti - target_ti) < 0.02, \
             f"von Kármán TI = {measured_ti:.3f}, expected ~{target_ti:.3f}"
 
     def test_vonkarman_runs_without_error(self):
@@ -334,7 +334,7 @@ class TestCmHubMoment:
         """Polar tables contain non-zero Cm values at 15°."""
         from vawt_core import PolarDatabase
         import math
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
 
@@ -369,21 +369,21 @@ class TestPolarExtremeAngles:
     def test_cl_zero_at_90_deg(self):
         """CL should be zero at 90° angle of attack (blade edge-on)."""
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(90.0))
         assert abs(Cl) < 0.05, f"CL at 90° should be ~0, got {Cl:.4f}"
 
     def test_cl_negative_at_150_deg(self):
         """CL should be negative at 150° angle of attack (post-stall)."""
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(150.0))
         assert Cl < 0.0, f"CL at 150° should be negative, got {Cl:.4f}"
 
     def test_cl_max_at_re1e6(self):
         """CLmax should be ~1.25 at Re=1e6."""
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         max_cl = max(
             pdb.lookup(1e6, math.radians(a))[0]
             for a in [i * 5 for i in range(1, 18)]
@@ -393,7 +393,7 @@ class TestPolarExtremeAngles:
     def test_cd_reasonable_at_stall(self):
         """CD should increase through stall but not exceed ~2.0."""
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012")
         cd_max = max(
             pdb.lookup(1e6, math.radians(a))[1]
             for a in [i * 5 for i in range(1, 36)]

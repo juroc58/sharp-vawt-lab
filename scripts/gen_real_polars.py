@@ -130,7 +130,7 @@ def generate_polar_file(Re, output_dir):
 
 
 def main():
-    output_dir = "/home/duer3rw01f/Documents/sharp_proj/polars/naca0012"
+    output_dir = "/home/duer3rw01f/Documents/sharp_proj/airfoil_polars/naca0012"
     
     # Reynolds numbers from SAND80-2114
     Re_list = [100000, 200000, 400000, 1000000]

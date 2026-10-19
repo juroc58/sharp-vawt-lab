@@ -89,7 +89,7 @@ CUT_IN = 3.0         # m/s, cut-in wind speed
 CUT_OUT = 25.0       # m/s, cut-out wind speed
 RHO = 1.225          # kg/m^3, air density
 HOURS_YEAR = 8760.0  # hours/year
-P_RATED_W = 15000.0    # W, rated power for scale-up (area ~46x R=0.6)
+P_RATED_W = 90000.0    # W, rated power for scale-up rotor (≈90 kW, based on peak power at U=12 m/s)
 ETA_DRIVETRAIN = 0.90 # drivetrain efficiency
 
 # Counter-rotating specific parameters

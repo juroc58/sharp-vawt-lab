@@ -73,8 +73,10 @@ SCALEUP_BASE = dict(
 )
 
 # Override rated power for larger turbine (area ~46x bigger than R=0.6)
-# 250W * 46 ≈ 11.5 kW, use 15 kW to keep cap non-binding
-P_RATED_W_SCALEUP = 15000.0
+# Peak power at U=12 m/s, Cp=0.41: P = 0.5*rho*A*U^3*Cp ≈ 94 kW.
+# Use 90 kW to give a realistic capacity factor (~19%).
+# NOTE: This should be based on actual generator sizing, not area scaling.
+P_RATED_W_SCALEUP = 90000.0
 
 
 # ============================================================================

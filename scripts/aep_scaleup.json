@@ -11,19 +11,19 @@
     "k_weibull": 2.0,
     "cut_in": 3.0,
     "cut_out": 25.0,
-    "p_rated_W": 15000.0
+    "p_rated_W": 90000.0
   },
   "results": {
     "passive_k_load": {
-      "aep_MWh": 18.297526235118557,
-      "cf": 0.1392505801759403
+      "aep_MWh": 15.167005483861123,
+      "cf": 0.019237703556394117
     },
     "passive_fixed_rpm": {
-      "aep_MWh": 11.251715054026482,
-      "cf": 0.08562949051770534
+      "aep_MWh": 10.244906886710952,
+      "cf": 0.012994554650825663
     }
   },
   "gains_percent": {
-    "passive_vs_fixed_rpm": 62.61988636630731
+    "passive_vs_fixed_rpm": 48.04434683086096
   }
 }
