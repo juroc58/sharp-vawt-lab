@@ -218,12 +218,20 @@ def main():
         type=int,
         default=None,
         help="Base N for Saltelli sampling (default: use N_SAMPLES). "
-             "Total runs = N * (D + 2) where D is number of parameters.",
+             "Total runs = N * (D + 2) per anchor (first-order) "
+             "or N * (2D + 2) per anchor (second-order).",
+    )
+    parser.add_argument(
+        "--saltelli-second-order",
+        action="store_true",
+        help="Compute second-order Sobol indices. Requires N * (2D + 2) "
+             "samples per anchor instead of N * (D + 2).",
     )
     args = parser.parse_args()
 
     use_saltelli = args.saltelli
     saltelli_n = args.saltelli_n if args.saltelli_n is not None else N_SAMPLES
+    calc_second_order = args.saltelli_second_order
 
     print("=" * 74)
     print("Uncertainty quantification — Sharp cycloturbine model")
@@ -234,14 +242,15 @@ def main():
             print("ERROR: SALib not installed. Install with: pip install SALib")
             return 1
         D = len(UQ_SPEC)
-        total_runs = saltelli_n * (len(UQ_SPEC) + 2)
-        print(f"  Saltelli sampling: N={saltelli_n}, D={len(UQ_SPEC)}")
+        samples_per_anchor = saltelli_n * (2 * D + 2 if calc_second_order else D + 2)
+        total_runs = samples_per_anchor
+        print(f"  Saltelli sampling: N={saltelli_n}, D={D}, second_order={calc_second_order}")
         print(f"  Total runs per anchor: {total_runs}")
     else:
         print(f"  Samples per anchor : {N_SAMPLES}")
     print(f"  Anchors            : {len(ANCHORS)}")
     if use_saltelli:
-        print(f"  Total runs         : {saltelli_n * (len(UQ_SPEC) + 2) * len(ANCHORS)}")
+        print(f"  Total runs         : {samples_per_anchor * len(ANCHORS)}")
     else:
         print(f"  Total runs         : {N_SAMPLES * len(ANCHORS)}")
     print()
@@ -258,7 +267,7 @@ def main():
             'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
         }
         # Saltelli sampling
-        unit = saltelli.sample(problem, saltelli_n, calc_second_order=False)
+        unit = saltelli.sample(problem, saltelli_n, calc_second_order=calc_second_order)
         samples = [sample_to_params_saltelli(row) for row in unit]
         print(f"  Generated {len(samples)} Saltelli samples")
     else:
@@ -343,11 +352,7 @@ def main():
                 'names': UQ_NAMES,
                 'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
             }
-            # Debug: print problem info and Y size
-            from SALib.analyze import sobol as sobol_mod
-            _, D = sobol_mod.extract_group_names(problem)
-            print(f'  Anchor {anchor_name}: D={D}, Y.size={len(Y)}, Y.size%(D+2)={len(Y)%(D+2)}, Y.size%(2*D+2)={len(Y)%(2*D+2)}')
-            Si = sobol.analyze(problem, Y, calc_second_order=False, print_to_console=False)
+            Si = sobol.analyze(problem, Y, calc_second_order=calc_second_order, print_to_console=False)
             sobol_results[anchor_name] = {
                 'S1': {name: float(Si['S1'][i]) for i, name in enumerate(UQ_NAMES)},
                 'ST': {name: float(Si['ST'][i]) for i, name in enumerate(UQ_NAMES)},
