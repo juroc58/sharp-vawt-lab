@@ -9,6 +9,16 @@ Lagrangian coupling between rotor and pitch dynamics.
 The project ships one physics core and a set of validation scripts. Every
 number in this README is reproducible from the scripts in `scripts/`.
 
+**Independent cross-check.** This solver is independently cross-validated by
+[`juroc58/sharp-fsi`](https://github.com/juroc58/sharp-fsi) — a from-scratch 2-D
+discrete-vortex + fluid-structure-interaction code for the same blade section,
+sharing this project's geometry, mass properties and pitch equation but none of
+its numerics. In matched potential flow the two independent codes reproduce each
+other's pitch and incidence histories to a few degrees (circulation budget to
+1e-13), and with the 2-D stall layer active the stalled-cycle rotor torque agrees
+to 5–13 % against the best-matched of this project's four aero models. The
+remaining differences are diagnosed in that repository's `COMPARISON_REPORT.md`.
+
 ![validation](docs/validation.png)
 
 ![ham curve](docs/ham_curve.png)
@@ -17,17 +27,24 @@ number in this README is reproducible from the scripts in `scripts/`.
 
 ## 🏆 Headline results
 
-At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
+### Small-rotor regime (R = 0.60 m, Re ≈ 1.4 × 10⁵, σ ≈ 0.11)
 
-<!-- BEGIN GENERATED: headline_table -->
+<!-- BEGIN GENERATED: headline_table_small -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.41** | [0.40, 0.42] | ~71 % of Betz |
 | **Sharp-inspired CPPC** | **0.13** | [0.10, 0.19] | — |
 | Optimised passive (mass-balanced) | **0.27** | [0.20, 0.32] | — |
-| Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
-| Ham 1979 reproduction | **0.47** | [0.46, 0.47] | matches Ham's method |
-<!-- END GENERATED: headline_table -->
+| Prescribed pitch (ideal actuator) | 0.48 | — | upper bound |
+| Ham 1979 reproduction | **0.47** | [0.46, 0.47] | UQ mean matches deterministic run |
+<!-- END GENERATED: headline_table_small -->
+
+### Scale-up regime (R = 2.72 m, Re ≈ 5.1 × 10⁵)
+
+<!-- BEGIN GENERATED: headline_table_large -->
+| Configuration | Cp | 90 % CI | Reference |
+|---|---|---|---|
+| **Scaled-up passive (R = 2.72 m)** | **0.41** | [0.40, 0.42] | ~69 % of Betz |
+<!-- END GENERATED: headline_table_large -->
 
 The confidence intervals come from Saltelli sampling over eleven
 uncalibrated model constants (`scripts/uncertainty.py`). All Sharp-machine
@@ -419,8 +436,8 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
   blade unit's CG position relative to the pitch pivot.
 - **Pitch law** (prescribed mode): `ψ(φ) = pp0 + pp1·cos(φ + ph) + pp2·cos 2(φ + ph) + pp3·sin 2(φ + ph)` with `ph` = `pp_ph_deg`. There is no sin φ term and no fourth harmonic.
 - **Polars**: NACA 0012 tables at four Reynolds numbers
-  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶) from Abbott & SAND80-2114 data,
-  with realistic stall progression, Cm from Abbott measurements, and proper
+  (1×10⁵, 2×10⁵, 4×10⁵, 1×10⁶) based on Abbott & SAND80-2114 data trends,
+  with realistic stall progression, representative Cm values, and proper
   360° coverage. Bilinear interpolation in (log Re, α).
   See `airfoil_polars/README.md` for what is and is not captured.
 - **Energy ledger**: closes to within a few percent for passive runs;
@@ -624,12 +641,12 @@ sharp-vawt-lab/
     bellcrank geometry of Sharp's later machines is not modelled
     separately.
 
-Pitching moment (Cm ≠ 0). The polar tables now include Cm from Abbott &
-SAND80-2114 data. The passive CPPC mechanism relies on the centre-of-pressure
-shift in stall, which in reality is driven by the pitching moment
-coefficient Cm. The model now uses real Cm data that moves the centre of
-pressure realistically through stall. See `airfoil_polars/README.md` for full
-discussion and data provenance.
+Pitching moment (Cm ≠ 0). The polar tables now include Cm values derived
+from Abbott & SAND80-2114 trends. The passive CPPC mechanism relies on
+the centre-of-pressure shift in stall, which in reality is driven by the
+pitching moment coefficient Cm. The model now uses Cm data that moves the
+centre of pressure realistically through stall. See `airfoil_polars/README.md`
+for full discussion and data provenance.
 
 Flux-line optimal pitch. Adams's inverse method for computing the
 maximum-power pitch schedule from first principles is not implemented. The
@@ -652,7 +669,7 @@ through a fixed model structure.
 Finite-span correction. The correction uses the generalized Prandtl form
 f_ar = 1/(1 + 1.8/(e*AR)) (k=1.8), without an arbitrary floor. The formula
 is an empirical fit to low-AR wind-turbine data. The classical Prandtl
-formula with k=2.0 over-corrects at low AR. See `vawt_core.py` and
+formula with k=2.0 under-corrects at low AR. See `vawt_core.py` and
 `scripts/validate_finite_span.py` for details.
 
 ## 📄 References

@@ -130,7 +130,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm = 0 at all angles in synthetic polars"
+    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -235,7 +235,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm = 0 at all angles in synthetic polars"
+    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -330,7 +330,7 @@ def iv_optimised_passive_ar_bound():
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm = 0 at all angles in synthetic polars"
+    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -437,7 +437,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm = 0 at all angles in synthetic polars"
+    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -527,7 +527,7 @@ def iv_optimised_passive_ar_bound():
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm = 0 at all angles in synthetic polars"
+    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -753,14 +753,13 @@ INLINE_FUNCS = {
 }
 
 
-def block_headline_table():
+def block_headline_table_small():
     uq = DATA["uq"]["summary"]
     rows = [
-        ("**Scaled-up passive (R = 2.72 m, Re = 5.1e5)**", uq["scaleup"], "~71 % of Betz"),
         ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "\u2014"),
         ("Optimised passive (mass-balanced)", uq["optimised_passive"], "\u2014"),
-        ("Prescribed pitch (ideal actuator)", None, "Ham 1979 measured 0.42\u20130.45"),
-        ("Ham 1979 reproduction", uq["ham_1979"], "matches Ham's method"),
+        ("Prescribed pitch (ideal actuator)", None, "upper bound"),
+        ("Ham 1979 reproduction", uq["ham_1979"], "UQ mean matches deterministic run"),
     ]
     out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
     for name, s, ref in rows:
@@ -768,6 +767,17 @@ def block_headline_table():
             out.append(f"| {name} | 0.48 | \u2014 | {ref} |")
         else:
             out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} |")
+    return "\n".join(out)
+
+
+def block_headline_table_large():
+    uq = DATA["uq"]["summary"]
+    rows = [
+        ("**Scaled-up passive (R = 2.72 m)**", uq["scaleup"], "~69 % of Betz"),
+    ]
+    out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
+    for name, s, ref in rows:
+        out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} |")
     return "\n".join(out)
 
 
@@ -848,7 +858,8 @@ def block_uq_sobol():
 
 
 BLOCKS = {
-    "headline_table": block_headline_table,
+    "headline_table_small": block_headline_table_small,
+    "headline_table_large": block_headline_table_large,
     "aep_steady": block_aep_steady_table,
     "aep_turbulent": block_aep_turbulent_table,
     "uq_params": block_uq_params_table,

@@ -178,7 +178,7 @@ def verify_polar(Re, alpha_deg):
 
 
 def main():
-    output_dir = "/home/duer3rw01f/Documents/sharp_proj/airfoil_polars/naca0012"
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "airfoil_polars", "naca0012")
     
     # Backup original files first
     import shutil

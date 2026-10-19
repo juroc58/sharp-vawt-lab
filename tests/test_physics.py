@@ -95,6 +95,9 @@ class TestCmDimensions:
         assert r_h2['cp'] > 0
 
         cp_ratio = r_h2['cp'] / r_h1['cp']
+        # H affects many aero terms beyond Cm torque (dynamic pressure q = 0.5*rho*W^2*c*H,
+        # Reynolds number, induction), so Cp is not strictly H-independent.
+        # Bound [0.4, 1.5] catches gross errors while allowing realistic variation.
         assert 0.4 < cp_ratio < 1.5,             f"Cp ratio H=0.8/H=0.4 = {cp_ratio:.3f}"
 
 
@@ -338,22 +341,36 @@ class TestCmHubMoment:
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
 
-    def test_cm_changes_shaft_torque(self):
-        """A non-zero Cm polar must change the shaft torque compared to a
-        Cm=0 surrogate polar, confirming the hub reaction term Qa_cm is active."""
-        params = {
-            **BASE_QUICK,
-            'T_max': 15.0, 'stride': 5,
-        }
-        r_with_cm = create_sim_from_params(params).run()
-        r_without_cm = create_sim_from_params({**params, 'polar_dir': ''}).run()
-
-        # Cm torque Qa_cm = q * Cm * c directly subtracts from shaft torque
-        # (Tsum += Tk - Qa_cm), so Cp must differ when Cm is present vs absent.
-        # The surrogate also has different Cl/Cd, but Cm's sign-reversing
-        # contribution should produce a measurable difference.
-        assert abs(r_with_cm['cp'] - r_without_cm['cp']) > 0.01, \
-            f"Cm should change Cp: with={r_with_cm['cp']:.4f}, without={r_without_cm['cp']:.4f}"
+    def test_cm_sign_test_locked_blade(self):
+        """Three-value locked-blade Cm sign test.
+        
+        Locked blades (free=False, prescribe_pitch=True) with constant Cm values:
+        +0.1 (nose-down) should give lowest Cp, -0.1 (nose-up) should give highest.
+        This catches sign errors in Qa_cm = q * Cm * c hub reaction torque.
+        
+        Measured on current machine: Cm=+0.1→Cp≈0.205, Cm=0→Cp≈0.257,
+        Cm=-0.1→Cp≈0.309. Positive Cm reduces shaft torque, negative Cm increases it.
+        """
+        from vawt_core import create_sim_from_params
+        
+        base = dict(BASE_QUICK, free=False, prescribe_pitch=True, T_max=10.0, stride=5)
+        
+        sim = create_sim_from_params(base)
+        pdb = sim.polar_db
+        
+        cps = []
+        for cm_val in [0.1, 0.0, -0.1]:
+            pdb.Cm[:] = cm_val  # Constant Cm across all Re/alpha
+            r = sim.run()
+            cps.append(r['cp'])
+        
+        # Positive Cm (nose-down pitching moment) reduces shaft torque → lowest Cp
+        # Negative Cm (nose-up pitching moment) increases shaft torque → highest Cp
+        assert cps[0] < cps[1] < cps[2], \
+            f"Cp ordering wrong: Cm=+0.1→{cps[0]:.4f}, Cm=0→{cps[1]:.4f}, Cm=-0.1→{cps[2]:.4f}"
+        # Cm=0 case should be between the two signed cases (sanity check on range)
+        assert cps[2] - cps[0] > 0.05, \
+            f"Cm effect too small: ΔCp = {cps[2]-cps[0]:.4f}, expected > 0.05"
 
     def test_cm_torque_in_energy_ledger(self):
         """Energy ledger should account for Cm hub reaction torque."""
@@ -374,11 +391,17 @@ class TestPolarExtremeAngles:
         assert abs(Cl) < 0.05, f"CL at 90° should be ~0, got {Cl:.4f}"
 
     def test_cl_negative_at_150_deg(self):
-        """CL should be negative at 150° angle of attack (post-stall)."""
+        """CL should be clearly negative at 150° angle of attack (post-stall).
+        
+        Note: Current synthetic polars give ≈ -0.06 at Re=1e6; physical
+        data (Abbott & von Doenhoff) suggests ≈ -0.4 to -0.6. The test
+        bound (-0.02) catches sign errors but cannot validate magnitude
+        until real polar data replaces the synthetic tables.
+        """
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
         Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(150.0))
-        assert Cl < 0.0, f"CL at 150° should be negative, got {Cl:.4f}"
+        assert Cl < -0.02, f"CL at 150° should be clearly negative, got {Cl:.4f}"
 
     def test_cl_max_at_re1e6(self):
         """CLmax should be ~1.25 at Re=1e6."""
@@ -388,17 +411,17 @@ class TestPolarExtremeAngles:
             pdb.lookup(1e6, math.radians(a))[0]
             for a in [i * 5 for i in range(1, 18)]
         )
-        assert 1.0 < max_cl < 1.5, f"CLmax = {max_cl:.3f}, expected ~1.25"
+        assert 1.15 < max_cl < 1.35, f"CLmax = {max_cl:.3f}, expected ~1.25"
 
     def test_cd_reasonable_at_stall(self):
-        """CD should increase through stall but not exceed ~2.0."""
+        """CD should increase through stall but stay below ~1.6."""
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
         cd_max = max(
             pdb.lookup(1e6, math.radians(a))[1]
             for a in [i * 5 for i in range(1, 36)]
         )
-        assert cd_max < 2.0, f"CD max = {cd_max:.3f}, should be < 2.0"
+        assert cd_max < 1.7, f"CD max = {cd_max:.3f}, should be < 1.7"
 
 
 class TestActiveLiftDiagnostic:

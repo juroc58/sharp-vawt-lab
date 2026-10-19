@@ -647,7 +647,7 @@ class CycloturbineSim:
         AR = geo.H / geo.c
         self.AR = AR
         # Finite-span corrections (generalized Prandtl, k=1.8).
-        # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) over-corrects
+        # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) under-corrects
         # at low aspect ratio because it assumes an elliptical lift distribution
         # and neglects wake rollup.  An empirical factor k=1.8 (vs 2.0) matches
         # wind-tunnel data for wind-turbine blades down to AR ≈ 3.

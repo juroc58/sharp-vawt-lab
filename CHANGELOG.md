@@ -16,12 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **optimised_passive anchor**: Updated to optimiser output (c=0.0701, ar=0.2604, dcw=-0.1909, mc=0.0252, Cp=0.308) from `scripts/optimization_passive.json`.
-- **UQ parameter count**: 11 parameters (removed duplicate `cd_add` from `UQ_SPEC`).
-- **Saltelli N**: Default first-order N=64 (1536 runs/anchor); second-order N=64 also supported.
+- **UQ parameter count**: 11 parameters (removed duplicate `cd_add` from `UQ_SPEC`; SALib deduplicates names, so the duplicate had inflated D from 11 to 12).
+- **Saltelli N**: Default first-order N=64 (832 runs/anchor with 11 parameters); second-order N=64 (1536 runs/anchor) also supported.
 - **README prose**: Rewrote Uncertainty section with honest tip-loss-floor scenario framing; updated all stale numeric claims.
 
 ### Fixed
-- **Duplicate `cd_add`**: Removed from `UQ_SPEC` which was causing SALib to see D=11 instead of D=12.
+- **Duplicate `cd_add`**: Removed from `UQ_SPEC`; SALib deduplicates parameter names, so the duplicate had caused D to be counted as 12 instead of 11.
 - **Saltelli sample order**: `ex.map()` replaces `as_completed()` to preserve Saltelli sample ordering for Sobol analysis.
 - **`__main__` guard**: Added `if __name__ == "__main__"` block to `scripts/uncertainty.py`.
 - **Cm test misnamed**: `test_cm_affects_torque` now actually verifies Cm changes shaft torque (not just table lookup).

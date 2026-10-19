@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sharp-vawt-lab"
-version = "3.2.0"
+version = "3.3.0"
 description = "2D BEM solver for the Sharp cycloturbine (passive variable-pitch VAWT with centrifugal-pendulum pitch control)"
 readme = "README.md"
 license = { text = "MIT" }
