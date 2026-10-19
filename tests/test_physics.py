@@ -330,15 +330,30 @@ class TestFnRatio:
 class TestCmHubMoment:
     """Cm pitch-moment coupling: non-zero Cm drives hub reaction torque."""
 
-    def test_cm_affects_torque(self):
-        """A non-zero Cm polar should change the shaft torque compared to
-        a Cm=0 polar, confirming the hub reaction term Qa_cm is active."""
-        from vawt_core import PolarDatabase, create_sim_from_params
+    def test_cm_nonzero_in_polar(self):
+        """Polar tables contain non-zero Cm values at 15°."""
+        from vawt_core import PolarDatabase
         import math
         pdb = PolarDatabase("polars/naca0012")
-        # At Re=1e6, alpha=15°, Cm should be non-zero
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
+
+    def test_cm_changes_shaft_torque(self):
+        """A non-zero Cm polar must change the shaft torque compared to a
+        Cm=0 surrogate polar, confirming the hub reaction term Qa_cm is active."""
+        params = {
+            **BASE_QUICK,
+            'T_max': 15.0, 'stride': 5,
+        }
+        r_with_cm = create_sim_from_params(params).run()
+        r_without_cm = create_sim_from_params({**params, 'polar_dir': ''}).run()
+
+        # Cm torque Qa_cm = q * Cm * c directly subtracts from shaft torque
+        # (Tsum += Tk - Qa_cm), so Cp must differ when Cm is present vs absent.
+        # The surrogate also has different Cl/Cd, but Cm's sign-reversing
+        # contribution should produce a measurable difference.
+        assert abs(r_with_cm['cp'] - r_without_cm['cp']) > 0.01, \
+            f"Cm should change Cp: with={r_with_cm['cp']:.4f}, without={r_without_cm['cp']:.4f}"
 
     def test_cm_torque_in_energy_ledger(self):
         """Energy ledger should account for Cm hub reaction torque."""

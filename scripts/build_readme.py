@@ -34,7 +34,6 @@ def _load_all():
         "aq": _j("aep_results.json"),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
-        "sp": _j("spearman_results.json"),
     }
 
 DATA = {}
@@ -45,7 +44,6 @@ def _load_all():
         "aq": _j("aep_results.json"),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
-        "sp": _j("spearman_results.json"),
     }
 _load_all()
 
@@ -823,31 +821,29 @@ def block_uq_params_table():
     return "\n".join(out)
 
 
-def block_spearman_table():
-    sp = DATA["sp"]["anchor_results"]
+def block_uq_sobol():
+    """Sobol sensitivity table from uncertainty_results.json."""
+    sobol = DATA.get("sobol", {})
     labels = {
         "ham_1979":          "Ham 1979 reproduction",
         "sharp_cppc":        "Sharp-inspired CPPC",
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.72 m",
     }
-    pretty = {
-        "cd_add":                  "`cd_add` (strut drag)",
-        "ds_Tf":                   "`ds_Tf` (separation lag)",
-        "ds_Tv":                   "`ds_Tv` (vortex-lift lag)",
-        "ds_Ta":                   "`ds_Ta` (attached-flow lag)",
-        "ds_Kv":                   "`ds_Kv` (vortex-lift strength)",
-        "tau_rev":                 "`tau_rev` (induction lag)",
-        "c_scale_override":        "`c_scale_override` (Adams shift)",
-        "tip_loss_floor_override": "`tip_loss_floor_override`",
-    }
-    out = ["| Anchor | Dominant parameter | \u03c1 | p-value |", "|---|---|---|---|"]
+    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 | Total-order S\u2084 |",
+           "|---|---|---|---|"]
     for a in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
-        d = DATA["sp"]["anchor_results"][a]
-        dom = max(d, key=lambda k: abs(d[k]["rho"]))
-        rho, p = d[dom]["rho"], d[dom]["p"]
-        ps = "< 0.001" if p < 1e-3 else f"{p:.3f}"
-        out.append(f"| {labels[a]} | {pretty[dom]} | **{'+' if rho >= 0 else ''}{rho:.2f}** | {ps} |")
+        res = sobol.get(a, {})
+        s1 = res.get("S1", {})
+        st = res.get("ST", {})
+        if not s1:
+            out.append(f"| {labels[a]} | — | — | — |")
+            continue
+        dom = max(s1, key=lambda k: abs(s1[k]))
+        rho = s1[dom]
+        st_val = st.get(dom, 0.0)
+        sign = "+" if rho >= 0 else ""
+        out.append(f"| {labels[a]} | `{dom}` | **{sign}{rho:.2f}** | {st_val:+.2f} |")
     return "\n".join(out)
 
 
@@ -856,7 +852,7 @@ BLOCKS = {
     "aep_steady": block_aep_steady_table,
     "aep_turbulent": block_aep_turbulent_table,
     "uq_params": block_uq_params_table,
-    "spearman_table": block_spearman_table,
+    "uq_sobol": block_uq_sobol,
 }
 
 

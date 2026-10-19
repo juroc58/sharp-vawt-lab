@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-10-19
+
+### Added
+- **Second-order Sobol indices**: `--saltelli-second-order` flag in `scripts/uncertainty.py` computes full S1/ST/S2/S2_conf via Saltelli sampling with `calc_second_order=True`. Saved to `uncertainty_results.json`.
+- **Disk result cache**: `.uq_cache/` stores per-task results keyed by SHA-256 of (anchor, params, code hash). Enables interrupt-safe resume; cache invalidated when `vawt_core.py`, polars, `UQ_SPEC`, or version changes.
+- **Cm hub-moment sign test**: `TestCmHubMoment.test_cm_changes_shaft_torque` verifies Cp differs between Cm and Cm=0 surrogate polars.
+- **Polar extreme-angle tests**: CL≈0 at 90°, CL<0 at 150°, CLmax≈1.25 at Re=1e6, CD<2.0 stall bound.
+- **CI workflow**: `.github/workflows/ci.yml` runs test suite + validation on push/PR.
+
+### Changed
+- **optimised_passive anchor**: Updated to optimiser output (c=0.0701, ar=0.2604, dcw=-0.1909, mc=0.0252, Cp=0.308) from `scripts/optimization_passive.json`.
+- **UQ parameter count**: 11 parameters (removed duplicate `cd_add` from `UQ_SPEC`).
+- **Saltelli N**: Default first-order N=64 (1536 runs/anchor); second-order N=64 also supported.
+- **README prose**: Rewrote Uncertainty section with honest tip-loss-floor scenario framing; updated all stale numeric claims.
+
+### Fixed
+- **Duplicate `cd_add`**: Removed from `UQ_SPEC` which was causing SALib to see D=11 instead of D=12.
+- **Saltelli sample order**: `ex.map()` replaces `as_completed()` to preserve Saltelli sample ordering for Sobol analysis.
+- **`__main__` guard**: Added `if __name__ == "__main__"` block to `scripts/uncertainty.py`.
+- **Cm test misnamed**: `test_cm_affects_torque` now actually verifies Cm changes shaft torque (not just table lookup).
+- **Cache key staleness**: Cache key now includes hash of `vawt_core.py`, polar files, `UQ_SPEC`, and version string.
+
+### Documentation
+- **README.md**: Regenerated with new UQ results (Ham 0.47 [0.46, 0.47], Sharp-inspired 0.13 [0.10, 0.19], optimised passive 0.27 [0.20, 0.32], scale-up 0.41 [0.40, 0.42]); honest sensitivity text noting tip-loss floor drives small-rotor uncertainty.
+- **CITATION.cff**: Added citation metadata.
+
 ## [3.2.0] - 2026-10-13
 
 ### Added

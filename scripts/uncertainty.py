@@ -77,13 +77,44 @@ SEED = 42
 # Disk cache for UQ runs (interrupt-safe resume)
 CACHE_DIR = ".uq_cache"
 
+# Version string that gets hashed into the cache key so that changes to
+# the core physics, polars or parameter spec invalidate stale cache entries.
+_UQ_VERSION = "v8-2026-10-19"
+
+
+def _code_hash() -> str:
+    """Hash of vawt_core.py, polars, UQ_SPEC and the script version."""
+    h = hashlib.sha256()
+    # Core physics
+    for path in ["vawt_core.py", "scripts/uncertainty.py"]:
+        try:
+            with open(path, "rb") as f:
+                h.update(f.read())
+        except OSError:
+            pass
+    # UQ parameter spec (catches bound/name changes)
+    h.update(json.dumps(UQ_SPEC, sort_keys=True).encode())
+    # Polar files
+    polars_dir = Path("polars")
+    if polars_dir.is_dir():
+        for f in sorted(polars_dir.glob("**/*.csv")):
+            h.update(f.read_bytes())
+    h.update(_UQ_VERSION.encode())
+    return h.hexdigest()[:16]
+
 
 def _cache_key(anchor_name: str, anchor_params: dict, uq_params: dict) -> str:
-    """Stable SHA-256-based key for a (anchor, params) task."""
+    """Stable SHA-256-based key for a (anchor, params) task.
+
+    Includes a hash of vawt_core.py, the polar files, UQ_SPEC and a version
+    string so that stale cache entries are invalidated when the code or data
+    changes.
+    """
     key = {
         "anchor": anchor_name,
         "anchor_params": {k: float(v) for k, v in anchor_params.items()},
         "uq_params": {k: float(v) for k, v in uq_params.items()},
+        "code_hash": _code_hash(),
     }
     return hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:16]
 
@@ -147,20 +178,21 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         k_load=0.0025,
         arm_cd=1.0,
     ),
-    # Optimised passive (mass-balanced) at R = 0.60 m
+    # Optimised passive (mass-balanced) at R = 0.60 m — matches the
+    # optimiser output in scripts/optimization_passive.json (Cp = 0.308)
     "optimised_passive": dict(
-        R=0.60, c=0.157004, H=0.40, N=3,
-        ar=0.797355, sp=0.153250,
-        mb=0.010, xbcg=0.20, mc=0.016460, dcw=0.011736,
-        balance=0, bias_deg=0.2430,
+        R=0.60, c=0.070077, H=0.40, N=3,
+        ar=0.260419, sp=0.209523,
+        mb=0.010, xbcg=0.20, mc=0.025151, dcw=-0.190913,
+        balance=0, bias_deg=4.676692,
         prescribe_pitch=False,
-        free=True, tsr=2.14, T_max=30.0, stride=5,
+        free=True, tsr=2.0, T_max=30.0, stride=5,
         use_dynamic_stall=True,
         use_flow_curvature=True,
         use_tip_loss=True,
         use_dmst=True,
         win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        k_load=0.001909,
+        k_load=0.000535,
         arm_cd=1.0,
     ),
     # Scale-up R = 2.26 m with tip loss on
