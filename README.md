@@ -22,9 +22,9 @@ At **R = 0.60 m**, **Re ≈ 1.4 × 10⁵**, **σ ≈ 0.11**:
 <!-- BEGIN GENERATED: headline_table -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.42** | [0.41, 0.42] | ~71 % of Betz |
-| **Sharp-inspired CPPC** | **0.18** | [0.18, 0.19] | — |
-| Optimised passive (mass-balanced) | **0.31** | [0.30, 0.31] | — |
+| **Scaled-up passive (R = 2.72 m, Re = 5.1e5)** | **0.41** | [0.41, 0.42] | ~71 % of Betz |
+| **Sharp-inspired CPPC** | **0.13** | [0.10, 0.19] | — |
+| Optimised passive (mass-balanced) | **0.28** | [0.24, 0.32] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | Ham 1979 measured 0.42–0.45 |
 | Ham 1979 reproduction | **0.47** | [0.47, 0.48] | matches Ham's method |
 <!-- END GENERATED: headline_table -->
@@ -244,8 +244,11 @@ indices:
 | `ds_Ta` | 0.05 | 0.15 | attached-flow lag (default 0.10) |
 | `ds_Kv` | 0.25 | 0.75 | vortex-lift strength (default 0.50) |
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
+| `e_osw` | 0.85 | 0.95 | Oswald efficiency for finite-span |
 | `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_floor_override` | 0.80 | 1.00 | finite-span correction floor |
+| `tip_loss_floor_override` | 0.0 | 1.0 | finite-span correction floor |
+| `ds_Knc` | 0.5 | 1.5 | apparent-mass lift multiplier (k_nc) |
+| `arm_cd` | 0.5 | 1.5 | arm drag coefficient multiplier (Geometry) |
 <!-- END GENERATED: uq_params -->
 
 The 90 % confidence width is **0.005–0.007 in Cp** for the Ham, Sharp-CPPC

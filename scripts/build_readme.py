@@ -808,8 +808,11 @@ def block_uq_params_table():
         "ds_Ta":                   ("0.05",  "0.15",  "attached-flow lag (default 0.10)"),
         "ds_Kv":                   ("0.25",  "0.75",  "vortex-lift strength (default 0.50)"),
         "tau_rev":                 ("0.05",  "0.20",  "induction lag (default 0.10 rev)"),
+        "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for finite-span"),
         "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
-        "tip_loss_floor_override": ("0.80",  "1.00",  "finite-span correction floor"),
+        "tip_loss_floor_override": ("0.0",   "1.0",   "finite-span correction floor"),
+        "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
+        "arm_cd":                  ("0.5",   "1.5",   "arm drag coefficient multiplier (Geometry)"),
     }
     out = ["| Parameter | Low | High | Source of uncertainty |", "|---|---|---|---|"]
     for name, lo, hi in p:
