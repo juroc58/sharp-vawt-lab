@@ -397,12 +397,24 @@ def main():
                 'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
             }
             Si = sobol.analyze(problem, Y, calc_second_order=calc_second_order, print_to_console=False)
-            sobol_results[anchor_name] = {
+            sobol_entry = {
                 'S1': {name: float(Si['S1'][i]) for i, name in enumerate(UQ_NAMES)},
                 'ST': {name: float(Si['ST'][i]) for i, name in enumerate(UQ_NAMES)},
                 'S1_conf': {name: float(Si['S1_conf'][i]) for i, name in enumerate(UQ_NAMES)},
                 'ST_conf': {name: float(Si['ST_conf'][i]) for i, name in enumerate(UQ_NAMES)},
             }
+            if calc_second_order and 'S2' in Si:
+                sobol_entry['S2'] = {
+                    f"{UQ_NAMES[i]}|{UQ_NAMES[j]}": float(Si['S2'][i, j])
+                    for i in range(len(UQ_NAMES))
+                    for j in range(i + 1, len(UQ_NAMES))
+                }
+                sobol_entry['S2_conf'] = {
+                    f"{UQ_NAMES[i]}|{UQ_NAMES[j]}": float(Si['S2_conf'][i, j])
+                    for i in range(len(UQ_NAMES))
+                    for j in range(i + 1, len(UQ_NAMES))
+                }
+            sobol_results[anchor_name] = sobol_entry
             print(f"  {anchor_name}: S1 dominant = {max(Si['S1']):.4f}")
 
     # -------- figure --------
