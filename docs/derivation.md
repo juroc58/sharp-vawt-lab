@@ -638,16 +638,19 @@ limitations in the README:
    UQ study. The old band [0.70, 1.30] was needed to cover the systematic
    low-AR bias of the Prandtl form; with Helmbold that bias is gone, so a
    ±15 % residual band is used instead. For the small-rotor anchors the
-   multiplier still dominates the Cp variance.
+   multiplier is a leading driver of the Cp variance (for Sharp-inspired
+CPPC it is nearly tied with the separation lag `ds_Tf`, S₁ = 0.41 vs
+0.43 at N = 64).
 
    **The Sharp-inspired design sits close to the collapse threshold.**
    The rotation-sustaining branch switches to the collapsed branch between
    multipliers 0.955 and 0.96, i.e. about 4 % below the Helmbold central
    value. At the central value Cp = 0.067; at 0.955 it is 0.005. Because
-   the [0.85, 1.15] band extends well below the threshold, roughly a third
-   of the UQ samples collapse, so the 90 % interval is a scenario range,
-   not a precision estimate. The scale-up anchor (AR 10.5) is much less
-   sensitive because its $f_{ar}$ is already high.
+   With `cm_scale` sampled down to zero, 56.8 % of the UQ samples
+   collapse — the design does not self-sustain without its pitching
+   moment — so the 90 % interval is a scenario range, not a precision
+   estimate. The scale-up anchor (AR 10.5) is much less sensitive because
+   its $f_{ar}$ is already high.
 
 2. **No flow curvature expansion.** Flux-line theory predicts the flow
    to accelerate through the rotor in a way that a 2D DMS model misses.

@@ -833,6 +833,7 @@ def block_uq_params_table():
         "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for induced drag"),
         "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
         "tip_loss_multiplier":     ("0.85",  "1.15",  "residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)"),
+        "cm_scale":                ("0.0",   "1.0",   "scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)"),
         "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
         "arm_cd":                  ("0.5",   "1.5",   "arm drag coefficient multiplier (Geometry)"),
     }

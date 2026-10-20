@@ -70,7 +70,15 @@ generator.
    torque. Section 12 of `docs/derivation.md` lists this as a model-form
    limitation.
 
-3. **Reynolds interpolation** uses a bilinear fit in (log Re, α). That is
+3. **Low-Re lift is surrogate output.** At Re = 1e5 the attached Cl reaches
+   0.445 at 2° (slope ≈ 12.7/rad, about twice the thin-airfoil limit of
+   2π) and peaks near 0.98 at 10° before falling to 0.68 at 12°. NeuralFoil
+   is an XFOIL-trained network and is least reliable off its training
+   Reynolds numbers and in post-stall; treat Re = 1e5 attached values as
+   indicative and compare against measured low-Re NACA 0012 data before
+   using them quantitatively.
+
+4. **Reynolds interpolation** uses a bilinear fit in (log Re, α). That is
    standard but hides the real Re-dependent shape changes in the stall band.
 
 ## To use real data

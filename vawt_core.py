@@ -116,19 +116,21 @@ def _fstat(alpha, Cl_tab, cla):
 
 @njit(cache=True)
 def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
-                 logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t=None):
+                 logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t=None,
+                 cm_scale: float = 1.0):
     """
     Returns (Cl, Cd, Cl_nc, f, Cm).  Cl excludes the apparent-mass term Cl_nc (added once by the caller).
     ds = [alpha_eff, f_dyn, v_vortex, alpha_prev, initialised].
     dyn = 0 : static table lookup.
     dyn = 1 : delayed separation / vortex lift written as increments on the static polar, so that
               steady flow gives exactly the static polar.
+    cm_scale scales the polar Cm before it is used; 1 = table value, 0 = no pitching moment.
     """
     logRe = math.log(max(Re, 1e3))
     if dyn == 0:
         Cl, Cd, Cm, cla = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
         f, Clatt, Clsep = _fstat(alpha, Cl, cla)
-        return Cl, Cd, 0.0, f, Cm
+        return Cl, Cd, 0.0, f, Cm * cm_scale
 
     if ds[4] < 0.5:  # first call: start from the steady state (no start-up spike)
         Cl0, Cd0, Cm0, cla0 = _lookup(logRe, alpha, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
@@ -146,6 +148,7 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     ae = ds[0]
 
     Cl_s, Cd_s, Cm_s, cla = _lookup(logRe, ae, logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
+    Cm_s *= cm_scale
     fst, Clatt, Clsep = _fstat(ae, Cl_s, cla)
     ds[1] += (fst - ds[1]) * min(1.0, dt / (Tf * tau))            # separation-point lag
     fd = ds[1]
@@ -197,7 +200,7 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             win, ks, cs, cb, kc, mu_c, r_b, arm_k, k_load, free, w_init, psi0,
             prescribe, pp0, pp1, pp2, pp3, ppph, dmst, tau_rev, a_fix, dyn, Tf, Tv, Ta, Kv,
             curv, c_scale, fin_span, f_ar, ind_k, cd_add, Clmax, Knc,
-            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t):
+            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t, cm_scale):
     n = U_arr.shape[0]
     nb = 180
     atab = np.full(nb, 0.2)
@@ -296,7 +299,7 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
                 dCl = pe * (-0.402) * c_scale
                 dCd = pe * 0.0156 * c_scale
             Cl, Cd, Clnc, wt, Cm = _aero_coeffs(ds[k], a_in, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
-                                            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t)
+                                            logRe_grid, alpha_grid, cla_re, Cl_t, Cd_t, Cm_t, cm_scale)
             Clnc *= Knc
             Cl += dCl
             Cd += dCd
@@ -460,6 +463,7 @@ class AeroConfig:
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
     tip_loss_floor_override: float = 0.0   # 0 = use Helmbold formula; >0 floors f_ar
     tip_loss_multiplier: float = 1.0    # residual multiplier on Helmbold f_ar; <1 = stronger tip loss
+    cm_scale: float = 1.0               # scale on polar Cm; 1 = table value, 0 = no pitching moment
 
 
 @dataclass(frozen=True)
@@ -826,7 +830,7 @@ class CycloturbineSim:
             ae.tau_rev if ae.use_dynamic_inflow else 0.02, ae.a_fix, int(ae.use_dynamic_stall),
             ae.ds_Tf, ae.ds_Tv, ae.ds_Ta, ae.ds_Kv, bool(ae.use_flow_curvature), self.c_scale,
             bool(ae.use_tip_loss), self.f_ar, self.ind_k, ae.cd_add, pdb.Cl_max, ae.ds_Knc,
-            pdb.logRe_grid, pdb.alpha_grid, pdb.cla_re, pdb.Cl, pdb.Cd, pdb.Cm)
+            pdb.logRe_grid, pdb.alpha_grid, pdb.cla_re, pdb.Cl, pdb.Cd, pdb.Cm, ae.cm_scale)
         return self._post(out, led, t_arr, U_arr, store_history)
 
     def _post(self, out, led, t_arr, U_arr, store_history):

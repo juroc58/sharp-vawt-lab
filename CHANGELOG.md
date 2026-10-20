@@ -133,26 +133,27 @@ hiding it.
   idle rotor (Cp = 0.0011) and reported a meaningless 0.01 % delta. It now
   uses the same prescribed design as the test (Cp = 0.4965), giving 1.8 %.
 
-### UQ results (Saltelli N = 64, second order, 1536 runs per anchor)
-Regenerated after the sampler fix and polar change. See
-`scripts/uncertainty_results.json`; the README tables are generated from
-it. Mean [p5, p95]:
+### UQ results (Saltelli N = 64, second order; v13 rerun, 1664 runs per anchor)
+Added `cm_scale` (0–1) to UQ_SPEC; see `scripts/uncertainty_results.json`;
+the README tables are generated from it. Mean [p5, p95]:
 
 | Anchor | Mean | 90 % interval | Collapsed samples (Cp < 0.02) |
 |---|---|---|---|
-| Ham 1979 | 0.491 | [0.464, 0.512] | 0 |
-| Sharp-inspired CPPC | 0.048 | [0.003, 0.108] | 46.7 % |
-| Optimised passive | 0.182 | [0.044, 0.280] | 2.9 % |
-| Scale-up R = 2.72 m | 0.362 | [0.303, 0.419] | 0 |
+| Ham 1979 | 0.49 | [0.47, 0.51] | 0 % |
+| Sharp-inspired CPPC | 0.04 | [0.002, 0.12] | 56.8 % |
+| Optimised passive | 0.19 | [0.051, 0.28] | 2.0 % |
+| Scale-up R = 2.72 m | 0.38 | [0.33, 0.42] | 0 % |
 
-The dominant first-order Sobol parameter is `tau_rev` for Ham (S₁ = 0.86),
-`tip_loss_multiplier` for Sharp and optimised passive (0.50 and 0.61),
-and `ds_Knc` for the scale-up (0.65). No run returned a non-finite or
-negative Cp (`n_fail = 0`). These values are from the final v12 rerun
-(Helmbold central estimate, NeuralFoil Cm, band [0.85, 1.15]); they
-supersede the intermediate v11 numbers. The 95 % confidence half-widths
-on the dominant indices are 0.2-0.3 at N = 64 and are printed in the
-README table.
+The dominant first-order Sobol parameter is `tau_rev` for Ham (S₁ = 0.84).
+For Sharp-inspired CPPC, `ds_Tf` (S₁ = 0.43) and `tip_loss_multiplier`
+(S₁ = 0.41) are nearly tied; for the optimised-passive anchor the
+multiplier leads (S₁ = 0.51); at the scale-up no first-order index is
+significant at N = 64 (largest is `tip_loss_multiplier` S₁ = 0.19, CI
+spans zero). No run returned a non-finite or negative Cp (`n_fail = 0`).
+The v12 numbers (Sharp 0.048 [0.003, 0.108], 46.7 % collapsed; Ham
+0.491; scale-up 0.362) did not sample `cm_scale` and are superseded.
+The 95 % confidence half-widths on the dominant indices are 0.2-0.3 at
+N = 64 and are printed in the README table.
 
 ### v12 review follow-up (same unreleased 3.3.1)
 
@@ -192,9 +193,10 @@ new version entry.
   Reason: the old band existed to cover the systematic low-AR bias of the
   Prandtl form; Helmbold removes that bias, so a +/-15 % residual
   model-form band is used. `_UQ_VERSION` was bumped to invalidate the
-  cache. The Sharp design is so close to the cliff that roughly a third
-  of the narrowed band still collapses; that is a physical result, not a
-  sampling artifact.
+  cache. With `cm_scale` now sampled (0–1), 56.8 % of the Sharp-inspired
+  UQ distribution collapses — most of it through zero/low Cm scale, i.e.
+  the design does not self-sustain without its pitching moment; that is a
+  physical result, not a sampling artifact.
 - **Passive DS sensitivity pinned.** The vacuous test bound
   `0.001 < delta < 0.95` is replaced by anchor-specific values:
   0.91 +/- 0.05 for Sharp-inspired CPPC and 0.75 +/- 0.05 for the
@@ -205,7 +207,8 @@ new version entry.
 - **Sobol reporting.** The README table now prints 95 % confidence
   half-widths next to S₁ and Sₜ and keeps two-decimal rounding. It also
   states that `arm_cd` is inert because every anchor has `arm_d = 0`
-  (10 of 11 sampled inputs are active), and lists the model-form choices
+  (now 11 of 12 sampled inputs are active after the Cm scale was added;
+  see the v13 follow-up), and lists the model-form choices
   that are *not* sampled (induction closure, DS structure, curvature
   scaling, counter-rotating interaction, section-data source). Indices
   whose confidence interval spans zero are not used for ranking.
@@ -218,6 +221,26 @@ new version entry.
   (Cm(15 deg) ~ +0.047), with a zero-at-zero-alpha check and a
   provenance check. This is a deliberate source change, not a tolerance
   relaxation.
+
+### v13 review follow-up (same unreleased 3.3.1)
+
+- **Cm scale added to the UQ** (`cm_scale`, range 0–1; core default 1.0 so nominal
+  numbers are unchanged). Reason: the Sharp-inspired design does not
+  self-sustain without the pitching moment — with Cm = 0 its Cp falls from
+  0.067 to ≈ 0.005 (collapsed, TSR ≈ 0.49) — so its headline number rests
+  on the NeuralFoil attached-flow Cm table, whose values are noisy and
+  sign-changing for a symmetric section. The optimised-passive design is
+  insensitive (Cp 0.272 → 0.274 with Cm = 0) and is the more robust result.
+  The Sharp UQ row is therefore a scenario range, not a precision result,
+  and is reported as such. `_UQ_VERSION` bumped to invalidate the cache.
+- **UQ input scope** is now twelve sampled inputs, eleven active
+  (`arm_cd` inert because `arm_d = 0` in every anchor); the Sobol table and
+  README counts were regenerated accordingly.
+- **README prose corrected.** Sharp-inspired TSR is ≈ 1.19 (not 1.38) and
+  the collapse threshold is ≈ 0.955 (not 0.78); the optimised-passive
+  nominal point (Cp = 0.272) is shown next to its UQ mean (0.18 [0.044,
+  0.28]) with a winner's-curse note; the low-Re NeuralFoil lift caveat was
+  added to `airfoil_polars/README.md`.
 
 ## [3.3.0] - 2026-10-19
 
