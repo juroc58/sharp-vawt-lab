@@ -14,6 +14,30 @@ number in this README is reproducible from the scripts in `scripts/`, except
 where a paragraph explicitly cites an external study (those numbers are
 quoted, not reproduced here).
 
+## Evidence Table
+
+| Metric | Value | Evidence Category |
+| :--- | :--- | :--- |
+| **Ham 1979 Peak Cp** | ~0.49 | Literature comparison (2D upper bound) |
+| **Sharp-inspired Passive Cp** | 0.04 [0.00, 0.12] | **Model result** (uncalibrated DS) |
+| **Optimised Passive Cp** | 0.19 [0.05, 0.28] | **Model result** (uncalibrated DS) |
+| **Scale-up Passive Cp** | 0.38 [0.33, 0.42] | **Model result** (robust) |
+| **Prescribed-pitch Upper Bound** | 0.50 | Ideal actuator (no physical limit) |
+| **AEP Gain vs Rigid** | +13.9% | **Model comparison** (unproven machine) |
+
+## Scope and Limitations
+
+This is a 2D computational study. As of 2025-10-20, **no physical rotor has been built or instrumented**. All passive CPPC results are model hypotheses, not experimental predictions.
+
+The passive CPPC mechanism relies heavily on the dynamic-stall model. At the Sharp-inspired anchor, disabling DS drops Cp from ~0.067 to ~0.006. Until DS is independently calibrated against measured rotor data, these passive results should be treated as a numerical exploration of the mechanism.
+
+The optimised passive design has been re-run on the current NeuralFoil/Helmbold physics. Any previous references to the old Cp (~0.272) have been updated to the re-optimised Cp ≈ 0.270.
+
+The project ships one physics core and a set of validation scripts. Every
+number in this README is reproducible from the scripts in `scripts/`, except
+where a paragraph explicitly cites an external study (those numbers are
+quoted, not reproduced here).
+
 **Related external work.** A companion project,
 [`juroc58/sharp-fsi`](https://github.com/juroc58/sharp-fsi), is a from-scratch
 2-D discrete-vortex + fluid-structure-interaction code for the same blade
@@ -95,26 +119,6 @@ model has no tip-loss penalty, so it over-predicts Ham's 3D rotor. It is
 a **documented upper-bound comparison, not a reproduction of Ham's
 experiment**, and the peak is not expected to fall inside Ham's band.
 See `scripts/validate_ham.py` and `scripts/plot_ham_curve.py`.
-
-### What's validated vs what's not
-
-| Claim | Evidence level | Status |
-|---|---|---|
-| Peak Ham 1979 Cp ≈ 0.476 at TSR 2.5 (static polars) | Model vs published literature (0.42–0.45 band) | **2D upper-bound comparison — not validated** (peak ≈ +9 % above band midpoint 0.435; expected bias for a 2D no-tip-loss solver; curve shape mismatches at high TSR) |
-| Prescribed-pitch DS sensitivity ≈ 2.2 % | Model self-check (`validate_ds_off.py`) | **Verified internally** |
-| Passive CPPC runs near static stall; DS off → collapse | Model self-check | **Verified internally; DS model uncalibrated** |
-| Pitch-torque sign restoring at stall extremes | `diag_qa.py` + tests | **Verified internally** |
-| Sharp-inspired passive CPPC ≈ 0.067 (deterministic) | 2-D BEM model output, synthetic polars | **Scenario estimate — not measured** |
-| Optimised passive ≈ 0.270 (re-optimized) | Re-run on current polars (DE+NM) | **Scenario estimate — winner's curse possible** |
-| Scale-up passive ≈ 0.384 (deterministic) | 2-D BEM model output | **Scenario estimate — not measured** |
-| AEP 17,330 kWh/yr, +13.9 % vs rigid | Model comparison (assumed wind/drivetrain) | **Model comparison — not an energy forecast** |
-| Counter-rotating +3.3 % array gain | Literature-calibrated interaction model | **Literature-calibrated — not validated at this spacing** |
-| Measured rotor / wind-tunnel / prototype Cp | None | **Not available** |
-
-Every passive result rests on the dynamic-stall model and on NeuralFoil
-attached-flow data, both of which are uncalibrated for this machine. The
-90 % intervals propagate parameter uncertainty only; they do not capture
-model-form uncertainty (polar source, DS structure, 2-D vs 3-D flow).
 
 ### Sharp-inspired CPPC
 
@@ -484,10 +488,10 @@ anchor. Runs in ~20 min on 4 cores (`scripts/uncertainty.py --saltelli
 <!-- BEGIN GENERATED: uq_sobol -->
 | Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
 |---|---|---|---|
-| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.29** | +0.86 ± 0.24 |
-| Sharp-inspired CPPC | `ds_Tf` | **+0.43 ± 0.26** | +0.62 ± 0.25 |
-| Optimised passive | `tip_loss_multiplier` | **+0.51 ± 0.34** | +0.80 ± 0.28 |
-| Scale-up R = 2.72 m | `tip_loss_multiplier` | **+0.19 ± 0.18** | +0.28 ± 0.19 |
+| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.28** | +0.86 ± 0.24 |
+| Sharp-inspired CPPC | `ds_Tf` | **+0.43 ± 0.25** | +0.62 ± 0.23 |
+| Optimised passive | `tip_loss_multiplier` | **+0.51 ± 0.31** | +0.80 ± 0.23 |
+| Scale-up R = 2.72 m | `tip_loss_multiplier` | **+0.19 ± 0.22** | +0.28 ± 0.21 |
 <!-- END GENERATED: uq_sobol -->
 
 **The finite-span multiplier and separation lag drive the two small-rotor anchors.** Direct
@@ -532,6 +536,12 @@ significant at N = 64, so no single measurement is clearly dominant there;
 a strut-drag measurement (`cd_add`) and a wake-induction relaxation
 measurement (`tau_rev`) are the next most useful after a tip-loss
 calibration.
+
+## 📚 Deep Dive Details
+
+The sections below contain detailed technical derivations, model descriptions,
+and extended validation data. For a quick overview, see the Evidence Table,
+Scope, and Headline Results above.
 
 ## 🔬 What this project does differently
 
