@@ -218,67 +218,46 @@ def main():
     print("\nGenerating plot...")
     fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     col_passive = "C0"
-    col_fixed = "C2"
+    col_fixed   = "C2"
     fr = free_passive
 
-    # Panel 1: Cp vs TSR
+    # Panel 1
     a = ax[0]
     a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
-    
-    # Add free-running points as red dots
     if fr:
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        # Add annotation pointing to the red dots
+        # FIX: Place text at bottom left (x=1.2, y=0.15)
         a.annotate("Free-running\noperating points", 
                    xy=(tsr_pts[0], cp_pts[0]), 
-                   xytext=(1.5, 0.3),
-                   arrowprops=dict(arrowstyle="->", color="red"),
-                   bbox=dict(boxstyle="round", fc="white", alpha=0.8))
-                   
+                   xytext=(1.2, 0.15),
+                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
+                   bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
     a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ")
-    a.set_ylabel("Cp")
-    a.set_title("Cp vs TSR at fixed rpm (scale-up)")
-    a.grid(alpha=0.3)
-    a.legend(fontsize=9)
+    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
-    # Panel 2: Free-running Cp vs U
+    # Panel 2
     a = ax[1]
     if fr:
         Us  = np.array([f['U'] for f in fr])
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        
-        # Add bifurcation annotation pointing to the massive drop at U=12.5, Cp=0.34
+        # FIX: Point specifically to the drop at U=12.5, Cp=0.347. Place text at x=16, y=0.37
         a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
-                   xy=(12.5, 0.34), 
-                   xytext=(15.0, 0.36),
-                   arrowprops=dict(arrowstyle="->", color="black"),
-                   bbox=dict(boxstyle="round", fc="wheat", alpha=0.8))
-                   
-    a.set_xlabel("wind speed U [m/s]")
-    a.set_ylabel("Cp at equilibrium")
-    a.set_title("Free-running Cp vs wind speed (branch traced)")
-    a.grid(alpha=0.3)
-    a.legend(fontsize=9)
+                   xy=(12.5, 0.347), 
+                   xytext=(16, 0.37),
+                   arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
+                   bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9))
+    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (branch traced)"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
-    # Panel 3: power curves
+    # Panel 3
     a = ax[2]
-    a.plot(res_passive['U'], res_passive['P']/1000, "-",
-           color=col_passive, lw=2.0, label="passive CPPC, k_load")
-    a.plot(res_fixed['U'], res_fixed['P']/1000, "--",
-           color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
-    a.set_xlabel("wind speed U [m/s]")
-    a.set_ylabel("electrical power [kW]")
-    a.set_title("Power curve (scale-up)")
-    a.grid(alpha=0.3)
-    a.legend(fontsize=9)
-    a.set_xlim(CUT_IN, CUT_OUT)
+    a.plot(res_passive['U'], res_passive['P']/1000, "-", color=col_passive, lw=2.0, label="passive CPPC, k_load")
+    a.plot(res_fixed['U'], res_fixed['P']/1000, "--", color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
+    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("electrical power [kW]"); a.set_title("Power curve (scale-up)"); a.grid(alpha=0.3); a.legend(fontsize=9); a.set_xlim(CUT_IN, CUT_OUT)
 
-    fig.suptitle("AEP — Scale-Up Sharp CPPC, R = 2.72 m, AR ≈ 10.5",
-                 fontsize=13, fontweight="bold")
+    fig.suptitle(f"AEP — Scale-Up Sharp CPPC, R = {SCALEUP_BASE['R']:.2f} m, AR ≈ 10.5", fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     out_path = os.path.join(_ROOT, "docs", "aep_scaleup.png")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
