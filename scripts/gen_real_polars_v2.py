@@ -22,154 +22,89 @@ import os
 
 def naca0012_real_polar(Re, alpha_deg):
     """
-    NACA 0012 polar based on Abbott & von Doenhoff + SAND80-2114 data.
-    
+    NACA 0012 polar based on Abbott & von Doenhoff + SAND80-2114 trends.
+
     Returns: (Cl, Cd, Cm)
-    
+
     Based on:
     - Abbott & von Doenhoff, "Theory of Wing Sections", Fig 7.18-7.20 (NACA 0012)
     - Sheldahl & Klimas SAND80-2114 (Re 1e5 to 1e6)
     - NASA TM 81924 (low Re NACA 0012)
     """
-    alpha = math.radians(alpha_deg)
-    a = abs(alpha_deg)
-    sign = 1.0 if alpha_deg >= 0 else -1.0
-    
-    # Re-dependent parameters from experimental data
-    if Re <= 1e5:
-        # Re = 1e5 (low Re, significant laminar separation)
-        cl_alpha = 0.100  # per degree
-        cl_max = 1.00
-        alpha_stall = 12.0
-        cd_min = 0.012
-        re_factor = 1.0
-    elif Re <= 2e5:
-        # Re = 2e5
-        cl_alpha = 0.105
-        cl_max = 1.10
-        alpha_stall = 13.0
-        cd_min = 0.010
-        re_factor = 1.1
-    elif Re <= 4e5:
-        # Re = 4e5
-        cl_alpha = 0.108
-        cl_max = 1.20
-        alpha_stall = 14.0
-        cd_min = 0.0085
-        re_factor = 1.2
-    elif Re <= 1e6:
-        # Re = 1e6
-        cl_alpha = 0.110
-        cl_max = 1.25
-        alpha_stall = 15.0
-        cd_min = 0.007
-        re_factor = 1.3
+    rc = {
+        100000:  dict(clmax=1.10, alpha_stall=11.0, cd0=0.012, cd_stall=0.15, cd_90=1.60, cm0=-0.015, cm_stall=-0.08),
+        200000:  dict(clmax=1.15, alpha_stall=12.0, cd0=0.010, cd_stall=0.12, cd_90=1.55, cm0=-0.012, cm_stall=-0.07),
+        400000:  dict(clmax=1.20, alpha_stall=13.0, cd0=0.009, cd_stall=0.10, cd_90=1.50, cm0=-0.010, cm_stall=-0.06),
+        1000000: dict(clmax=1.25, alpha_stall=14.0, cd0=0.008, cd_stall=0.08, cd_90=1.45, cm0=-0.008, cm_stall=-0.05),
+    }.get(Re, dict(clmax=1.25, alpha_stall=14.0, cd0=0.008, cd_stall=0.08, cd_90=1.45, cm0=-0.008, cm_stall=-0.05))
+
+    # Normalize angle to [-180, 180]
+    a = alpha_deg
+    while a > 180:
+        a -= 360
+    while a < -180:
+        a += 360
+    abs_a = abs(a)
+
+    # --- Cl magnitude ---
+    if abs_a <= rc['alpha_stall']:
+        x = abs_a / rc['alpha_stall']
+        cl_mag = rc['clmax'] * (2*x - x*x)
+    elif abs_a <= 20:
+        x = (abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall'])
+        cl_mag = rc['clmax'] * (1.0 - 0.35 * x)
+    elif abs_a <= 45:
+        x = (abs_a - 20) / 25
+        cl_mag = rc['clmax'] * 0.65 * (1.0 - 0.3 * x)
+    elif abs_a <= 90:
+        x = (abs_a - 45) / 45
+        cl_mag = rc['clmax'] * 0.45 * (1.0 - x)
     else:
-        # High Re extrapolation
-        cl_alpha = 0.111
-        cl_max = 1.3
-        alpha_stall = 16.0
-        cd_min = 0.0065
-        re_factor = 1.35
-    
-    cl_alpha_rad = cl_alpha * 180 / math.pi
-    
-    # Stall model: linear up to alpha_stall-4, rounded peak alpha_stall-4 to alpha_stall+2, post-stall after
-    alpha_linear_end = alpha_stall - 4
-    alpha_peak_end = alpha_stall + 2
-    
-    if a <= alpha_linear_end:
-        # Pre-stall: linear lift, quadratic drag bucket
-        Cl = sign * cl_alpha * a
-        # Drag bucket: minimum at Cl=0, parabolic rise
-        Cl_norm = Cl / cl_max
-        Cd = cd_min * re_factor + 0.004 * Cl_norm**2
-        # Cm: nearly zero pre-stall, slight negative at pos alpha
-        Cm = -0.001 * sign * (a / alpha_stall)
-    elif a <= alpha_peak_end:
-        # Rounded stall peak region (alpha_stall-4 to alpha_stall+2)
-        # Smooth cubic interpolation from linear value to cl_max at alpha_stall, then slight drop
-        t = (a - alpha_linear_end) / (alpha_peak_end - alpha_linear_end)  # 0 to 1
-        # Linear value at alpha_linear_end
-        Cl_linear_end = cl_alpha * alpha_linear_end
-        # Smoothstep interpolation
-        smooth_t = t * t * (3.0 - 2.0 * t)
-        Cl = sign * (Cl_linear_end + (cl_max - Cl_linear_end) * smooth_t - 0.05 * (t - 0.5)**2)
-        # Drag rises through stall
-        Cd = cd_min * re_factor + 0.004 * (Cl / cl_max)**2 + 0.05 * (t**2)
-        # Cm goes negative through stall
-        Cm = -0.001 * sign * (a / alpha_stall) - 0.01 * sign * t
+        x = (abs_a - 90) / 90
+        cl_mag = -rc['clmax'] * 0.50 * math.sin(math.pi * x)
+
+    # --- Apply sign for CL (odd symmetry: CL(-alpha) = -CL(alpha)) ---
+    if 0 < a < 90:
+        cl = abs(cl_mag)
+    elif -90 < a < 0:
+        cl = -abs(cl_mag)
+    elif 90 < a < 180:
+        cl = -abs(cl_mag)
+    elif -180 < a < -90:
+        cl = abs(cl_mag)
     else:
-        # Post-stall: based on Abbott Fig 7.19 & SAND80-2114
-        if a <= 20:
-            # Initial drop from peak Cl
-            frac = (a - alpha_stall) / (20 - alpha_stall)
-            Cl = sign * (cl_max * (1 - 0.35 * frac))
-        elif a <= 35:
-            # Secondary hump (vortex lift)
-            frac = (a - 20) / 15
-            Cl = sign * (cl_max * (0.65 + 0.20 * frac))
-        elif a <= 50:
-            # Gradual decline
-            frac = (a - 35) / 15
-            Cl = sign * (cl_max * 0.85 * (1 - 0.35 * frac))
-        elif a <= 90:
-            # Steady decline to 90°
-            frac = (a - 50) / 40
-            Cl = sign * (cl_max * 0.55 * (1 - 0.75 * frac))
-        else:
-            # 90-180°: backside flow, symmetric airfoil has opposite sign
-            a2 = 180 - a
-            # At exactly 90°, Cl = 0. As we go to 180°, lift increases negatively
-            # For symmetric airfoil, backside lift is opposite sign to frontside
-            Cl = -sign * cl_max * 0.14 * a2 / 90
-        
-        # Ensure exactly zero at 90° for symmetric airfoil
-        if a == 90.0:
-            Cl = 0.0
-        
-        # Drag in post-stall
-        if a <= 90:
-            Cd = 0.02 * re_factor + 1.5 * math.sin(alpha)**2
-        else:
-            Cd = 0.02 * re_factor + 1.5 * math.sin(alpha)**2
-        
-        # Cm in stall: Abbott data shows Cm ~ -0.03 to -0.07 at peak stall
-        if a <= 15:
-            Cm = -0.005 * sign
-        elif a <= 35:
-            # Peak negative Cm around 25-30°
-            frac = (a - 15) / 20
-            Cm = sign * (-0.005 - 0.055 * frac)
-        elif a <= 50:
-            # Cm recovers slightly
-            frac = (a - 35) / 15
-            Cm = sign * (-0.06 + 0.02 * frac)
-        elif a <= 90:
-            frac = (a - 50) / 40
-            Cm = sign * (-0.04 + 0.03 * frac)
-        else:
-            Cm = sign * (-0.01)
-    
-    return Cl, Cd, Cm
+        cl = 0.0
 
+    # --- Cd ---
+    if abs_a <= rc['alpha_stall']:
+        cd = rc['cd0'] + (rc['cd_stall'] - rc['cd0']) * (abs_a / rc['alpha_stall'])**2
+    elif abs_a <= 20:
+        cd = rc['cd_stall'] + (0.35 - rc['cd_stall']) * ((abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall']))
+    elif abs_a <= 45:
+        cd = 0.35 + (0.75 - 0.35) * ((abs_a - 20) / 25)
+    elif abs_a <= 90:
+        cd = 0.75 + (rc['cd_90'] - 0.75) * ((abs_a - 45) / 45)
+    else:
+        x = (abs_a - 90) / 90
+        cd = rc['cd_90'] * (1.0 - 0.7 * x * (1.0 - x))
 
-def generate_polar_file(Re, output_dir):
-    """Generate polar CSV file for given Reynolds number."""
-    filename = os.path.join(output_dir, f"polars_naca0012_Re_{int(Re)}.csv")
-    
-    alphas = np.arange(-180.0, 181.0, 1.0)
-    
-    with open(filename, 'w') as f:
-        f.write(f"# NACA 0012, Re = {Re:.1e} (based on Abbott & SAND80-2114)\n")
-        f.write("# alpha_deg, Cl, Cd, Cm\n")
-        
-        for alpha_deg in alphas:
-            Cl, Cd, Cm = naca0012_real_polar(Re, alpha_deg)
-            f.write(f"{alpha_deg:.1f}, {Cl:.6f}, {Cd:.6f}, {Cm:.6f}\n")
-    
-    print(f"Generated {filename} ({len(alphas)} points)")
+    # --- Cm ---
+    if abs_a <= rc['alpha_stall']:
+        cm = rc['cm0'] + (rc['cm_stall'] - rc['cm0']) * (abs_a / rc['alpha_stall'])**1.5
+    elif abs_a <= 20:
+        cm = rc['cm_stall'] + (-0.02 - rc['cm_stall']) * ((abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall']))
+    elif abs_a <= 45:
+        cm = -0.02 + (0.0 - (-0.02)) * ((abs_a - 20) / 25)
+    elif abs_a <= 90:
+        cm = 0.0 + (-0.01 - 0.0) * ((abs_a - 45) / 45)
+    else:
+        cm = -0.01 + (0.0 - (-0.01)) * ((abs_a - 90) / 90)
 
+    # Cm is odd: Cm(-alpha) = -Cm(alpha)
+    if alpha_deg < 0:
+        cm = -cm
+
+    return cl, cd, cm
 
 def verify_polar(Re, alpha_deg):
     """Quick verification of polar values."""

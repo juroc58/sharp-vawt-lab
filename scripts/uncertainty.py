@@ -63,7 +63,7 @@ UQ_SPEC = [
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
     ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_floor_override",  0.00,  1.00),    # finite-span correction floor (0=raw, >0 floors f_ar)
+    ("tip_loss_floor_override",  0.00,  0.80),    # finite-span correction floor (0=raw, 0.8=max floor based on Selig et al. 2015 Oswald efficiency 0.3-0.8 for AR 2-5)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
     ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
 ]

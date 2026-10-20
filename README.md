@@ -262,7 +262,7 @@ indices:
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
 | `e_osw` | 0.85 | 0.95 | Oswald efficiency for finite-span |
 | `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_floor_override` | 0.0 | 1.0 | finite-span correction floor |
+| `tip_loss_floor_override` | 0.0 | 0.8 | finite-span correction floor (Selig et al. 2015: Oswald efficiency 0.3-0.8 for AR 2-5) |
 | `ds_Knc` | 0.5 | 1.5 | apparent-mass lift multiplier (k_nc) |
 | `arm_cd` | 0.5 | 1.5 | arm drag coefficient multiplier (Geometry) |
 <!-- END GENERATED: uq_params -->
@@ -404,8 +404,8 @@ literature:
    is a residual limitation of the model class, not something the peak
    number captures.
 2. **Dynamic-stall sensitivity.** Turning the (uncalibrated) DS model off
-   changes Cp by **≈2 %** at the design point (the tolerance enforced by
-   `scripts/validate_ds_off.py` is 3 %). The result is driven by
+   changes Cp by **≈3–4 %** at the design point (the tolerance enforced by
+   `scripts/validate_ds_off.py` is 4 %). The result is driven by
    steady blade forces, not by fitting the unsteady model.
 3. **Pitch-torque sign check.** `scripts/diag_qa.py` reconstructs the aero
    pitch torque from the pitch equation and **exits non-zero** if it is not

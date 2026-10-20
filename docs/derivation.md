@@ -607,6 +607,16 @@ limitations in the README:
    wake structure. The tip-loss correction is a bounded finite-span
    reduction capped at 15 %; the true 3D loss at H/c = 3 is around 15–25 %.
 
+   **Finite-span floor uncertainty.** The `tip_loss_floor_override`
+   parameter sets a minimum value for the finite-span efficiency factor
+   f_ar. It is sampled from 0 to 0.8 in the UQ study; this range is based
+   on experimental Oswald efficiency measurements (Selig et al. 2015:
+   0.3–0.8 for AR 2–5 wings). For small-rotor anchors (Sharp-inspired CPPC,
+   optimised passive), this parameter dominates the Cp variance (S₁ ≈ 1.0),
+   meaning the small-rotor Cp is effectively "whatever you assume for tip
+   loss." The scale-up anchor (AR 10.5) is largely unaffected since its raw
+   f_ar ≈ 0.86 already exceeds the floor range.
+
 2. **No flow curvature expansion.** Flux-line theory predicts the flow
    to accelerate through the rotor in a way that a 2D DMS model misses.
    The Adams correction partially compensates but is not a substitute.

@@ -26,89 +26,85 @@ import math
 def naca0012_polar(Re, alpha_deg):
     """
     Compute NACA 0012 Cl, Cd, Cm at given Re and alpha.
-    Based on SAND80-2114 characteristics.
-    
-    Returns: (Cl, Cd, Cm)
+    Based on Abbott & von Doenhoff / SAND80-2114 trends.
+
+    Symmetric airfoil: Cl(alpha) = -Cl(-alpha), Cd(alpha) = Cd(-alpha),
+    Cm(alpha) = -Cm(alpha).
     """
-    alpha = math.radians(alpha_deg)
-    sin_a = math.sin(alpha)
-    cos_a = math.cos(alpha)
-    
-    # Reynolds number effects on lift curve slope and stall
-    logRe = math.log10(Re)
-    
-    # Lift curve slope (per radian) - increases with Re
-    # Thin airfoil theory: 2*pi ≈ 6.28, but NACA 0012 is ~0.11/deg = 6.28/rad
-    # SAND80-2114 shows ~0.105-0.115/deg depending on Re
-    if Re <= 1e5:
-        cla = 0.105  # per deg
-        cl_max = 1.0
-        stall_alpha = 12.0
-    elif Re <= 2e5:
-        cla = 0.108
-        cl_max = 1.1
-        stall_alpha = 13.0
-    elif Re <= 4e5:
-        cla = 0.110
-        cl_max = 1.2
-        stall_alpha = 14.0
+    rc = {
+        100000:  dict(clmax=1.10, alpha_stall=11.0, cd0=0.012, cd_stall=0.15, cd_90=1.60, cm0=-0.015, cm_stall=-0.08),
+        200000:  dict(clmax=1.15, alpha_stall=12.0, cd0=0.010, cd_stall=0.12, cd_90=1.55, cm0=-0.012, cm_stall=-0.07),
+        400000:  dict(clmax=1.20, alpha_stall=13.0, cd0=0.009, cd_stall=0.10, cd_90=1.50, cm0=-0.010, cm_stall=-0.06),
+        1000000: dict(clmax=1.25, alpha_stall=14.0, cd0=0.008, cd_stall=0.08, cd_90=1.45, cm0=-0.008, cm_stall=-0.05),
+    }.get(Re, dict(clmax=1.25, alpha_stall=14.0, cd0=0.008, cd_stall=0.08, cd_90=1.45, cm0=-0.008, cm_stall=-0.05))
+
+    # Normalize angle to [-180, 180]
+    a = alpha_deg
+    while a > 180:
+        a -= 360
+    while a < -180:
+        a += 360
+    abs_a = abs(a)
+
+    # --- Cl magnitude ---
+    if abs_a <= rc['alpha_stall']:
+        x = abs_a / rc['alpha_stall']
+        cl_mag = rc['clmax'] * (2*x - x*x)
+    elif abs_a <= 20:
+        x = (abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall'])
+        cl_mag = rc['clmax'] * (1.0 - 0.35 * x)
+    elif abs_a <= 45:
+        x = (abs_a - 20) / 25
+        cl_mag = rc['clmax'] * 0.65 * (1.0 - 0.3 * x)
+    elif abs_a <= 90:
+        x = (abs_a - 45) / 45
+        cl_mag = rc['clmax'] * 0.45 * (1.0 - x)
     else:
-        cla = 0.112
-        cl_max = 1.3
-        stall_alpha = 15.0
-    
-    # Convert to per radian
-    cla_rad = cla * 180 / math.pi
-    
-    # Symmetric airfoil: Cl(alpha) = -Cl(-alpha), Cd(alpha) = Cd(-alpha), Cm(alpha) = -Cm(-alpha)
-    # Use absolute value for computation
-    a = abs(alpha_deg)
-    sign = 1.0 if alpha_deg >= 0 else -1.0
-    
-    if a <= stall_alpha:
-        # Attached flow: linear lift, quadratic drag
-        Cl = sign * cla * a
-        Cd = 0.008 + 0.004 * (a / stall_alpha)**2  # approximate
-        Cm = -0.001 * sign * (a / stall_alpha)  # small moment, moves with alpha
+        x = (abs_a - 90) / 90
+        cl_mag = -rc['clmax'] * 0.50 * math.sin(math.pi * x)
+
+    # --- Apply sign for CL (odd symmetry: CL(-alpha) = -CL(alpha)) ---
+    if 0 < a < 90:
+        cl = abs(cl_mag)
+    elif -90 < a < 0:
+        cl = -abs(cl_mag)
+    elif 90 < a < 180:
+        cl = -abs(cl_mag)
+    elif -180 < a < -90:
+        cl = abs(cl_mag)
     else:
-        # Post-stall: empirical fit from SAND80-2114
-        # Cl drops, then has a secondary peak around 30-45°, then drops
-        if a <= 30:
-            # Initial drop past stall
-            frac = (a - stall_alpha) / (30 - stall_alpha)
-            Cl = sign * (cl_max * (1 - 0.4 * frac))
-        elif a <= 45:
-            # Secondary recovery
-            frac = (a - 30) / 15
-            Cl = sign * (cl_max * (0.6 + 0.2 * frac))
-        elif a <= 90:
-            # Drop to 90°
-            frac = (a - 45) / 45
-            Cl = sign * (cl_max * 0.8 * (1 - frac))
-        else:
-            # 90-180°
-            a2 = 180 - a
-            Cl = sign * cl_max * 0.2 * a2 / 90  # small residual
-        
-        # Drag in stall: increases dramatically
-        if a <= 90:
-            Cd = 0.02 + 1.2 * math.sin(alpha)**2
-        else:
-            Cd = 0.02 + 1.2 * math.sin(alpha)**2
-        
-        # Pitching moment Cm in stall
-        # Cm becomes more negative (nose-down) in stall
-        # Peak negative Cm around 30-45°
-        if a <= 15:
-            Cm = -0.01 * sign
-        elif a <= 45:
-            Cm = sign * (-0.01 - 0.06 * (a - 15) / 30)
-        elif a <= 90:
-            Cm = sign * (-0.07 + 0.05 * (a - 45) / 45)
-        else:
-            Cm = sign * (-0.02)
-    
-    return Cl, Cd, Cm
+        cl = 0.0
+
+    # --- Cd ---
+    if abs_a <= rc['alpha_stall']:
+        cd = rc['cd0'] + (rc['cd_stall'] - rc['cd0']) * (abs_a / rc['alpha_stall'])**2
+    elif abs_a <= 20:
+        cd = rc['cd_stall'] + (0.35 - rc['cd_stall']) * ((abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall']))
+    elif abs_a <= 45:
+        cd = 0.35 + (0.75 - 0.35) * ((abs_a - 20) / 25)
+    elif abs_a <= 90:
+        cd = 0.75 + (rc['cd_90'] - 0.75) * ((abs_a - 45) / 45)
+    else:
+        x = (abs_a - 90) / 90
+        cd = rc['cd_90'] * (1.0 - 0.7 * x * (1.0 - x))
+
+    # --- Cm ---
+    if abs_a <= rc['alpha_stall']:
+        cm = rc['cm0'] + (rc['cm_stall'] - rc['cm0']) * (abs_a / rc['alpha_stall'])**1.5
+    elif abs_a <= 20:
+        cm = rc['cm_stall'] + (-0.02 - rc['cm_stall']) * ((abs_a - rc['alpha_stall']) / (20 - rc['alpha_stall']))
+    elif abs_a <= 45:
+        cm = -0.02 + (0.0 - (-0.02)) * ((abs_a - 20) / 25)
+    elif abs_a <= 90:
+        cm = 0.0 + (-0.01 - 0.0) * ((abs_a - 45) / 45)
+    else:
+        cm = -0.01 + (0.0 - (-0.01)) * ((abs_a - 90) / 90)
+
+    # Cm is odd: Cm(-alpha) = -Cm(alpha)
+    if alpha_deg < 0:
+        cm = -cm
+
+    return cl, cd, cm
 
 
 def generate_polar_file(Re, output_dir):
