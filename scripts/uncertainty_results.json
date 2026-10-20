@@ -45,8 +45,8 @@
     ],
     [
       "tip_loss_floor_override",
-      0.0,
-      0.8
+      0.59,
+      0.84
     ],
     [
       "ds_Knc",
