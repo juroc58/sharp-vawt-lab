@@ -34,6 +34,22 @@ class TestTipLossBounds:
         # AR = 30, raw Gen. Prandtl f_ar ≈ 0.94; override 0.50 should not apply
         assert s.f_ar > 0.85
 
+    def test_multiplier_below_one_increases_tip_loss(self):
+        """tip_loss_multiplier < 1 represents low-AR under-correction."""
+        raw = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
+        weaker = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
+                                         'tip_loss_multiplier': 0.7})
+        assert weaker.f_ar == pytest.approx(0.7 * raw.f_ar, rel=1e-9)
+        assert weaker.f_ar < raw.f_ar
+
+    def test_multiplier_above_one_reduces_tip_loss(self):
+        """tip_loss_multiplier > 1 explores less finite-span penalty."""
+        raw = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
+        stronger = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
+                                           'tip_loss_multiplier': 1.3})
+        assert stronger.f_ar == pytest.approx(min(1.0, 1.3 * raw.f_ar), rel=1e-9)
+        assert stronger.f_ar > raw.f_ar
+
     def test_ind_k_uncapped_at_low_AR(self):
         """Induced drag uses the raw 1/(pi*e*AR) form; no cap."""
         s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
@@ -345,8 +361,9 @@ class TestCmHubMoment:
         """Three-value locked-blade Cm sign test.
         
         Locked blades (free=False, prescribe_pitch=True) with constant Cm values:
-        +0.1 (nose-down) should give lowest Cp, -0.1 (nose-up) should give highest.
-        This catches sign errors in Qa_cm = q * Cm * c hub reaction torque.
+        +0.1 (nose-up by the usual convention) should give lowest Cp, -0.1
+        (nose-down) should give highest. This catches sign errors in the
+        Qa_cm = q * Cm * c hub reaction torque.
         
         Measured on current machine: Cm=+0.1→Cp≈0.205, Cm=0→Cp≈0.257,
         Cm=-0.1→Cp≈0.309. Positive Cm reduces shaft torque, negative Cm increases it.
@@ -364,13 +381,38 @@ class TestCmHubMoment:
             r = sim.run()
             cps.append(r['cp'])
         
-        # Positive Cm (nose-down pitching moment) reduces shaft torque → lowest Cp
-        # Negative Cm (nose-up pitching moment) increases shaft torque → highest Cp
+        # Positive Cm (nose-up pitching moment) reduces shaft torque → lowest Cp
+        # Negative Cm (nose-down pitching moment) increases shaft torque → highest Cp
         assert cps[0] < cps[1] < cps[2], \
             f"Cp ordering wrong: Cm=+0.1→{cps[0]:.4f}, Cm=0→{cps[1]:.4f}, Cm=-0.1→{cps[2]:.4f}"
         # Cm=0 case should be between the two signed cases (sanity check on range)
         assert cps[2] - cps[0] > 0.05, \
             f"Cm effect too small: ΔCp = {cps[2]-cps[0]:.4f}, expected > 0.05"
+
+    def test_cm_zeroed_column_changes_cp(self):
+        """Same polar, only the Cm column zeroed: Cp must change.
+
+        Comparing against a surrogate polar changes Cl and Cd as well, so it
+        cannot isolate the hub-reaction term. Here both simulators load the
+        same CSV tables; the second has ``Cm[:] = 0`` applied in memory.
+        """
+        from vawt_core import create_sim_from_params
+
+        base = dict(BASE_QUICK, free=False, prescribe_pitch=True,
+                    T_max=10.0, stride=5)
+        sim_with_cm = create_sim_from_params(base)
+        sim_zero_cm = create_sim_from_params(base)
+        assert sim_zero_cm.polar_db is not sim_with_cm.polar_db
+
+        # Only the Cm column changes; Cl and Cd stay bit-identical.
+        sim_zero_cm.polar_db.Cm[:] = 0.0
+
+        cp_with = sim_with_cm.run()['cp']
+        cp_zero = sim_zero_cm.run()['cp']
+        assert abs(cp_with - cp_zero) > 0.005, (
+            "Zeroing only the Cm column should move Cp; "
+            f"got {cp_with:.4f} vs {cp_zero:.4f}"
+        )
 
     def test_cm_torque_in_energy_ledger(self):
         """Energy ledger should account for Cm hub reaction torque."""
@@ -392,11 +434,10 @@ class TestPolarExtremeAngles:
 
     def test_cl_negative_at_150_deg(self):
         """CL should be clearly negative at 150° angle of attack (post-stall).
-        
-        Note: Current synthetic polars give ≈ -0.06 at Re=1e6; physical
-        data (Abbott & von Doenhoff) suggests ≈ -0.4 to -0.6. The test
-        bound (-0.02) catches sign errors but cannot validate magnitude
-        until real polar data replaces the synthetic tables.
+
+        Flat-plate deep-stall model: CL(150°) ≈ -0.56, consistent with the
+        Sheldahl & Klimas SAND80-2114 trend (roughly -0.5 to -0.6). This is
+        an analytic deep-stall value, not a direct measurement.
         """
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")

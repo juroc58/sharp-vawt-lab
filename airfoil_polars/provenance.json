@@ -1,0 +1,17 @@
+{
+  "generator": "scripts/gen_real_polars.py",
+  "method": "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; flat-plate model beyond. CD(90 deg)~1.7, CD(150 deg)~0.4, CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981).",
+  "cm_method": "synthetic Abbott & von Doenhoff trend (not measured)",
+  "neuralfoil_version": "0.3.3",
+  "n_crit": 9.0,
+  "model_size": "xlarge",
+  "aerosandbox_shim": true,
+  "cst_fit_max_error_chord": 0.0001368347882649435,
+  "reynolds": [
+    100000,
+    200000,
+    400000,
+    1000000
+  ],
+  "note": "These tables are not raw experimental data. The attached-flow Cl/CD come from an XFOIL-trained surrogate; deep-stall and Cm are analytic trends."
+}

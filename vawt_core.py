@@ -459,6 +459,7 @@ class AeroConfig:
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
     tip_loss_floor_override: float = 0.0   # 0 = use raw generalized Prandtl formula; >0 floors f_ar
+    tip_loss_multiplier: float = 1.0    # multiplies raw f_ar; <1 = stronger tip loss (low-AR under-correction)
 
 
 @dataclass(frozen=True)
@@ -649,18 +650,21 @@ class CycloturbineSim:
         # Finite-span corrections (generalized Prandtl, k=1.8).
         # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) under-corrects
         # at low aspect ratio because it assumes an elliptical lift distribution
-        # and neglects wake rollup.  An empirical factor k=1.8 (vs 2.0) matches
+        # and neglects wake rollup.  An empirical factor k=1.8 (vs 2.0) fits
         # wind-tunnel data for wind-turbine blades down to AR ≈ 3.
-        # This is the generalized Prandtl correction (k=1.8).
-        # We no longer apply an arbitrary floor; the raw generalized Prandtl formula is
-        # the best available model for low-AR wings in BEM.
-        # Induced drag: Cd_i = Cl^2 / (pi * e * AR) — unchanged, physically
-        # correct at all AR.
-        # tip_loss_floor_override is retained for back-compat but defaults to 0
-        # so the raw generalized Prandtl formula is used by default.
+        # The raw generalized Prandtl value is the central estimate. Its
+        # uncertainty is modelled by tip_loss_multiplier, which may raise or
+        # lower f_ar (the latter represents the residual low-AR
+        # under-correction). tip_loss_floor_override is retained for
+        # back-compat and defaults to 0.
         f_ar_raw  = 1.0 / (1.0 + 1.8 / (aero.e_osw * AR))
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
-        self.f_ar  = max(aero.tip_loss_floor_override, f_ar_raw)
+        # A multiplier below 1 models the known low-AR under-correction of the
+        # generalized Prandtl formula (wake roll-up is stronger than the
+        # elliptical-loading assumption); above 1 explores less tip loss.
+        # The absolute floor override is kept for back-compat and applied last.
+        f_ar_scaled = min(1.0, max(0.0, f_ar_raw * aero.tip_loss_multiplier))
+        self.f_ar  = max(aero.tip_loss_floor_override, f_ar_scaled)
         self.ind_k = ind_k_raw
         if aero.c_scale_override > 0.0:
             self.c_scale = float(aero.c_scale_override)

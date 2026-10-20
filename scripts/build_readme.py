@@ -15,8 +15,13 @@ def _j(name):
     with open(os.path.join(SCRIPTS, name)) as fh:
         return json.load(fh)
 
+def _bound(x, d=2):
+    # Keep small collapse-branch values visible instead of rounding to 0.00.
+    return f"{x:.3f}" if abs(x) < 0.1 else f"{x:.{d}f}"
+
+
 def _ci(lo, hi, d=2):
-    return f"[{lo:.{d}f}, {hi:.{d}f}]"
+    return f"[{_bound(lo, d)}, {_bound(hi, d)}]"
 
 def _pct(x, d=1):
     return f"{x*100:.{d}f} %"
@@ -34,6 +39,7 @@ def _load_all():
         "aq": _j("aep_results.json"),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
+        "act": _j("optimization_actuator.json"),
     }
 
 DATA = {}
@@ -44,12 +50,18 @@ def _load_all():
         "aq": _j("aep_results.json"),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
+        "act": _j("optimization_actuator.json"),
     }
 _load_all()
 
 
+def _bound(x, d=2):
+    # Keep small collapse-branch values visible instead of rounding to 0.00.
+    return f"{x:.3f}" if abs(x) < 0.1 else f"{x:.{d}f}"
+
+
 def _ci(lo, hi, d=2):
-    return f"[{lo:.{d}f}, {hi:.{d}f}]"
+    return f"[{_bound(lo, d)}, {_bound(hi, d)}]"
 
 def _pct(x, d=1):
     return f"{x*100:.{d}f} %"
@@ -113,7 +125,7 @@ def iv_aep_turb_gain_pp():
     return _fmt((d["cf"] - s["cf"]) * 100, 2)
 
 def iv_ham_peak_cp():
-    return "0.47"
+    return "0.49"
 
 def iv_ham_uq_mean_cp():
     return _fmt(DATA["uq"]["summary"]["ham_1979"]["mean"])
@@ -124,13 +136,13 @@ def iv_uq_ci_width():
     return f"{min(widths):.3f}–{max(widths):.3f}"
 
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
+    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -212,10 +224,10 @@ def iv_scaleup_gain_vs_rigid_pct():
 
 # Ham values
 def iv_ham_2_0_cp():
-    return "0.366"  # From new validation bounds
+    return "0.389"
 
 def iv_ham_2_5_cp():
-    return "0.47"
+    return "0.485"
 
 def iv_ham_uq_ci():
     s = DATA["uq"]["summary"]["ham_1979"]
@@ -229,13 +241,13 @@ def iv_uq_ci_width():
 
 # Optimised passive
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
+    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -296,7 +308,7 @@ def iv_optimised_passive_ci():
     return _ci(s['p5'], s['p95'])
 
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
@@ -310,7 +322,7 @@ def iv_ham_reproduction_ci():
     return _ci(s['p5'], s['p95'])
 
 def iv_ham_peak_cp():
-    return "0.47"
+    return "0.49"
 
 def iv_ham_uq_mean_cp():
     return _fmt(DATA["uq"]["summary"]["ham_1979"]["mean"])
@@ -323,14 +335,14 @@ def iv_uq_ci_width():
 
 # Optimised passive AR
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
+    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -414,10 +426,10 @@ def iv_scaleup_gain_vs_rigid_pct():
 
 # Ham values
 def iv_ham_2_0_cp():
-    return "0.366"  # From new validation bounds
+    return "0.389"
 
 def iv_ham_2_5_cp():
-    return "0.47"
+    return "0.485"
 
 def iv_ham_uq_ci():
     s = DATA["uq"]["summary"]["ham_1979"]
@@ -431,13 +443,13 @@ def iv_uq_ci_width():
 
 # Optimised passive
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
+    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -493,7 +505,7 @@ def iv_optimised_passive_ci():
     return _ci(s['p5'], s['p95'])
 
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
@@ -507,7 +519,7 @@ def iv_ham_reproduction_ci():
     return _ci(s['p5'], s['p95'])
 
 def iv_ham_peak_cp():
-    return "0.47"
+    return "0.49"
 
 def iv_ham_uq_mean_cp():
     return _fmt(DATA["uq"]["summary"]["ham_1979"]["mean"])
@@ -520,14 +532,14 @@ def iv_uq_ci_width():
 
 # Optimised passive AR
 def iv_optimised_passive_ar():
-    return "0.797"
+    return "0.260"
 
 def iv_optimised_passive_ar_bound():
     return "0.80"
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm from Abbott & von Doenhoff data, non-zero throughout 360°"
+    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -756,15 +768,15 @@ INLINE_FUNCS = {
 def block_headline_table_small():
     uq = DATA["uq"]["summary"]
     rows = [
-        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "\u2014"),
-        ("Optimised passive (mass-balanced)", uq["optimised_passive"], "\u2014"),
+        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range, not precision (see note)"),
+        ("Optimised passive (mass-balanced)", uq["optimised_passive"], "fixed optimiser point"),
         ("Prescribed pitch (ideal actuator)", None, "upper bound"),
-        ("Ham 1979 reproduction", uq["ham_1979"], "UQ mean matches deterministic run"),
+        ("Ham 1979 reproduction", uq["ham_1979"], "fixed design point"),
     ]
     out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
     for name, s, ref in rows:
         if s is None:
-            out.append(f"| {name} | 0.48 | \u2014 | {ref} |")
+            out.append(f"| {name} | {DATA['act']['best_cp']:.2f} | \u2014 | {ref} |")
         else:
             out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} |")
     return "\n".join(out)
@@ -772,8 +784,10 @@ def block_headline_table_small():
 
 def block_headline_table_large():
     uq = DATA["uq"]["summary"]
+    s = uq["scaleup"]
+    betz_pct = 100.0 * s["mean"] / (16.0 / 27.0)
     rows = [
-        ("**Scaled-up passive (R = 2.72 m)**", uq["scaleup"], "~69 % of Betz"),
+        ("**Scaled-up passive (R = 2.72 m)**", s, f"~{betz_pct:.0f} % of Betz"),
     ]
     out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
     for name, s, ref in rows:
@@ -818,7 +832,7 @@ def block_uq_params_table():
         "tau_rev":                 ("0.05",  "0.20",  "induction lag (default 0.10 rev)"),
         "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for finite-span"),
         "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
-        "tip_loss_floor_override": ("0.59",   "0.84",   "finite-span correction floor [Prandtl lifting-line: AR 2.86→0.59, AR 10.5→0.84]"),
+        "tip_loss_multiplier":     ("0.70",  "1.30",  "multiplier on generalized Prandtl f_ar (<1 = low-AR under-correction, >1 = less tip loss)"),
         "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
         "arm_cd":                  ("0.5",   "1.5",   "arm drag coefficient multiplier (Geometry)"),
     }
@@ -833,14 +847,14 @@ def block_uq_params_table():
 
 def block_uq_sobol():
     """Sobol sensitivity table from uncertainty_results.json."""
-    sobol = DATA.get("sobol", {})
+    sobol = DATA["uq"].get("sobol", {})
     labels = {
         "ham_1979":          "Ham 1979 reproduction",
         "sharp_cppc":        "Sharp-inspired CPPC",
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.72 m",
     }
-    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 | Total-order S\u2084 |",
+    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 | Total-order S\u209c |",
            "|---|---|---|---|"]
     for a in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
         res = sobol.get(a, {})

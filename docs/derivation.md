@@ -167,13 +167,15 @@ $$
 
 with $\nu = 1.5\times 10^{-5}$ m²/s (air at sea level, 15 °C).
 
-The database is a set of **synthetic** NACA 0012 tables approximating the
-Sheldahl & Klimas (1981) report SAND80-2114, generated for four Reynolds
-numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
-$\alpha \in [-180°, 180°]$. They are not digitised from the report; see
-`airfoil_polars/README.md` for exactly what the surrogate does and does not
-capture (in particular, Cm is non-zero and comes from Abbott & von
-Doenhoff data).
+The database is a set of **synthetic** NACA 0012 tables generated for four
+Reynolds numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
+$\alpha \in [-180°, 180°]$. Attached-flow Cl and Cd ($|\alpha| \le 20°$) come
+from NeuralFoil 0.3.3, the XFOIL-trained network; deep stall is a flat-plate
+model anchored to Sheldahl & Klimas (1981) SAND80-2114 trends. They are not
+digitised measurements. See `airfoil_polars/README.md` and
+`airfoil_polars/provenance.json` for exactly what the surrogate does and does
+not capture (in particular, Cm is a synthetic Abbott & von Doenhoff trend and
+is not measured).
 
 ---
 
@@ -286,10 +288,11 @@ required for the wake to adjust to a change in blade loading.
 
 ---
 
-## 6. MIT dynamic-stall increment
+## 6. Lag-based dynamic-stall increment
 
-The dynamic-stall model follows the modified MIT formulation (Pawsey 2002
-App. B.2, Noll & Ham 1982), but is written as an **increment on the static
+The dynamic-stall model is a lagged-increment model after Noll & Ham (1982),
+in the form given by Pawsey (2002 App. B.2); older notes call it the
+"modified MIT" form. It is written as an **increment on the static
 polar** so that in steady flow the output exactly reproduces the static
 coefficients.
 
@@ -604,37 +607,51 @@ The following approximations are **intentional** and documented as
 limitations in the README:
 
 1. **Two-dimensional flow.** No tip vortices, no spanwise flow, no 3D
-   wake structure. The tip-loss correction is a bounded finite-span
-   reduction capped at 15 %; the true 3D loss at H/c = 3 is around 15–25 %.
+   wake structure. The generalized Prandtl factor reduces lift by
+   $1-f_{ar}$ — about 40 % at AR ≈ 2.9 and 15 % at AR ≈ 10.5.
 
-   **Finite-span floor uncertainty.** The `tip_loss_floor_override`
-   parameter sets a minimum value for the finite-span efficiency factor
-   f_ar. It is sampled from 0 to 0.8 in the UQ study; this range is based
-   on experimental Oswald efficiency measurements (Selig et al. 2015:
-   0.3–0.8 for AR 2–5 wings). For small-rotor anchors (Sharp-inspired CPPC,
-   optimised passive), this parameter dominates the Cp variance (S₁ ≈ 1.0),
-   meaning the small-rotor Cp is effectively "whatever you assume for tip
-   loss." The scale-up anchor (AR 10.5) is largely unaffected since its raw
-   f_ar ≈ 0.86 already exceeds the floor range.
+   **Finite-span uncertainty.** The central estimate is
+   $f_{ar} = 1/(1 + 1.8/(e\,AR))$. Its uncertainty is modelled by
+   `tip_loss_multiplier`, sampled over [0.70, 1.30]. The multiplier is
+   deliberately two-sided: below 1 it represents the known low-AR
+   under-correction of the Prandtl formula (wake roll-up is stronger than
+   the elliptical-loading assumption), above 1 it explores less tip loss.
+   The previous one-sided floor [0.59, 0.84] could only *raise* $f_{ar}$
+   above the raw value, so it could not represent the collapse scenario and
+   made the short-rotor interval look artificially narrow. For the
+   small-rotor anchors the multiplier dominates the Cp variance, and the
+   low end of its range crosses the rotation-sustaining threshold (the
+   Sharp-inspired anchor falls from Cp ≈ 0.10 at multiplier 1.0 to
+   ≈ 0.003 at 0.70). The 90 % interval is therefore a scenario range, not
+   a precision estimate. The scale-up anchor (AR 10.5) is much less
+   sensitive because its raw $f_{ar}$ is already high.
 
 2. **No flow curvature expansion.** Flux-line theory predicts the flow
    to accelerate through the rotor in a way that a 2D DMS model misses.
    The Adams correction partially compensates but is not a substitute.
 
-3. **Active Lift is not quantitatively isolated.** Sharp's secondary
-   mechanism (the L-shaped bellcrank between the rocking hinge and the
-   CG) is present in the model through the blade's motion relative to
-   its arm, but the current diagnostic (`scripts/diag_active_lift.py`)
-   only measures the combined benefit of a time-varying pitch schedule,
-   not the Coriolis-specific component. Earlier attempts to isolate the
-   Coriolis term via a Lagrangian `sumL` integral gave a near-null result
-   (~0.1 % of shaft power) but the script that produced that number is no
-   longer in the repo, so the figure should not be relied on. See the
-   Active Lift section of README.md for the current state.
+3. **Active Lift is isolated only at the scale-up point.** Sharp's
+   secondary mechanism (the L-shaped bellcrank between the rocking hinge
+   and the CG) is present in the model through the blade's motion
+   relative to its arm. The diagnostic
+   (`scripts/diag_active_lift.py`) runs the same prescribed pitch
+   schedule with `ar = 0` (no radial CG motion) and `ar = 0.312`, so the
+   difference isolates the radial-CG (Coriolis-like) term:
+   $\Delta C_p = +0.0069$ (+1.8 %) at the scale-up design. It does not
+   model Sharp's specific L-shaped bellcrank, and it has not been run on
+   the R = 0.60 m machine, which sits near the collapse threshold.
+   Earlier attempts to isolate the term via a Lagrangian `sumL` integral
+   gave a near-null result (~0.1 % of shaft power), but that script is no
+   longer in the repo and the figure should not be relied on. See the
+   Active Lift section of README.md.
 
 4. **Uncalibrated dynamic-stall constants.** $T_f, T_v, T_\alpha$ are
    literature-typical values from Pawsey's thesis, not fitted to data.
-   The uncertainty study shows they contribute 3–4 % to Cp spread.
+   With the XFOIL-derived polars the passive machine operates close to
+   static stall, so the DS model is not a small correction there:
+   switching it off drops passive Cp from ~0.18 to ~0.03 and lets the
+   blade reach ~74° incidence. At the prescribed-pitch design point the
+   effect is only ~2 %. The DS constants are sampled in the UQ study.
 
 5. **No stall-cell effects.** At low aspect ratio, stall cells can
    occupy part of the span, reducing effective lift further. Not modelled.
@@ -646,7 +663,7 @@ limitations in the README:
    Dryden spectrum with spatially varying length scale.
 
 7. **Model-form uncertainty.** The model combines several literature
-   sources (MIT dynamic stall, Adams curvilinear flow, DMS induction,
+   sources (lag-based dynamic stall, Adams curvilinear flow, DMS induction,
    generalized Prandtl finite-span) that were developed for different
    machines and flight regimes. The model-form error — how much the
    combined 2D BEM prediction deviates from reality due to structural
@@ -689,7 +706,7 @@ Additional known-good behaviours:
 - Selig, M.S., Ananda, G.K., Su, W.J. (2015). *Measured aerodynamic
   characteristics of wings at low Reynolds numbers.* Aerospace Science
   and Technology 45: 388-404. (AR 2-5 rectangular wings; Oswald efficiency
-  factors 0.3-0.8 measured — relevant for pinning finite-span floor values.)
+  factors 0.3-0.8 measured — relevant for pinning the finite-span multiplier.)
 - Ananda, G.K., Selig, M.S. (2012). *Low-to-Moderate Aspect Ratio Wings
   Tested at Low Reynolds Numbers.* AIAA 2012-3026. (Experimental data for
   low-AR wings, including lift curve slope and induced drag.)

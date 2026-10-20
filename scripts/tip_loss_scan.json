@@ -1,0 +1,233 @@
+{
+  "note": "Deterministic scan at each anchor's nominal parameters. tip_loss_multiplier < 1 means stronger finite-span loss than the raw generalized Prandtl value. The Sharp-inspired rotor switches from a rotation-sustaining branch to a collapsed branch at multiplier ~0.75.",
+  "multipliers": [
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    1.0,
+    1.1,
+    1.2,
+    1.3
+  ],
+  "anchors": {
+    "sharp_cppc": [
+      {
+        "multiplier": 0.7,
+        "cp": 0.003047866986527963,
+        "tsr": 0.4241377312521174,
+        "aoa_max": 179.38638503706116,
+        "steady": true
+      },
+      {
+        "multiplier": 0.75,
+        "cp": 0.0039430215388234465,
+        "tsr": 0.4620728227657833,
+        "aoa_max": 178.073214454689,
+        "steady": true
+      },
+      {
+        "multiplier": 0.8,
+        "cp": 0.06940217638944643,
+        "tsr": 1.207323575455434,
+        "aoa_max": 27.484585779235346,
+        "steady": true
+      },
+      {
+        "multiplier": 0.85,
+        "cp": 0.08153914677259466,
+        "tsr": 1.2740950243522449,
+        "aoa_max": 24.765409542943626,
+        "steady": true
+      },
+      {
+        "multiplier": 0.9,
+        "cp": 0.08929941502023962,
+        "tsr": 1.313370504910096,
+        "aoa_max": 23.471709050871173,
+        "steady": true
+      },
+      {
+        "multiplier": 0.95,
+        "cp": 0.09649519233228405,
+        "tsr": 1.3478101914594096,
+        "aoa_max": 22.188202582813712,
+        "steady": true
+      },
+      {
+        "multiplier": 1.0,
+        "cp": 0.10437329764039538,
+        "tsr": 1.383596375487575,
+        "aoa_max": 20.742425420400668,
+        "steady": true
+      },
+      {
+        "multiplier": 1.1,
+        "cp": 0.1387164478662806,
+        "tsr": 1.5214874041549644,
+        "aoa_max": 17.024319371662937,
+        "steady": true
+      },
+      {
+        "multiplier": 1.2,
+        "cp": 0.16427312428209095,
+        "tsr": 1.6098035226382612,
+        "aoa_max": 15.585490094746753,
+        "steady": true
+      },
+      {
+        "multiplier": 1.3,
+        "cp": 0.17429970476224693,
+        "tsr": 1.641882172925153,
+        "aoa_max": 13.428948894807004,
+        "steady": true
+      }
+    ],
+    "optimised_passive": [
+      {
+        "multiplier": 0.7,
+        "cp": 0.04694650078954009,
+        "tsr": 1.772879536528695,
+        "aoa_max": 26.16847914484017,
+        "steady": true
+      },
+      {
+        "multiplier": 0.75,
+        "cp": 0.07034296795359782,
+        "tsr": 2.0287037644221426,
+        "aoa_max": 19.839621297351858,
+        "steady": true
+      },
+      {
+        "multiplier": 0.8,
+        "cp": 0.23617775932203658,
+        "tsr": 3.0378189937074374,
+        "aoa_max": 10.300454735142308,
+        "steady": true
+      },
+      {
+        "multiplier": 0.85,
+        "cp": 0.2500629915244044,
+        "tsr": 3.0962214368341336,
+        "aoa_max": 9.746366482704339,
+        "steady": true
+      },
+      {
+        "multiplier": 0.9,
+        "cp": 0.26216954443947244,
+        "tsr": 3.1454027377653975,
+        "aoa_max": 9.265578573510618,
+        "steady": true
+      },
+      {
+        "multiplier": 0.95,
+        "cp": 0.2725028855875556,
+        "tsr": 3.186196236149574,
+        "aoa_max": 8.840971534753146,
+        "steady": true
+      },
+      {
+        "multiplier": 1.0,
+        "cp": 0.2814551602430655,
+        "tsr": 3.2207117970636396,
+        "aoa_max": 8.46132668149615,
+        "steady": true
+      },
+      {
+        "multiplier": 1.1,
+        "cp": 0.2956024972314239,
+        "tsr": 3.273794699197154,
+        "aoa_max": 7.951702208270793,
+        "steady": true
+      },
+      {
+        "multiplier": 1.2,
+        "cp": 0.3051543065050883,
+        "tsr": 3.3086833171820818,
+        "aoa_max": 7.539397522196107,
+        "steady": true
+      },
+      {
+        "multiplier": 1.3,
+        "cp": 0.31051679438275226,
+        "tsr": 3.3279518106877037,
+        "aoa_max": 7.224982228925752,
+        "steady": true
+      }
+    ],
+    "scaleup": [
+      {
+        "multiplier": 0.7,
+        "cp": 0.301696755922922,
+        "tsr": 2.69827815162259,
+        "aoa_max": 11.459809344657314,
+        "steady": true
+      },
+      {
+        "multiplier": 0.75,
+        "cp": 0.3220035576996733,
+        "tsr": 2.7575090156629605,
+        "aoa_max": 10.969158373951029,
+        "steady": true
+      },
+      {
+        "multiplier": 0.8,
+        "cp": 0.34006562697313486,
+        "tsr": 2.808133827330346,
+        "aoa_max": 10.528301425508385,
+        "steady": true
+      },
+      {
+        "multiplier": 0.85,
+        "cp": 0.35609933881213335,
+        "tsr": 2.851592292984125,
+        "aoa_max": 10.126379403196008,
+        "steady": true
+      },
+      {
+        "multiplier": 0.9,
+        "cp": 0.3701863057290623,
+        "tsr": 2.8887100734538387,
+        "aoa_max": 9.756791829250583,
+        "steady": true
+      },
+      {
+        "multiplier": 0.95,
+        "cp": 0.3826591525343728,
+        "tsr": 2.9207966610163107,
+        "aoa_max": 9.41446448842534,
+        "steady": true
+      },
+      {
+        "multiplier": 1.0,
+        "cp": 0.39340243741921105,
+        "tsr": 2.94787956960767,
+        "aoa_max": 9.07879993815838,
+        "steady": true
+      },
+      {
+        "multiplier": 1.1,
+        "cp": 0.4106821743307728,
+        "tsr": 2.990424897156817,
+        "aoa_max": 8.426816963449832,
+        "steady": true
+      },
+      {
+        "multiplier": 1.2,
+        "cp": 0.42246505731649037,
+        "tsr": 3.018757116027591,
+        "aoa_max": 7.963588991119574,
+        "steady": true
+      },
+      {
+        "multiplier": 1.3,
+        "cp": 0.42246505731649037,
+        "tsr": 3.018757116027591,
+        "aoa_max": 7.963588991119574,
+        "steady": true
+      }
+    ]
+  }
+}

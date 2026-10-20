@@ -4,15 +4,16 @@ title: "sharp-vawt-lab: a 2D BEM solver for the Sharp cycloturbine"
 abstract: >-
   A Python numerical laboratory for the Sharp cycloturbine — a passive
   variable-pitch vertical-axis wind turbine with centrifugal-pendulum
-  pitch control (CPPC). Implements the modified MIT dynamic stall model,
+  pitch control (CPPC). Implements a lag-based dynamic-stall increment
+  on the static polar (loosely after the Noll–Ham formulation),
   Adams (2018) curvilinear corrections, double-multiple-streamtube
   induction, and the full Lagrangian coupling between rotor and pitch
   dynamics.
 type: software
 authors:
   - name: juroc58
-version: 3.3.0
-date-released: "2026-10-19"
+version: 3.3.1
+date-released: "2026-10-20"
 license: MIT
 repository-code: "https://github.com/juroc58/sharp-vawt-lab"
 keywords:

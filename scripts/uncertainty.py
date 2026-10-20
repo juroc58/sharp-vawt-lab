@@ -63,7 +63,7 @@ UQ_SPEC = [
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
     ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_floor_override",  0.59,  0.84),    # finite-span correction floor [0.59, 0.84] from Prandtl lifting-line theory across all anchor AR values (Sharp-inspired AR=2.86→0.59, scale-up AR=10.5→0.84)
+    ("tip_loss_multiplier",       0.70,  1.30),    # finite-span multiplier on generalized Prandtl f_ar (<1 = low-AR under-correction, >1 = less tip loss)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
     ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
 ]
@@ -79,26 +79,36 @@ CACHE_DIR = ".uq_cache"
 
 # Version string that gets hashed into the cache key so that changes to
 # the core physics, polars or parameter spec invalidate stale cache entries.
-_UQ_VERSION = "v8-2026-10-19"
+_UQ_VERSION = "v10-2026-10-20"
 
 
 def _code_hash() -> str:
-    """Hash of vawt_core.py, polars, UQ_SPEC and the script version."""
+    """Hash of vawt_core.py, airfoil polars, UQ_SPEC and the script version.
+
+    Paths are resolved relative to the repository root (``__file__``), never
+    the process working directory, so the hash is identical however the
+    script is launched. Missing inputs raise instead of being silently
+    skipped: a stale cache that cannot see the polars is worse than no cache.
+    """
+    root = Path(__file__).resolve().parent.parent
     h = hashlib.sha256()
-    # Core physics
-    for path in ["vawt_core.py", "scripts/uncertainty.py"]:
-        try:
-            with open(path, "rb") as f:
-                h.update(f.read())
-        except OSError:
-            pass
+    # Core physics (hard requirement)
+    for rel in ("vawt_core.py", "scripts/uncertainty.py"):
+        path = root / rel
+        if not path.is_file():
+            raise FileNotFoundError(f"UQ cache hash: missing source file {path}")
+        h.update(path.read_bytes())
     # UQ parameter spec (catches bound/name changes)
     h.update(json.dumps(UQ_SPEC, sort_keys=True).encode())
-    # Polar files
-    polars_dir = Path("polars")
-    if polars_dir.is_dir():
-        for f in sorted(polars_dir.glob("**/*.csv")):
-            h.update(f.read_bytes())
+    # Polar files (hard requirement: a cache key that ignores them is unsafe)
+    polar_dir = root / "airfoil_polars"
+    polar_files = sorted(polar_dir.glob("**/*.csv"))
+    if not polar_files:
+        raise FileNotFoundError(
+            f"UQ cache hash: no polar CSVs found under {polar_dir}"
+        )
+    for f in polar_files:
+        h.update(f.read_bytes())
     h.update(_UQ_VERSION.encode())
     return h.hexdigest()[:16]
 
@@ -145,7 +155,10 @@ def _save_to_cache(key: str, result: dict) -> None:
 # 2. ANCHOR CASES
 # ============================================================================
 ANCHORS: Dict[str, Dict[str, Any]] = {
-    # Ham 1979 reproduction — his model class
+    # Ham 1979 reproduction — his model class: DMS induction, static polars,
+    # cosine pitch, no curvature and no finite-span correction.  DS is off
+    # here to match scripts/validate_ham.py; the DS-on sensitivity is a
+    # separate case (see README).
     "ham_1979": dict(
         R=1.83, c=0.305, H=1.37, N=3,
         ar=0.0, sp=0.25,
@@ -154,7 +167,7 @@ ANCHORS: Dict[str, Dict[str, Any]] = {
         prescribe_pitch=True, pp0_deg=0.0, pp1_deg=-10.0,
         pp2_deg=0.0, pp3_deg=0.0, pp_ph_deg=0.0,
         free=False, tsr=2.5, T_max=20.0, stride=5,
-        use_dynamic_stall=True,
+        use_dynamic_stall=False,
         use_flow_curvature=False,
         use_tip_loss=False,
         use_dmst=True,
@@ -337,10 +350,15 @@ def main():
 
     # Generate samples
     if use_saltelli:
+        # SALib returns samples scaled to the problem bounds. Give it the unit
+        # hypercube here and map to physical values exactly once below.
+        # (Passing physical bounds and then re-scaling was a double-mapping bug
+        # that compressed every parameter into a narrow band near its low
+        # bound.)
         problem = {
             'num_vars': len(UQ_SPEC),
             'names': UQ_NAMES,
-            'bounds': [[lo, hi] for lo, hi in zip(UQ_LOW, UQ_HIGH)],
+            'bounds': [[0.0, 1.0] for _ in UQ_SPEC],
         }
         # Saltelli sampling
         unit = saltelli.sample(problem, saltelli_n, calc_second_order=calc_second_order)

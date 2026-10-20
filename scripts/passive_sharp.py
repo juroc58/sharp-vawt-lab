@@ -75,6 +75,10 @@ def sweep(name, values):
     best = (None, -1)
     for v in values:
         p = {**BASE, name: v}
+        if name == "dcw":
+            # BASE uses balance=1, which solves dcw from the equilibrium;
+            # sweeping dcw would be a no-op.  Fix the mass instead.
+            p["balance"] = 0
         r = create_sim_from_params(p).run()
         mark = ""
         if r['cp'] > best[1]:
@@ -87,7 +91,7 @@ def sweep(name, values):
 
 # Sweep the Sharp hardware parameters
 sweep("mc",   [0.004, 0.006, 0.008, 0.012, 0.016])   # counterweight mass
-sweep("dcw",  [0.3,   0.4,   0.5,   0.6,   0.8])     # counterweight offset
+sweep("dcw",  [-0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.3, 0.5, 0.8])  # counterweight offset
 sweep("ar",   [0.3,   0.4,   0.5,   0.6,   0.7])     # rocking arm length
 sweep("bias_deg", [-4, -2, 0, 2, 4])                 # static pitch bias
 sweep("k_load",   [0.0004, 0.0008, 0.0012, 0.0018, 0.0025])

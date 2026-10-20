@@ -9,8 +9,9 @@ prescribed pitch schedule ψ(φ) with two pivot configurations:
 Uses the scale-up passive CPPC design (R=2.72m, AR=10.5) which operates
 at a healthy TSR ~3.0 with Cp ~0.43, providing a meaningful operating
 point for isolating the Coriolis-like term. The Sharp-inspired design
-(R=0.60m, AR=2.86) does not run at a healthy TSR without the artificial
-tip-loss floor (tip_loss_floor_override ∈ [0.80, 1.00] in UQ runs).
+(R=0.60m, AR=2.86) does not run at a healthy TSR without a finite-span
+multiplier well above 1 (i.e. assuming much less tip loss than the raw
+Prandtl value).
 
 The net pitch-to-rotor energy transfer is measured as the difference
 in Cp between the same pitch schedule with and without radial CG motion.
@@ -22,7 +23,8 @@ from vawt_core import create_sim_from_params
 
 
 # Scale-up passive CPPC design (R=2.72m, AR=10.5) - proper operating point
-# Sharp-inspired design at R=0.60m stalls without artificial floor
+# Sharp-inspired design at R=0.60m only runs with a tip-loss multiplier well
+# above 1 (much less loss than raw Prandtl); not used here.
 DESIGN = dict(
     R=2.7179, H=4.0568, N=3, c=0.3861,
     ar=0.3121, sp=0.2181,

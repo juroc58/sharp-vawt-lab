@@ -49,7 +49,14 @@ MIN_RIGID_TSR = 1.0
 
 GEOMETRIES = {
     "sharp_inspired": {
-        "base": {**BASE},   # already the Sharp-inspired config
+        # Sharp-inspired CPPC anchor (R = 0.60 m, AR 2.86).  Do not inherit
+        # BASE from compute_aep.py: that dict is the scale-up machine.
+        "base": {**BASE,
+                 "R": 0.60, "H": 0.40, "c": 0.14,
+                 "ar": 0.50, "sp": 0.25,
+                 "mb": 0.010, "xbcg": 0.20,
+                 "mc": 0.002, "dcw": 0.30,
+                 "k_load": 0.0025, "tsr": 2.0, "T_max": 30.0},
         "pitch_grid": [-10.0, -5.0, 0.0, 5.0, 10.0, 15.0],
         "kload_grid": [0.0005, 0.0010, 0.0015, 0.0020, 0.0030, 0.0040,
                        0.0050, 0.0080, 0.0120],
@@ -100,7 +107,11 @@ def sweep_rigid(base, psi_grid, kl_grid, label):
             cp, tsr = res
             results.append(dict(psi0=psi0, k_load=kl, cp=cp, tsr=tsr))
     if not results:
-        raise RuntimeError(f"no steady rigid configs at {label}")
+        # At very low aspect ratio the uncapped induced drag stops a
+        # fixed-pitch rotor from spinning at all.  Report it as a null
+        # baseline rather than crashing the whole comparison.
+        print(f"    no steady rigid configuration found (rotor does not spin)")
+        return dict(psi0=None, k_load=None, cp=0.0, tsr=0.0, viable=False)
     best = max(results, key=lambda r: r['cp'])
     viable = bool(best['cp'] >= MIN_RIGID_CP and best['tsr'] >= MIN_RIGID_TSR)
     tag = "" if viable else "   [BELOW VIABILITY FLOOR]"

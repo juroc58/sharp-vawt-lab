@@ -58,8 +58,8 @@ class TestHamReproduction:
     def test_ham_tsr_2_5_within_band(self):
         r = create_sim_from_params(self.BASE_HAM).run()
         # Ham 1979 reported Cp = 0.42-0.45 at TSR 2.5-3.0.
-        # The solver (2D, no tip loss) runs ~+9 % above the band; see README.
-        # New polars: static peak Cp = 0.4635 (6.6% above mid-band 0.435)
+        # The solver (2D, no tip loss) runs ~+11 % above the band's midpoint.
+        # New polars: static peak Cp = 0.485.
         assert 0.42 < r['cp'] < 0.50, f"Ham Cp = {r['cp']:.3f} outside plausible band"
 
     def test_ham_tsr_2_0_within_band(self):
@@ -69,7 +69,7 @@ class TestHamReproduction:
 
 @pytest.mark.slow
 class TestDynamicStallSensitivity:
-    """Turning DS off should change Cp by less than 3 % at the design point."""
+    """Turning DS off should change Cp by less than 4 % at the design point."""
 
     # Prescribed-pitch design at the actuator optimiser's best point.
     # The passive optimiser's optimum is different; see
@@ -91,12 +91,14 @@ class TestDynamicStallSensitivity:
         w0_frac=0.9, k_load=0.0015, tsr=2.14,
     )
 
-    def test_ds_sensitivity_under_3_percent(self):
-        """The README claims ΔCp < 4 % when the dynamic-stall model is
-        turned off at the optimiser's prescribed-pitch design point.
-        New polars (synthetic NACA 0012 based on Abbott & SAND80-2114
-        trends) give ΔCp ≈ 3.4 %; tolerance set to 4 % to allow for
-        polar refinement."""
+    def test_ds_sensitivity_prescribed_design(self):
+        """At the prescribed-pitch design point, DS changes Cp by < 4 %.
+
+        With the XFOIL-derived polars the measured delta is ~1.8 %
+        (Cp 0.497 with DS, 0.488 without), consistent with the README's
+        claim that the prescribed result is driven by steady blade forces.
+        The passive case is very different; see the next test.
+        """
         r_ds = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': True}).run()
         r_nods = create_sim_from_params({**self.DESIGN, 'use_dynamic_stall': False}).run()
         delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
@@ -105,9 +107,16 @@ class TestDynamicStallSensitivity:
             f"(Cp with DS = {r_ds['cp']:.4f}, without = {r_nods['cp']:.4f})"
 
     def test_passive_ds_sensitivity_is_larger(self):
-        """A test that documents the physical difference: passive operation
-        is much more DS-sensitive than prescribed.  If this test ever fails
-        it means something in the pitch dynamics has changed."""
+        """Passive operation is much more DS-sensitive than prescribed.
+
+        With the XFOIL-derived polars the passive machine sits close to
+        static stall (alpha_max ~19 deg with DS on). Switching DS off lets
+        it fall into deep stall (Cp 0.18 -> 0.03, alpha_max ~74 deg), an
+        ~80 % change. That is a genuine physical dependence of a passive
+        pitch mechanism, not numerical noise, and it is why the UQ study
+        samples the DS constants. The bound catches regressions; the exact
+        value is recorded in CHANGELOG v3.3.1.
+        """
         passive = {**self.DESIGN,
                    'prescribe_pitch': False,
                    'use_tip_loss': True,
@@ -115,10 +124,8 @@ class TestDynamicStallSensitivity:
         r_ds = create_sim_from_params({**passive, 'use_dynamic_stall': True}).run()
         r_nods = create_sim_from_params({**passive, 'use_dynamic_stall': False}).run()
         delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
-        # Passive mode: DS sensitivity is much larger than prescribed.
-        # Wide bounds so the test detects regressions without being
-        # fragile: this case reaches ~50 deg AoA on the upwind pass,
-        # where the DS model is genuinely active, so the delta is not
-        # expected to be small.
-        assert 0.001 < delta < 0.70, \
+        # Passive mode: DS keeps the blade attached where the static polar
+        # would stall, so turning it off must reduce Cp.
+        assert r_ds['cp'] > r_nods['cp']
+        assert 0.001 < delta < 0.95, \
             f"Passive DS sensitivity {delta*100:.1f}% outside expected range"

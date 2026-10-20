@@ -94,13 +94,13 @@ def load_fair_rigid_reference():
         return None
     with open(path) as fh:
         data = json.load(fh)
-    g = data.get("geometries", {}).get("sharp_inspired")
+    g = data.get("geometries", {}).get("scaleup")
     if not g:
         return None
     br = g.get("best_rigid") or {}
     return {
         "source":       "aep_rigid_fair.json",
-        "geometry":     "sharp_inspired",
+        "geometry":     "scaleup",
         "psi0_deg":     br.get("psi0_deg"),
         "k_load":       br.get("k_load"),
         "cp_design":    br.get("cp_design"),
