@@ -27,7 +27,7 @@ quoted, not reproduced here).
 
 ## Scope and Limitations
 
-This is a 2D computational study. As of 2025-10-20, **no physical rotor has been built or instrumented**. All passive CPPC results are model hypotheses, not experimental predictions.
+This is a 2D computational study. As of 2026-10-20, **no physical rotor has been built or instrumented**. All passive CPPC results are model hypotheses, not experimental predictions.
 
 The passive CPPC mechanism relies heavily on the dynamic-stall model. At the Sharp-inspired anchor, disabling DS drops Cp from ~0.067 to ~0.006. Until DS is independently calibrated against measured rotor data, these passive results should be treated as a numerical exploration of the mechanism.
 
@@ -322,7 +322,7 @@ For the scale-up design (R = 2.72 m, peak Cp ≈ 0.384):
 | Strategy | AEP | Capacity factor |
 |---|---|---|
 | **Passive k_load (variable speed)** | **16763 kWh/yr** | **12.8 %** |
-| Fixed-rpm generator | 10797 kWh/yr | 8.2 % |
+| Fixed-rpm generator | 10565 kWh/yr | 8.0 % |
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces **1.55× more energy** than the same rotor on
@@ -365,8 +365,8 @@ case and yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 | `arm_cd` | 0.5 | 1.5 | arm drag coefficient multiplier (Geometry) |
 <!-- END GENERATED: uq_params -->
 
-The 90 % confidence width is **0.045 Cp** for Ham, **0.094** for the
-scale-up, **0.116** for Sharp-inspired CPPC and **0.231** for optimised
+The 90 % confidence width is ~0.04 Cp for Ham, ~0.09 for the
+scale-up, ~0.12 for Sharp-inspired CPPC and ~0.23 for optimised
 passive. These are scenario widths, not calibrated error bars: the Sharp
 and optimised-passive distributions are bimodal because part of the
 finite-span band crosses a collapse threshold. The widths are not directly
@@ -399,7 +399,7 @@ it gives 0.521 where the old formula gave 0.588.
 confidence half-widths are 0.2–0.3 for the dominant indices (table above).
 Sums above 1.0 would be within that uncertainty; the largest total-order
 index now is the optimised-passive multiplier at 0.80 ± 0.28.
-they are not evidence of a physical interaction of that size. Indices
+They are not evidence of a physical interaction of that size. Indices
 whose confidence interval spans zero are not used for ranking.
 `arm_cd` is exactly zero in every anchor because `arm_d = 0`.
 
@@ -481,7 +481,7 @@ rather than "turbulence improves the machine."
 
 ### Which parameter drives the spread?
 
-Saltelli Sobol sensitivity indices (N = 64, 1536 runs per anchor) for each
+Saltelli Sobol sensitivity indices (N = 64, 1664 runs per anchor) for each
 anchor. Runs in ~20 min on 4 cores (`scripts/uncertainty.py --saltelli
 --saltelli-n 64 --saltelli-second-order`).
 
@@ -854,7 +854,7 @@ Sharpe–Glauert high-loading branch), the structure of the lagged DS
 increment, the Adams curvature scaling `min(1, (c/R)/0.418)`, the polar
 source (NeuralFoil surrogate rather than measured section data), the
 counter-rotating wake-interaction model (literature-calibrated, not
-validated at the modelled spacing), the rigid blade/pitch-linkage
+validated at the modelled spacing) -- NOTE: The counter-rotating pair gain is a speculative heuristic scenario, not a 2D BEM prediction. See `scripts/compute_aep_counter_rotating.py` for caveats., the rigid blade/pitch-linkage
 assumption, and the absence of tower shadow and finite blade thickness.
 Changing any of these could move Cp by more than the parameter bands
 above. They are listed so that the 90 % intervals are not mistaken for a

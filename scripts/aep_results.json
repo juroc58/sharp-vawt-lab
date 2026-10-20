@@ -19,12 +19,12 @@
       "branch_jumps": []
     },
     "passive_fixed_rpm": {
-      "aep_kWh": 10796.596042807916,
-      "cf": 0.08216587551604199
+      "aep_kWh": 10564.771828431196,
+      "cf": 0.08040161208851748
     }
   },
   "gains_percent": {
-    "passive_vs_fixed_rpm": 55.265738178331134,
+    "passive_vs_fixed_rpm": 58.67275523060174,
     "passive_vs_rigid_fair": 13.855563275405046
   },
   "rigid_fair_ref": {

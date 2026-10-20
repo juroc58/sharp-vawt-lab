@@ -242,7 +242,7 @@ def integrate_aep(U_grid, cp_curve, U_mean, k_weibull,
 # Plot
 # ============================================================================
 def make_plot(results, tsrs, out_path):
-    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
 
     col_passive = "C0"
     col_fixed   = "C2"
@@ -257,6 +257,22 @@ def make_plot(results, tsrs, out_path):
     a.set_title("Cp vs TSR at fixed rpm")
     a.grid(alpha=0.3)
     a.legend(fontsize=9)
+    
+    # Highlight free-running operating points
+    fr = results['passive']['free_results']
+    if fr:
+        fr_tsrs = np.array([f['tsr_eq'] for f in fr])
+        fr_cps  = np.array([f['cp'] for f in fr])
+        a.plot(fr_tsrs, fr_cps, "ro", markersize=8, label="free-running")
+        # Annotate free-running cluster
+        if len(fr_tsrs) > 0:
+            a.annotate("Free-running\noperating points",
+                       xy=(fr_tsrs[-1], fr_cps[-1]),
+                       xytext=(fr_tsrs[-1] + 0.3, fr_cps[-1] - 0.08),
+                       arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
+                       bbox=dict(boxstyle="round", fc="white", alpha=0.9),
+                       fontsize=9, color="red")
+    a.legend(fontsize=9)
 
     # Panel 2: free-running Cp vs U
     a = ax[1]
@@ -264,19 +280,37 @@ def make_plot(results, tsrs, out_path):
     if fr:
         Us  = np.array([f['U'] for f in fr])
         cps = np.array([f['cp'] for f in fr])
-        a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
+        a.plot(Us, cps, "o-", color="C0", lw=1.6, label="passive CPPC")
     a.set_xlabel("wind speed U [m/s]")
     a.set_ylabel("Cp at equilibrium")
     a.set_title("Free-running Cp vs wind speed")
     a.grid(alpha=0.3)
     a.legend(fontsize=9)
+    
+    # Annotate the bifurcation (branch jump)
+    # Find the jump point in free-running results
+    if fr and len(fr) >= 2:
+        Us_arr  = np.array([f['U'] for f in fr])
+        cps_arr = np.array([f['cp'] for f in fr])
+        dcp = np.diff([f['cp'] for f in fr])
+        jump_idx = np.argmax(np.abs(dcp))
+        if abs(dcp[jump_idx]) > 0.02:  # significant jump
+            U_jump = fr[jump_idx]['U']
+            cp_jump = fr[jump_idx]['cp']
+            a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch",
+                       xy=(U_jump, cp_jump),
+                       xytext=(U_jump + 3.0, min(fr[-1]['cp'], 0.15) + 0.05),
+                       arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
+                       bbox=dict(boxstyle="round", fc="wheat", alpha=0.8),
+                       fontsize=9)
+    a.legend(fontsize=9)
 
     # Panel 3: power curves
     a = ax[2]
     a.plot(results['passive']['U'], results['passive']['P'], "-",
-           color=col_passive, lw=2.0, label="passive CPPC, k_load")
+           color="C0", lw=2.0, label="passive CPPC, k_load")
     a.plot(results['fixed']['U'], results['fixed']['P'], "--",
-           color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
+           color="C2", lw=1.8, label="passive CPPC, fixed rpm")
     a.set_xlabel("wind speed U [m/s]")
     a.set_ylabel("electrical power [W]")
     a.set_title("Power curve")
@@ -308,7 +342,7 @@ def main():
     print()
 
     # --- fixed-rpm Cp(TSR) ---
-    tsrs = np.linspace(1.0, 3.5, 11)
+    tsrs = np.linspace(1.0, 4.5, 15)
     cps_passive_tsr = compute_cp_curve(BASE, tsrs, "passive CPPC")
 
     # --- free-running reference speeds (with branch tracing) ---

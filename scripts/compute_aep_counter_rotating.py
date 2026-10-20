@@ -1,10 +1,10 @@
 """
-Annual Energy Production (AEP) for two counter-rotating Sharp cycloturbines.
+Scenario Modeling: Counter-Rotating VAWTs
 
-Paired counter-rotating VAWTs benefit from bluff-body flow acceleration
-between the rotors: streamlines converge in the gap, increasing the
-incoming velocity on the downstream rotor. Experimental studies
-consistently measure performance gains:
+Paired counter-rotating VAWTs may benefit from bluff-body flow acceleration
+between the rotors: streamlines converge in the gap, potentially increasing
+the incoming velocity on the downstream rotor. Experimental studies
+report potential performance gains:
 
   - VUB wind-tunnel study (closely spaced counter-rotating pairs):
     up to 16% power increase from streamline convergence
@@ -12,25 +12,33 @@ consistently measure performance gains:
     performance increase over ~50 deg of wind direction
   - Counter-rotating vs co-rotating tandem: ~20% downstream improvement
 
-This script models:
+WARNING: This script uses a heuristic composite model (momentum theory + 
+assumed wake decay + assumed channeling factor) to estimate potential 
+gains from a counter-rotating pair. At the modeled spacing (0.37D), 
+2D BEM is fundamentally incapable of resolving 3D wake interactions, 
+blockage, or turbulence. These results are a speculative upper-bound 
+scenario, NOT a validated array prediction.
+
+This script explores a heuristic scenario model:
 1. Two Sharp cycloturbine rotors separated by a distance
 2. Rotors counter-rotating (one clockwise, one counter-clockwise)
-3. Physics-based interaction model: downstream rotor sees enhanced wind
+4. Heuristic interaction model: downstream rotor sees enhanced wind
    speed from momentum theory (wake recovery + counter-rotating channeling)
 4. Compares against single rotor baseline
 5. Integrates power curves against Weibull wind distribution
 
-The interaction factor is computed from first principles using momentum
-theory, not assumed as a constant:
+The interaction factor is estimated using a heuristic composite of 
+momentum theory, assumed wake recovery, and an assumed channeling factor,
+calibrated to an empirical cap from external experiments:
 
   - Upstream rotor induction factor a from thrust coefficient Ct = 4a(1-a)
-  - Wake velocity recovery between rotors (exponential decay of deficit)
-  - Counter-rotating channeling: adjacent blades move toward each other
+  - Assumed wake velocity recovery between rotors (exponential decay of deficit)
+  - Assumed counter-rotating channeling: adjacent blades move toward each other
     in the gap, creating additional flow acceleration
-  
-  The interaction factor varies with wind speed, TSR, and spacing.
-  Default rotor separation is 2.0 m (0.37 rotor diameters - close spacing
-  where interaction is strongest).
+   
+The interaction factor varies with wind speed, TSR, and spacing.
+Default rotor separation is 2.0 m (0.37 rotor diameters - close spacing
+where interaction is strongest).
 
 Sensitivity: the factor varies from ~0% (large spacing) to ~16%
 (VUB wind-tunnel upper bound at close spacing).
@@ -104,7 +112,7 @@ ETA_DRIVETRAIN = 0.90 # drivetrain efficiency
 # Counter-rotating specific parameters
 ROTOR_SEPARATION = 2.0  # m, distance between rotor centers (0.37 rotor diameters)
 
-# Interaction model parameters (physics-based, not a fixed constant)
+# Interaction model parameters (heuristic scenario model, not a fixed constant)
 WAKE_EXPANSION_ANGLE_DEG = 12.0   # degrees, wake half-angle for VAWT wake
 CHANNELING_STRENGTH = 0.25        # fraction of tip speed contributing to channeling
 MAX_INTERACTION_FACTOR = 0.16     # 16% max wind speed increase (VUB experiments)
@@ -199,7 +207,7 @@ def compute_power_curve(params: dict, U_vals: np.ndarray,
 def compute_interaction_factor(U_inf: float, tsr: float, spacing_m: float, R: float,
                                ct_upstream: float = 0.8) -> float:
     """
-    Physics-based interaction factor for counter-rotating VAWT pair.
+    heuristic scenario model interaction factor for counter-rotating VAWT pair.
     
     Model based on experimental observations:
     - VUB wind-tunnel: closely spaced counter-rotating pairs show up to 16%
@@ -314,12 +322,19 @@ def integrate_aep(U_grid: np.ndarray, P_grid: np.ndarray,
     return aep_elec, cf
 
 
+# WARNING: This script uses a heuristic composite model (momentum theory + 
+# assumed wake decay + assumed channeling factor) to estimate potential 
+# gains from a counter-rotating pair. At the modeled spacing (0.37D), 
+# 2D BEM is fundamentally incapable of resolving 3D wake interactions, 
+# blockage, or turbulence. These results are a speculative upper-bound 
+# scenario, NOT a validated array prediction.
+
 def main():
     """Main computation function."""
     print("=" * 70)
-    print("Annual Energy Production - Counter-Rotating Sharp Cycloturbines")
+    print("Scenario Modeling - Counter-Rotating Sharp Cycloturbines")
     print("=" * 70)
-    print("Interaction model: physics-based momentum theory")
+    print("Interaction model: heuristic scenario model momentum theory")
     print("  - Upstream rotor induction factor from Ct = 4a(1-a)")
     print("  - Wake recovery between rotors (exponential decay of deficit)")
     print("  - Counter-rotating channeling: blades move toward each other in gap")
@@ -512,7 +527,7 @@ def main():
                      bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
     
     plt.suptitle('Counter-Rotating Sharp Cycloturbine Analysis\n' +
-                 'Physics-based momentum theory interaction model\n' +
+                 'heuristic scenario model momentum theory interaction model\n' +
                  f'(interaction factor: {interaction_factors.mean()*100:.1f}% mean wind speed increase)',
                  fontsize=14, fontweight='bold')
     plt.tight_layout()
@@ -533,10 +548,10 @@ def main():
             "interaction_factor_mean": float(interaction_factors.mean()),
             "interaction_factor_min": float(interaction_factors.min()),
             "interaction_factor_max": float(interaction_factors.max()),
-            "interaction_factor_note": "Physics-based momentum theory model: upstream rotor induction factor from Ct=4a(1-a), wake recovery between rotors, counter-rotating channeling from blades moving toward each other in gap. Factor varies with wind speed, TSR, and spacing.",
+            "interaction_factor_note": "heuristic scenario model momentum theory model: upstream rotor induction factor from Ct=4a(1-a), wake recovery between rotors, counter-rotating channeling from blades moving toward each other in gap. Factor varies with wind speed, TSR, and spacing.",
             "description": "Two counter-rotating Sharp cycloturbines with bluff-body flow acceleration between rotors",
             "paper_reference": "VUB wind-tunnel study (closely spaced counter-rotating VAWT pairs); Dabiri et al., Energies 2019, 12(14):2724",
-            "claimed_improvement": f"{improvement_over_two:+.1f}% combined improvement over two independent rotors (physics-based)",
+            "speculative_scenario_gain_percent": f"{improvement_over_two:+.1f}% combined improvement over two independent rotors (heuristic scenario model)",
         },
         "wind_resource": {
             "mean_U": U_MEAN,
@@ -594,7 +609,7 @@ def main():
         print(f"Improvement over two indep.:   {improvement_over_two:6.1f}%")
         print(f"Absolute gain:                 {aep_total - aep_single:6.1f} kWh/yr")
     print("=" * 70)
-    print("Note: The interaction factor is computed from physics-based momentum theory:")
+    print("Note: The interaction factor is computed from heuristic scenario model momentum theory:")
     print("      upstream rotor induction factor from Ct=4a(1-a), wake recovery between")
     print("      rotors, and counter-rotating channeling from blades moving toward each")
     print("      other in the gap. Factor varies with wind speed, TSR, and spacing.")
