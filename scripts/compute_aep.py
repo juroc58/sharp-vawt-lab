@@ -71,7 +71,7 @@ CUT_IN         = 3.0
 CUT_OUT        = 25.0
 RHO            = 1.225
 HOURS_YEAR     = 8760.0
-P_RATED_W      = 15000.0
+P_RATED_W      = 90000.0
 ETA_DRIVETRAIN = 0.90
 
 # Cp jump between adjacent 1 m/s free-running samples that flags a
@@ -264,7 +264,7 @@ def make_plot(results, tsrs, out_path):
         # Add annotation pointing to the red dots
         a.annotate("Free-running\noperating points", 
                    xy=(tsr_pts[0], cp_pts[0]), 
-                   xytext=(tsr_pts[0] - 0.5, cp_pts[0] + 0.1),
+                   xytext=(1.5, 0.3),
                    arrowprops=dict(arrowstyle="->", color="red"),
                    bbox=dict(boxstyle="round", fc="white", alpha=0.8))
                    
@@ -285,7 +285,7 @@ def make_plot(results, tsrs, out_path):
         # Add bifurcation annotation pointing to the low-U drop
         a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
                    xy=(4.0, min(cps)), 
-                   xytext=(8.0, min(cps) - 0.02),
+                   xytext=(10.0, 0.37),
                    arrowprops=dict(arrowstyle="->", color="black"),
                    bbox=dict(boxstyle="round", fc="wheat", alpha=0.8))
                    

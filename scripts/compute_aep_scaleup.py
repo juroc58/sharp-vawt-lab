@@ -219,25 +219,45 @@ def main():
     fig, ax = plt.subplots(1, 3, figsize=(16, 5))
     col_passive = "C0"
     col_fixed = "C2"
+    fr = free_passive
 
     # Panel 1: Cp vs TSR
     a = ax[0]
-    a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC")
+    a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
+    
+    # Add free-running points as red dots
+    if fr:
+        tsr_pts = [f['tsr_eq'] for f in fr]
+        cp_pts = [f['cp'] for f in fr]
+        a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
+        # Add annotation pointing to the red dots
+        a.annotate("Free-running\noperating points", 
+                   xy=(tsr_pts[0], cp_pts[0]), 
+                   xytext=(1.5, 0.3),
+                   arrowprops=dict(arrowstyle="->", color="red"),
+                   bbox=dict(boxstyle="round", fc="white", alpha=0.8))
+                   
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ")
     a.set_ylabel("Cp")
     a.set_title("Cp vs TSR at fixed rpm (scale-up)")
     a.grid(alpha=0.3)
     a.legend(fontsize=9)
-    a.set_ylim(-0.1, 0.6)
 
-    # Panel 2: free-running Cp vs U
+    # Panel 2: Free-running Cp vs U
     a = ax[1]
-    fr = free_passive
     if fr:
-        Us = np.array([f['U'] for f in fr])
+        Us  = np.array([f['U'] for f in fr])
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
+        
+        # Add bifurcation annotation pointing to the massive drop at U=12.5, Cp=0.34
+        a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
+                   xy=(12.5, 0.34), 
+                   xytext=(15.0, 0.36),
+                   arrowprops=dict(arrowstyle="->", color="black"),
+                   bbox=dict(boxstyle="round", fc="wheat", alpha=0.8))
+                   
     a.set_xlabel("wind speed U [m/s]")
     a.set_ylabel("Cp at equilibrium")
     a.set_title("Free-running Cp vs wind speed (branch traced)")
@@ -260,7 +280,6 @@ def main():
     fig.suptitle("AEP — Scale-Up Sharp CPPC, R = 2.72 m, AR ≈ 10.5",
                  fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
-
     out_path = os.path.join(_ROOT, "docs", "aep_scaleup.png")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     fig.savefig(out_path, dpi=150)

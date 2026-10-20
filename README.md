@@ -321,8 +321,8 @@ For the scale-up design (R = 2.72 m, peak Cp ≈ 0.384):
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **16763 kWh/yr** | **12.8 %** |
-| Fixed-rpm generator | 10565 kWh/yr | 8.0 % |
+| **Passive k_load (variable speed)** | **17256 kWh/yr** | **2.2 %** |
+| Fixed-rpm generator | 10565 kWh/yr | 1.3 % |
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces **1.55× more energy** than the same rotor on
