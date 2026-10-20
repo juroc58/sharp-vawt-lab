@@ -238,7 +238,7 @@ new version entry.
   README counts were regenerated accordingly.
 - **README prose corrected.** Sharp-inspired TSR is ≈ 1.19 (not 1.38) and
   the collapse threshold is ≈ 0.955 (not 0.78); the optimised-passive
-  nominal point (Cp = 0.272) is shown next to its UQ mean (0.18 [0.044,
+  nominal point (Cp = 0.270) is shown next to its UQ mean (0.19 [0.051,
   0.28]) with a winner's-curse note; the low-Re NeuralFoil lift caveat was
   added to `airfoil_polars/README.md`.
 

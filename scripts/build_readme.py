@@ -767,18 +767,21 @@ INLINE_FUNCS = {
 
 def block_headline_table_small():
     uq = DATA["uq"]["summary"]
+    # Evidence levels: M = model result at fixed inputs / S = scenario estimate from UQ
+    #              / U = ideal-actuator upper bound / V = validated vs literature
     rows = [
-        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range, not precision (see note)"),
-        ("Optimised passive (mass-balanced)", uq["optimised_passive"], "fixed optimiser point"),
-        ("Prescribed pitch (ideal actuator)", None, "upper bound"),
-        ("Ham 1979 reproduction", uq["ham_1979"], "fixed design point"),
+        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range (UQ)", "S"),
+        ("Optimised passive (mass-balanced)", uq["optimised_passive"], "stored design point (UQ)", "S"),
+        ("Prescribed pitch (ideal actuator)", None, "ideal-actuator upper bound (model)", "U"),
+        ("Ham 1979 reproduction", uq["ham_1979"], "fixed design point (validated vs lit.)", "V"),
     ]
-    out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
-    for name, s, ref in rows:
+    out = ["| Configuration | Cp | 90 % CI | Reference | Evidence |",
+           "|---|---|---|---|---|"]
+    for name, s, ref, ev in rows:
         if s is None:
-            out.append(f"| {name} | {DATA['act']['best_cp']:.2f} | \u2014 | {ref} |")
+            out.append(f"| {name} | {DATA['act']['best_cp']:.2f} | \u2014 | {ref} | {ev} |")
         else:
-            out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} |")
+            out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} | {ev} |")
     return "\n".join(out)
 
 
@@ -787,11 +790,12 @@ def block_headline_table_large():
     s = uq["scaleup"]
     betz_pct = 100.0 * s["mean"] / (16.0 / 27.0)
     rows = [
-        ("**Scaled-up passive (R = 2.72 m)**", s, f"~{betz_pct:.0f} % of Betz"),
+        ("**Scaled-up passive (R = 2.72 m)**", s, f"~{betz_pct:.0f} % of Betz", "S"),
     ]
-    out = ["| Configuration | Cp | 90 % CI | Reference |", "|---|---|---|---|"]
-    for name, s, ref in rows:
-        out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} |")
+    out = ["| Configuration | Cp | 90 % CI | Reference | Evidence |",
+           "|---|---|---|---|---|"]
+    for name, s, ref, ev in rows:
+        out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} | {ev} |")
     return "\n".join(out)
 
 

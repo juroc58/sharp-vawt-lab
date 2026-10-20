@@ -32,13 +32,21 @@ vendored in this archive, so no agreement figure is reproduced here.
 ### Small-rotor regime (R = 0.60 m, Re ≈ 1.4 × 10⁵, σ ≈ 0.11)
 
 <!-- BEGIN GENERATED: headline_table_small -->
-| Configuration | Cp | 90 % CI | Reference |
-|---|---|---|---|
-| **Sharp-inspired CPPC** | **0.04** | [0.002, 0.12] | scenario range, not precision (see note) |
-| Optimised passive (mass-balanced) | **0.19** | [0.051, 0.28] | fixed optimiser point |
-| Prescribed pitch (ideal actuator) | 0.50 | — | upper bound |
-| Ham 1979 reproduction | **0.49** | [0.47, 0.51] | fixed design point |
+| Configuration | Cp | 90 % CI | Reference | Evidence |
+|---|---|---|---|---|
+| **Sharp-inspired CPPC** | **0.04** | [0.002, 0.12] | scenario range (UQ) | S |
+| Optimised passive (mass-balanced) | **0.19** | [0.051, 0.28] | stored design point (UQ) | S |
+| Prescribed pitch (ideal actuator) | 0.50 | — | ideal-actuator upper bound (model) | U |
+| Ham 1979 reproduction | **0.49** | [0.47, 0.51] | fixed design point (validated vs lit.) | V |
 <!-- END GENERATED: headline_table_small -->
+
+**Evidence levels.** `S` = scenario estimate from UQ sampling (a range, not a precision bar);
+`U` = ideal-actuator model result, an upper bound not achievable by the passive mechanism;
+`V` = model result checked against published literature. **There are no measured results
+in this archive:** no wind-tunnel data, no prototype data, and no experimental Cp values.
+Every headline number is a 2-D BEM model output whose absolute accuracy is bounded by
+model-form uncertainty (synthetic polars, uncalibrated dynamic stall, 2-D finite-span
+correction), not by measurement error.
 
 **Read the Sharp-inspired interval as two branches, not a precision bar.**
 The nominal design point (Helmbold multiplier 1.0) gives Cp = 0.067.
@@ -53,13 +61,13 @@ the scale-up has none.
 ### Scale-up regime (R = 2.72 m, Re ≈ 5.1 × 10⁵)
 
 <!-- BEGIN GENERATED: headline_table_large -->
-| Configuration | Cp | 90 % CI | Reference |
-|---|---|---|---|
-| **Scaled-up passive (R = 2.72 m)** | **0.38** | [0.33, 0.42] | ~65 % of Betz |
+| Configuration | Cp | 90 % CI | Reference | Evidence |
+|---|---|---|---|---|
+| **Scaled-up passive (R = 2.72 m)** | **0.38** | [0.33, 0.42] | ~65 % of Betz | S |
 <!-- END GENERATED: headline_table_large -->
 
-The confidence intervals come from Saltelli sampling over eleven
-inputs, ten of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
+The confidence intervals come from Saltelli sampling over twelve
+inputs, eleven of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
 Helmbold (1942) finite-span correction; the Ham
 reproduction is run without one and without the curvature correction, using
 double-multiple-streamtube induction and Ham's cosine pitch law. See the
@@ -78,6 +86,26 @@ For Ham, the body text quotes a peak of 0.476 from
 quotes the UQ mean 0.49 [0.46, 0.51], essentially the same point: the
 anchor uses Ham's model class (DS off, no curvature, no tip loss) and
 samples the induction-lag and strut-drag constants.
+
+### What's validated vs what's not
+
+| Claim | Evidence level | Status |
+|---|---|---|
+| Peak Ham 1979 Cp ≈ 0.476 at TSR 2.5 (static polars) | Model vs published literature (0.42–0.45 band) | **Validated within ~9 %** (peak only; curve shape mismatches at high TSR) |
+| Prescribed-pitch DS sensitivity ≈ 2.2 % | Model self-check (`validate_ds_off.py`) | **Verified internally** |
+| Passive CPPC runs near static stall; DS off → collapse | Model self-check | **Verified internally; DS model uncalibrated** |
+| Pitch-torque sign restoring at stall extremes | `diag_qa.py` + tests | **Verified internally** |
+| Sharp-inspired passive CPPC ≈ 0.067 (deterministic) | 2-D BEM model output, synthetic polars | **Scenario estimate — not measured** |
+| Optimised passive ≈ 0.270 (re-optimized) | Re-run on current polars (DE+NM) | **Scenario estimate — winner's curse possible** |
+| Scale-up passive ≈ 0.384 (deterministic) | 2-D BEM model output | **Scenario estimate — not measured** |
+| AEP 17,330 kWh/yr, +13.9 % vs rigid | Model comparison (assumed wind/drivetrain) | **Model comparison — not an energy forecast** |
+| Counter-rotating +3.3 % array gain | Literature-calibrated interaction model | **Literature-calibrated — not validated at this spacing** |
+| Measured rotor / wind-tunnel / prototype Cp | None | **Not available** |
+
+Every passive result rests on the dynamic-stall model and on NeuralFoil
+attached-flow data, both of which are uncalibrated for this machine. The
+90 % intervals propagate parameter uncertainty only; they do not capture
+model-form uncertainty (polar source, DS structure, 2-D vs 3-D flow).
 
 ### Sharp-inspired CPPC
 
@@ -119,19 +147,23 @@ speeds — see the AEP section below.
 ### Optimised passive
 
 A joint optimisation over chord, counterweight mass and position, load factor,
-and pivot geometry found a configuration with a small arm ratio and a
-relatively heavy counterweight. On the current polars its fixed design
-point evaluates to Cp = 0.272, while the UQ mean over eleven active inputs
-is **0.19 [0.051, 0.28]** — the nominal stored point sits at the top of its
-own interval (a winner's-curse effect; the optimiser snapshot predates the
-Cm and finite-span changes and was not re-optimised, so it should be read as
-a single stored design, not a robust optimum). The optimised
-arm ratio is **ar = 0.260**, which sits at the lower bound of the ar range
-rather than on the upper bound; the UQ spread is **0.231**, and 2.0 % of
-samples fall on the collapsed branch. The optimiser snapshot in
-`scripts/optimization_passive.json`
-predates the polar revision and was not re-run, so 0.272 should be read as
-"the stored design point on the new polars", not as a fresh optimum.
+and pivot geometry found a configuration with a relatively heavy counterweight
+and a large arm ratio. Re-running the optimiser on the current polars gives a
+deterministic design point of **Cp = 0.270** (verified at T_max = 40 s,
+steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10°, no stops),
+with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g, d_cw ≈ +0.066c,
+ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
+
+The UQ mean at the fixed optimiser anchor point is **0.19 [0.051, 0.28]**
+over eleven active inputs — the deterministic optimum (0.270) sits near the
+top of its own interval, a residual winner's-curse effect. Re-optimisation
+confirms the previously stored point (Cp = 0.272) was already near-optimal
+on the new polars, so the winner's curse is modest here, but the UQ spread
+remains large: the spread is **0.231**, and 2.0 % of samples fall on the
+collapsed branch. Note the optimised arm ratio **ar ≈ 0.87** now sits at the
+upper bound of the searched range (0.2–1.5), unlike the earlier stored point
+(ar = 0.260). The optimiser snapshot in `scripts/optimization_passive.json`
+records the re-optimized parameters.
 
 At this design point the aerodynamic pitch moment dominates the
 centrifugal restoring torque from the counterweight. The blade pitches
@@ -220,8 +252,12 @@ here, not a primary mechanism.
 
 ![aep](docs/aep.png)
 
-Power curves integrated against a Weibull wind distribution (k = 2.0,
-mean U = 6 m/s, cut-in 3 m/s, cut-out 25 m/s). See
+**MODEL RESULT — not an energy forecast.** Power curves are integrated
+against a Weibull wind distribution (k = 2.0, mean U = 6 m/s,
+cut-in 3 m/s, cut-out 25 m/s) using assumed drivetrain efficiency,
+rated power and a turbine geometry that has never been built. These
+numbers compare model configurations against each other; they are not a
+prediction of real-site energy production. See
 `scripts/compute_aep.py` and `scripts/compute_aep_rigid_fair.py`.
 
 ### CPPC vs a fair rigid baseline
@@ -231,16 +267,17 @@ own optimal pitch and load**, not a blade locked at zero pitch inheriting
 the passive machine's load. `scripts/compute_aep_rigid_fair.py` runs that
 comparison at both design points:
 
-| Geometry | AR | Passive CPPC | Best rigid | Gain |
-|---|---|---|---|---|
-| **Sharp-inspired (R = 0.60 m)** | 2.86 | **75.5 kWh/yr** | none (does not spin) | **n/a** |
-| **Scale-up (R = 2.72 m)** | 10.5 | **17,330 kWh/yr** | 15,221 kWh/yr | **+13.9 %** |
+| Geometry | AR | Passive CPPC | Best rigid | Gain | Evidence |
+|---|---|---|---|---|---|
+| **Sharp-inspired (R = 0.60 m)** | 2.86 | **75.5 kWh/yr** | none (does not spin) | **n/a** | model comparison |
+| **Scale-up (R = 2.72 m)** | 10.5 | **17,330 kWh/yr** | 15,221 kWh/yr | **+13.9 %** | model comparison |
 
 Sharp's published claim is **25–30 % more energy than a fixed-blade
 rotor**. The model gives **+13.9 %** at the scale-up geometry, where a
 rigid blade actually works. This is the closest agreement with Sharp in
-the repo, and it required the fair baseline to surface. The gap is a
-model-class result, not a fitted correction.
+the repo, and it required the fair baseline to surface. **This is a model
+comparison between two configurations of the same 2-D BEM solver — not an
+energy forecast.** The gap is a model-class result, not a fitted correction.
 
 The two rows describe different regimes. At AR 2.86 no fixed-pitch
 configuration produces a steady rotation at all: uncapped induced drag
