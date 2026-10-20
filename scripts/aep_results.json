@@ -14,28 +14,28 @@
   },
   "results": {
     "passive_k_load": {
-      "aep_kWh": 16842.96309975726,
-      "cf": 0.12818084550804612,
+      "aep_kWh": 16763.4145439982,
+      "cf": 0.12757545315067123,
       "branch_jumps": []
     },
     "passive_fixed_rpm": {
-      "aep_kWh": 11837.774284123352,
-      "cf": 0.09008960642407421
+      "aep_kWh": 10796.596042807916,
+      "cf": 0.08216587551604199
     }
   },
   "gains_percent": {
-    "passive_vs_fixed_rpm": 42.28150237960519,
-    "passive_vs_rigid_fair": 19.49391953460633
+    "passive_vs_fixed_rpm": 55.265738178331134,
+    "passive_vs_rigid_fair": 13.855563275405046
   },
   "rigid_fair_ref": {
     "source": "aep_rigid_fair.json",
     "geometry": "scaleup",
     "psi0_deg": 5.0,
-    "k_load": 4.0,
-    "cp_design": 0.32158644996276375,
+    "k_load": 6.0,
+    "cp_design": 0.3812511695318824,
     "viable": true,
-    "aep_kWh": 14449.529340889352,
-    "cf": 0.06597958603145823,
-    "gain_percent": 19.49391953460633
+    "aep_kWh": 15221.404140222048,
+    "cf": 0.06950412849416461,
+    "gain_percent": 13.855563275405046
   }
 }

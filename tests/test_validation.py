@@ -109,23 +109,32 @@ class TestDynamicStallSensitivity:
     def test_passive_ds_sensitivity_is_larger(self):
         """Passive operation is much more DS-sensitive than prescribed.
 
-        With the XFOIL-derived polars the passive machine sits close to
-        static stall (alpha_max ~19 deg with DS on). Switching DS off lets
-        it fall into deep stall (Cp 0.18 -> 0.03, alpha_max ~74 deg), an
-        ~80 % change. That is a genuine physical dependence of a passive
-        pitch mechanism, not numerical noise, and it is why the UQ study
-        samples the DS constants. The bound catches regressions; the exact
-        value is recorded in CHANGELOG v3.3.1.
+        Measured on the two passive headline anchors: switching DS off
+        drops Cp by 91 % for Sharp-inspired CPPC (0.067 -> 0.006) and 75 %
+        for the optimised passive machine (0.272 -> 0.068).  A passive
+        pitch mechanism runs near static stall, so the DS model is load
+        bearing for every passive result in this archive.  The bands are
+        deliberately tight: these are deterministic runs, and a large move
+        means the DS model or the anchors changed.
+
+        The old bound (0.001 < delta < 0.95) was effectively vacuous and is
+        replaced here.
         """
-        passive = {**self.DESIGN,
-                   'prescribe_pitch': False,
-                   'use_tip_loss': True,
-                   'T_max': 30.0}
-        r_ds = create_sim_from_params({**passive, 'use_dynamic_stall': True}).run()
-        r_nods = create_sim_from_params({**passive, 'use_dynamic_stall': False}).run()
-        delta = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
-        # Passive mode: DS keeps the blade attached where the static polar
-        # would stall, so turning it off must reduce Cp.
-        assert r_ds['cp'] > r_nods['cp']
-        assert 0.001 < delta < 0.95, \
-            f"Passive DS sensitivity {delta*100:.1f}% outside expected range"
+        from scripts.uncertainty import ANCHORS
+
+        cps = {}
+        for name in ("sharp_cppc", "optimised_passive"):
+            p = ANCHORS[name]
+            r_ds = create_sim_from_params({**p, 'use_dynamic_stall': True}).run()
+            r_nods = create_sim_from_params({**p, 'use_dynamic_stall': False}).run()
+            assert r_ds['cp'] > r_nods['cp']
+            cps[name] = abs(r_ds['cp'] - r_nods['cp']) / max(r_ds['cp'], 1e-9)
+
+        assert cps["sharp_cppc"] == pytest.approx(0.91, abs=0.05), (
+            f"Sharp passive DS sensitivity {cps['sharp_cppc']*100:.1f}% "
+            "outside 0.91 +/- 0.05"
+        )
+        assert cps["optimised_passive"] == pytest.approx(0.75, abs=0.05), (
+            f"Optimised passive DS sensitivity "
+            f"{cps['optimised_passive']*100:.1f}% outside 0.75 +/- 0.05"
+        )

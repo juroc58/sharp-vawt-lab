@@ -16,7 +16,7 @@ What is modelled
     NOT fitted to data)
   * optional apparent-mass (non-circulatory) lift, counted once
   * optional Adams (2018) curvilinear-flow shifts, scaled by c/R / 0.418 (scaling is an assumption)
-  * optional finite-span correction (generalized Prandtl, k=1.8; lift-slope reduction + induced drag)
+  * optional finite-span correction (Helmbold lift-slope reduction + induced drag)
   * arm drag, strut/interference drag (cd_add), viscous + Coulomb pivot friction, limit lines
   * gusts / turbulence (Dryden or von Kármán), prescribed-pitch mode (Ham 1979 style), energy ledger
   * quarter-chord pitching moment Cm from real polar data
@@ -458,8 +458,8 @@ class AeroConfig:
     ds_Kv: float = 0.5                   # vortex-lift strength (0 disables)
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier (0 disables)
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
-    tip_loss_floor_override: float = 0.0   # 0 = use raw generalized Prandtl formula; >0 floors f_ar
-    tip_loss_multiplier: float = 1.0    # multiplies raw f_ar; <1 = stronger tip loss (low-AR under-correction)
+    tip_loss_floor_override: float = 0.0   # 0 = use Helmbold formula; >0 floors f_ar
+    tip_loss_multiplier: float = 1.0    # residual multiplier on Helmbold f_ar; <1 = stronger tip loss
 
 
 @dataclass(frozen=True)
@@ -647,22 +647,19 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # Finite-span corrections (generalized Prandtl, k=1.8).
-        # The classical Prandtl formula f_ar = 1/(1 + 2/(e*AR)) under-corrects
-        # at low aspect ratio because it assumes an elliptical lift distribution
-        # and neglects wake rollup.  An empirical factor k=1.8 (vs 2.0) fits
-        # wind-tunnel data for wind-turbine blades down to AR ≈ 3.
-        # The raw generalized Prandtl value is the central estimate. Its
-        # uncertainty is modelled by tip_loss_multiplier, which may raise or
-        # lower f_ar (the latter represents the residual low-AR
-        # under-correction). tip_loss_floor_override is retained for
-        # back-compat and defaults to 0.
-        f_ar_raw  = 1.0 / (1.0 + 1.8 / (aero.e_osw * AR))
+        # Finite-span lift-slope correction: Helmbold (1942).
+        #   a   = a0 / (sqrt(1 + (a0/(pi*AR))^2) + a0/(pi*AR)),  a0 = 2*pi
+        #   f_ar = a/a0 = 1 / (sqrt(1 + (2/AR)^2) + 2/AR)
+        # The previous generalized-Prandtl form 1/(1 + 1.8/(e*AR)) matched
+        # Helmbold at high AR but was ~12 % too generous at the Sharp AR of
+        # 2.86: it gave f_ar = 0.588 (lift slope 3.70/rad) where Helmbold
+        # gives 0.520 (3.27/rad).  The empirical Oswald factor now enters only
+        # the induced-drag term, where it belongs.
+        # tip_loss_multiplier is a residual model-form multiplier around the
+        # Helmbold central estimate; tip_loss_floor_override is retained for
+        # back-compat and applied last.
+        f_ar_raw  = 1.0 / (math.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
-        # A multiplier below 1 models the known low-AR under-correction of the
-        # generalized Prandtl formula (wake roll-up is stronger than the
-        # elliptical-loading assumption); above 1 explores less tip loss.
-        # The absolute floor override is kept for back-compat and applied last.
         f_ar_scaled = min(1.0, max(0.0, f_ar_raw * aero.tip_loss_multiplier))
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_scaled)
         self.ind_k = ind_k_raw

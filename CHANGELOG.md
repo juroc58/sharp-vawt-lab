@@ -140,16 +140,84 @@ it. Mean [p5, p95]:
 
 | Anchor | Mean | 90 % interval | Collapsed samples (Cp < 0.02) |
 |---|---|---|---|
-| Ham 1979 | 0.486 | [0.459, 0.506] | 0 |
-| Sharp-inspired CPPC | 0.098 | [0.003, 0.173] | 16 % |
-| Optimised passive | 0.228 | [0.052, 0.294] | 2 % |
-| Scale-up R = 2.72 m | 0.366 | [0.295, 0.418] | 0 |
+| Ham 1979 | 0.491 | [0.464, 0.512] | 0 |
+| Sharp-inspired CPPC | 0.048 | [0.003, 0.108] | 46.7 % |
+| Optimised passive | 0.182 | [0.044, 0.280] | 2.9 % |
+| Scale-up R = 2.72 m | 0.362 | [0.303, 0.419] | 0 |
 
-The dominant first-order Sobol parameter is `tau_rev` for Ham (S₁ = 0.86)
-and `tip_loss_multiplier` for the other three (0.58, 0.81, 0.83). No run
-returned a non-finite or negative Cp (`n_fail = 0`). The wider intervals
-relative to 3.3.0 are the expected consequence of removing the
-double-scaling bug, not a new physics change.
+The dominant first-order Sobol parameter is `tau_rev` for Ham (S₁ = 0.86),
+`tip_loss_multiplier` for Sharp and optimised passive (0.50 and 0.61),
+and `ds_Knc` for the scale-up (0.65). No run returned a non-finite or
+negative Cp (`n_fail = 0`). These values are from the final v12 rerun
+(Helmbold central estimate, NeuralFoil Cm, band [0.85, 1.15]); they
+supersede the intermediate v11 numbers. The 95 % confidence half-widths
+on the dominant indices are 0.2-0.3 at N = 64 and are printed in the
+README table.
+
+### v12 review follow-up (same unreleased 3.3.1)
+
+Four remaining review items were fixed rather than deferred. Because
+3.3.1 has not been tagged, these changes are recorded here instead of in a
+new version entry.
+
+- **Attached-flow Cm now comes from NeuralFoil.** For `|alpha| <= 20 deg`
+  the tables use NeuralFoil's quarter-chord `CM` (positive nose-up, the
+  same sense as the solver's `Qa_cm = q*Cm*c`); negative incidence is
+  mirrored with odd symmetry. `20 < |alpha| < 45 deg` blends to the
+  synthetic Abbott & von Doenhoff trend, and `|alpha| >= 45 deg` remains
+  synthetic because NeuralFoil's post-stall moment is not validated.
+  Reason: the old synthetic trend was not measured and gave a smooth
+  but invented negative moment through attached flow; the reviewer
+  correctly flagged it. The network's attached Cm is itself noisy (at
+  Re = 1e6 it ranges from about -0.008 to +0.047 over 0-20 deg), but it
+  is the surrogate output rather than an additional hand fit. The
+  convention and scatter are recorded in `provenance.json` and
+  `airfoil_polars/README.md`.
+- **Consequence of the Cm change.** The passive pitch machine uses Cm
+  directly, so the Sharp-inspired deterministic point moved from Cp
+  0.104 to 0.067 (equilibrium TSR 1.20) and the collapse threshold moved
+  from multiplier ~0.78 to ~0.955 in the new Helmbold-normalised units.
+  The design is now only ~4 % above the threshold. This is reported, not
+  hidden.
+- **Finite-span central estimate replaced by Helmbold (1942).**
+  `f_ar = 1/(sqrt(1 + (2/AR)^2) + 2/AR)` replaces the generalized
+  Prandtl form `1/(1 + 1.8/(e*AR))`. Reason: at the Sharp AR of 2.86 the
+  old form gave `f_ar = 0.588` (lift slope 3.70/rad) where Helmbold gives
+  0.520 (3.27/rad), about 12 % too much lift; the reviewer's Helmbold
+  cross-check was correct. The Oswald factor now enters only the
+  induced-drag term `1/(pi*e*AR)`. At AR 10.5 the two forms nearly agree
+  (0.828 vs 0.840), so the scale-up is barely affected.
+- **`tip_loss_multiplier` band narrowed to [0.85, 1.15]** around the
+  Helmbold central value (was [0.70, 1.30] around generalized Prandtl).
+  Reason: the old band existed to cover the systematic low-AR bias of the
+  Prandtl form; Helmbold removes that bias, so a +/-15 % residual
+  model-form band is used. `_UQ_VERSION` was bumped to invalidate the
+  cache. The Sharp design is so close to the cliff that roughly a third
+  of the narrowed band still collapses; that is a physical result, not a
+  sampling artifact.
+- **Passive DS sensitivity pinned.** The vacuous test bound
+  `0.001 < delta < 0.95` is replaced by anchor-specific values:
+  0.91 +/- 0.05 for Sharp-inspired CPPC and 0.75 +/- 0.05 for the
+  optimised passive machine. The README now states explicitly that every
+  passive result rests on the dynamic-stall model. The old prescribed
+  design forced into passive mode collapsed to Cp ~0.03 after the
+  finite-span fix and is no longer used as the passive test case.
+- **Sobol reporting.** The README table now prints 95 % confidence
+  half-widths next to S₁ and Sₜ and keeps two-decimal rounding. It also
+  states that `arm_cd` is inert because every anchor has `arm_d = 0`
+  (10 of 11 sampled inputs are active), and lists the model-form choices
+  that are *not* sampled (induction closure, DS structure, curvature
+  scaling, counter-rotating interaction, section-data source). Indices
+  whose confidence interval spans zero are not used for ranking.
+- **Regression goldens** (reason: new Cm and Helmbold):
+  `ham_static_tsr2_5` 0.485448 -> 0.490899 (+1.1 %),
+  `passive_short_free` 0.393393 -> 0.384398 (-2.3 %),
+  `prescribed_fixed_rpm` 0.447375 -> 0.444303 (-0.7 %).
+- **`tests/test_physics.py` Cm expectations** were updated from the old
+  synthetic sign (Cm(15 deg) < 0) to the NeuralFoil value
+  (Cm(15 deg) ~ +0.047), with a zero-at-zero-alpha check and a
+  provenance check. This is a deliberate source change, not a tolerance
+  relaxation.
 
 ## [3.3.0] - 2026-10-19
 

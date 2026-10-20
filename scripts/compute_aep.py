@@ -19,7 +19,7 @@ This script reads the fair rigid result from scripts/aep_rigid_fair.json
 so the AEP record is self-contained. If the file is missing, the run
 still succeeds; the rigid row is reported as '(run compute_aep_rigid_fair.py)'.
 
-Tip-loss correction is ON (bounded finite-span, max 15% lift reduction),
+Tip-loss correction is ON (Helmbold finite-span),
 matching the convention used in the README headline results.
 
 Integrates each power curve against a Weibull wind distribution to give
@@ -303,7 +303,7 @@ def main():
     print(f"  Wind     : Weibull k = {K_WEIBULL}, mean U = {U_MEAN} m/s")
     print(f"  Cut-in   : {CUT_IN} m/s   cut-out: {CUT_OUT} m/s")
     print(f"  Rated P  : {P_RATED_W} W")
-    print(f"  Tip loss : ON (bounded finite-span)")
+    print("  Tip loss : ON (Helmbold finite-span)")
     print(f"  Drivetrain efficiency: {ETA_DRIVETRAIN*100:.0f} %")
     print()
 

@@ -1,8 +1,9 @@
 """
 Validate finite-span correction against wind-tunnel data for AR 3-10.
 
-Compares the generalized Prandtl correction (k=1.8) and Prandtl (k=2.0) against
-experimental data for NACA 0012 wings at various aspect ratios.
+Compares the Helmbold (1942) correction used by the simulator, the
+generalized Prandtl correction (k=1.8, the previous default) and Prandtl
+(k=2.0) against low-aspect-ratio lift-slope data.
 
 References:
 - Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics" — rotating-blade stall-delay model, NOT a finite-wing lift-slope correction
@@ -47,6 +48,12 @@ def f_ar_vec(AR, k):
     return np.array([f_ar(ar, k=k) for ar in AR])
 
 
+def f_ar_helmbold(AR):
+    """Helmbold (1942) finite-wing lift-slope correction (simulator default)."""
+    AR = np.asarray(AR, dtype=float)
+    return 1.0 / (np.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
+
+
 def main():
     print("=" * 70)
     print("Finite-Span Correction Validation")
@@ -60,6 +67,7 @@ def main():
     # Evaluate corrections
     prandtl = f_ar_vec(ARs_fine, 2.0)
     gen_prandtl = f_ar_vec(ARs_fine, 1.8)
+    helmbold = f_ar_helmbold(ARs_fine)
     k15 = f_ar_vec(ARs_fine, 1.5)
     k18 = f_ar_vec(ARs_fine, 1.8)
     k20 = f_ar_vec(ARs_fine, 2.0)
@@ -67,6 +75,7 @@ def main():
 
     cla_prandtl = CLA_2D * prandtl
     cla_gen_prandtl = CLA_2D * gen_prandtl
+    cla_helmbold = CLA_2D * helmbold
     cla_k15 = CLA_2D * k15
     cla_k18 = CLA_2D * k18
     cla_k20 = CLA_2D * k20
@@ -75,6 +84,7 @@ def main():
     # Evaluate at experimental ARs
     prandtl_exp = np.array([f_ar(ar, k=2.0) for ar in ARs_exp])
     gen_prandtl_exp = np.array([f_ar(ar, k=1.8) for ar in ARs_exp])
+    helmbold_exp = f_ar_helmbold(ARs_exp)
     k15_exp = np.array([f_ar(ar, k=1.5) for ar in ARs_exp])
     k18_exp = np.array([f_ar(ar, k=1.8) for ar in ARs_exp])
     k20_exp = np.array([f_ar(ar, k=2.0) for ar in ARs_exp])
@@ -82,6 +92,7 @@ def main():
 
     cla_prandtl_exp = CLA_2D * prandtl_exp
     cla_gen_prandtl_exp = CLA_2D * gen_prandtl_exp
+    cla_helmbold_exp = CLA_2D * helmbold_exp
     cla_k15_exp = CLA_2D * k15_exp
     cla_k18_exp = CLA_2D * k18_exp
     cla_k20_exp = CLA_2D * k20_exp
@@ -98,16 +109,19 @@ def main():
     print(f"  Gen. Prandtl (k=1.8):   {rmse(cla_gen_prandtl_exp, cla_exp):.3f}")
     print(f"  Modified k=2.0:         {rmse(cla_k20_exp, cla_exp):.3f}")
     print(f"  Modified k=2.2:         {rmse(cla_k22_exp, cla_exp):.3f}")
+    print(f"  Helmbold (default):     {rmse(cla_helmbold_exp, cla_exp):.3f}")
 
     print(f"\nPredicted vs Experimental Cl_alpha (per rad):")
-    print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} {'k=1.8':>8} {'k=1.5':>8} {'k=2.2':>8}")
+    print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} "
+          f"{'Helmbold':>9} {'k=1.5':>8} {'k=2.2':>8}")
     for ar, exp in zip(ARs_exp, cla_exp):
         p2 = CLA_2D * f_ar(ar, k=2.0)
         gp = CLA_2D * f_ar(ar, k=1.8)
-        k18_val = CLA_2D * f_ar(ar, k=1.8)
+        hm = CLA_2D * f_ar_helmbold(ar)
         k15_val = CLA_2D * f_ar(ar, k=1.5)
         k22_val = CLA_2D * f_ar(ar, k=2.2)
-        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {gp:>10.2f} {k18_val:>8.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
+        print(f"{ar:>6.1f} {exp:>8.2f} {p2:>8.2f} {gp:>10.2f} "
+              f"{hm:>9.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
 
     # Plot
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
@@ -115,7 +129,7 @@ def main():
     ax1.plot(ARs_fine, cla_prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
     ax1.plot(ARs_fine, cla_gen_prandtl, 'b-', lw=2, label='Gen. Prandtl (k=1.8)')
     ax1.plot(ARs_fine, cla_k15, 'g--', lw=1.5, label='k=1.5')
-    ax1.plot(ARs_fine, cla_k18, 'r-', lw=2, label='k=1.8 (our default)')
+    ax1.plot(ARs_fine, cla_helmbold, 'r-', lw=2.5, label='Helmbold (our default)')
     ax1.plot(ARs_fine, cla_k22, 'm--', lw=1.5, label='k=2.2')
     ax1.scatter(ARs_exp, cla_exp, color='black', s=60, zorder=5, label='Experimental')
     ax1.axhline(CLA_2D, color='gray', ls=':', lw=1, label='2D limit (2π)')
@@ -130,7 +144,7 @@ def main():
     ax2.plot(ARs_fine, prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
     ax2.plot(ARs_fine, gen_prandtl, 'b-', lw=2, label='Gen. Prandtl (k=1.8)')
     ax2.plot(ARs_fine, k15, 'g--', lw=1.5, label='k=1.5')
-    ax2.plot(ARs_fine, k18, 'r-', lw=2, label='k=1.8')
+    ax2.plot(ARs_fine, helmbold, 'r-', lw=2.5, label='Helmbold (our default)')
     ax2.plot(ARs_fine, k22, 'm--', lw=1.5, label='k=2.2')
     ax2.axhline(1.0, color='gray', ls=':', lw=1)
     ax2.set_xlabel('Aspect Ratio (AR)')
@@ -155,11 +169,13 @@ def main():
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print("Our default (k=1.8, generalized Prandtl) matches experimental data well for AR 3-10.")
-    print("At AR=3.18 (Sharp-inspired): f_ar = 0.614 (k=1.8) vs 0.59 (Prandtl)")
+    print("Our default is Helmbold (1942). At AR=3.18 (Sharp-inspired): "
+          f"f_ar = {float(f_ar_helmbold(3.18)):.3f}, versus 0.614 for the "
+          "old generalized-Prandtl form.")
     print("Note: Du & Selig (1998) is a stall-delay model, not a lift-slope correction.")
-    print("The k=1.8 value is an empirical fit to low-AR data for the generalized Prandtl correction.")
-    print("The correction is now physics-based, not an arbitrary floor.")
+    print("The tabulated comparison is therefore indicative only; the Helmbold")
+    print("central estimate is used because it is the standard low-AR lift-slope")
+    print("form, not because it was fitted to this table.")
 
 if __name__ == "__main__":
     main()

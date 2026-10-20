@@ -142,7 +142,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
+    return "Cm from NeuralFoil for |alpha|<=20 deg; synthetic deep-stall trend (not measured)"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -247,7 +247,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
+    return "Cm from NeuralFoil for |alpha|<=20 deg; synthetic deep-stall trend (not measured)"
 
 def iv_cp_vs_fixed_rpm_gain():
     aep = DATA["aq"]["results"]
@@ -342,7 +342,7 @@ def iv_optimised_passive_ar_bound():
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
+    return "Cm from NeuralFoil for |alpha|<=20 deg; synthetic deep-stall trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -449,7 +449,7 @@ def iv_optimised_passive_ar_bound():
     return "0.80"
 
 def iv_cm_zero_note():
-    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
+    return "Cm from NeuralFoil for |alpha|<=20 deg; synthetic deep-stall trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -539,7 +539,7 @@ def iv_optimised_passive_ar_bound():
 
 # Cm zero note
 def iv_cm_zero_note():
-    return "Cm from a synthetic Abbott & von Doenhoff trend (not measured)"
+    return "Cm from NeuralFoil for |alpha|<=20 deg; synthetic deep-stall trend (not measured)"
 
 # CPPC vs fixed rpm gain
 def iv_cp_vs_fixed_rpm_gain():
@@ -830,9 +830,9 @@ def block_uq_params_table():
         "ds_Ta":                   ("0.05",  "0.15",  "attached-flow lag (default 0.10)"),
         "ds_Kv":                   ("0.25",  "0.75",  "vortex-lift strength (default 0.50)"),
         "tau_rev":                 ("0.05",  "0.20",  "induction lag (default 0.10 rev)"),
-        "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for finite-span"),
+        "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for induced drag"),
         "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
-        "tip_loss_multiplier":     ("0.70",  "1.30",  "multiplier on generalized Prandtl f_ar (<1 = low-AR under-correction, >1 = less tip loss)"),
+        "tip_loss_multiplier":     ("0.85",  "1.15",  "residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)"),
         "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
         "arm_cd":                  ("0.5",   "1.5",   "arm drag coefficient multiplier (Geometry)"),
     }
@@ -854,7 +854,8 @@ def block_uq_sobol():
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.72 m",
     }
-    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 | Total-order S\u209c |",
+    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 (95 % CI) | "
+           "Total-order S\u209c (95 % CI) |",
            "|---|---|---|---|"]
     for a in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
         res = sobol.get(a, {})
@@ -866,8 +867,14 @@ def block_uq_sobol():
         dom = max(s1, key=lambda k: abs(s1[k]))
         rho = s1[dom]
         st_val = st.get(dom, 0.0)
+        rho_ci = res.get("S1_conf", {}).get(dom, float("nan"))
+        st_ci = res.get("ST_conf", {}).get(dom, float("nan"))
         sign = "+" if rho >= 0 else ""
-        out.append(f"| {labels[a]} | `{dom}` | **{sign}{rho:.2f}** | {st_val:+.2f} |")
+        st_sign = "+" if st_val >= 0 else ""
+        out.append(
+            f"| {labels[a]} | `{dom}` | **{sign}{rho:.2f} \u00b1 {rho_ci:.2f}** | "
+            f"{st_sign}{st_val:.2f} \u00b1 {st_ci:.2f} |"
+        )
     return "\n".join(out)
 
 

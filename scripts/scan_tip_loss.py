@@ -36,10 +36,11 @@ def main():
     out = {
         "note": (
             "Deterministic scan at each anchor's nominal parameters. "
-            "tip_loss_multiplier < 1 means stronger finite-span loss than "
-            "the raw generalized Prandtl value. The Sharp-inspired rotor "
-            "switches from a rotation-sustaining branch to a collapsed "
-            "branch at multiplier ~0.75."
+            "The central finite-span estimate is now Helmbold (1942); "
+            "tip_loss_multiplier < 1 means stronger loss than Helmbold. "
+            "The Sharp-inspired rotor switches from a rotation-sustaining "
+            "branch to a collapsed branch between multipliers 0.955 and "
+            "0.96, only ~4 % below the Helmbold central value (1.0)."
         ),
         "multipliers": MULTIPLIERS,
         "anchors": {},

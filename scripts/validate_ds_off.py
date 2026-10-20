@@ -72,8 +72,9 @@ def main():
     print(
         "Note: this check runs at a prescribed-pitch design point where "
         "alpha_max stays below stall. A small delta Cp here does NOT "
-        "imply the passive case is DS-insensitive -- see the "
-        "Uncertainty section for the passive-anchor spread."
+        "imply the passive case is DS-insensitive: switching DS off drops "
+        "Cp by ~91 % at the Sharp-inspired anchor and ~75 % at the "
+        "optimised-passive anchor (tests/test_validation.py)."
     )
     if delta < TOL:
         print("\nPASS: DS model is not driving the result at this point.")

@@ -1,11 +1,11 @@
 """
 Uncertainty quantification for the Sharp cycloturbine model.
 
-Eight model constants are uncalibrated (they come from the literature but
-are not fitted to this specific machine).  We sample them over their
-plausible ranges with Latin hypercube sampling (default) or Saltelli
-sampling (for Sobol indices) and propagate through the four anchor
-cases documented in the README.
+Eleven inputs are sampled (nine uncalibrated model constants, the
+finite-span multiplier, and the inert arm-drag multiplier; see UQ_SPEC).
+They are propagated with Latin hypercube sampling (default) or Saltelli
+sampling (for Sobol indices) through the four anchor cases documented in
+the README.
 
 Outputs
 -------
@@ -63,7 +63,7 @@ UQ_SPEC = [
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
     ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_multiplier",       0.70,  1.30),    # finite-span multiplier on generalized Prandtl f_ar (<1 = low-AR under-correction, >1 = less tip loss)
+    ("tip_loss_multiplier",       0.85,  1.15),    # residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
     ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
 ]
@@ -79,7 +79,7 @@ CACHE_DIR = ".uq_cache"
 
 # Version string that gets hashed into the cache key so that changes to
 # the core physics, polars or parameter spec invalidate stale cache entries.
-_UQ_VERSION = "v10-2026-10-20"
+_UQ_VERSION = "v12-2026-10-20"
 
 
 def _code_hash() -> str:
@@ -490,7 +490,7 @@ def main():
         ax.set_title(f"{name}  (N = {s['n_ok']})")
         ax.grid(alpha=0.3)
         ax.legend(fontsize=8, loc="upper left")
-    fig.suptitle("Uncertainty propagation — 8 uncalibrated model constants",
+    fig.suptitle("Uncertainty propagation — 11 sampled inputs (10 active)",
                  fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     out_png = os.path.join(_ROOT, "docs", "uncertainty.png")

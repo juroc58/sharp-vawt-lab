@@ -1,7 +1,8 @@
 {
   "generator": "scripts/gen_real_polars.py",
   "method": "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; flat-plate model beyond. CD(90 deg)~1.7, CD(150 deg)~0.4, CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981).",
-  "cm_method": "synthetic Abbott & von Doenhoff trend (not measured)",
+  "cm_method": "NeuralFoil CM for |alpha|<=20 deg (quarter-chord, positive nose-up); smoothstep to synthetic Abbott & von Doenhoff trend for 20<|alpha|<45 deg; synthetic trend beyond. Not measured.",
+  "cm_convention": "Positive Cm is nose-up about the quarter chord, matching the solver's Qa_cm = q*Cm*c term. Negative alpha uses odd symmetry.",
   "neuralfoil_version": "0.3.3",
   "n_crit": 9.0,
   "model_size": "xlarge",
@@ -13,5 +14,5 @@
     400000,
     1000000
   ],
-  "note": "These tables are not raw experimental data. The attached-flow Cl/CD come from an XFOIL-trained surrogate; deep-stall and Cm are analytic trends."
+  "note": "These tables are not raw experimental data. The attached-flow Cl, Cd and Cm come from an XFOIL-trained surrogate; deep-stall Cl/Cd and the deep-stall Cm are analytic trends."
 }

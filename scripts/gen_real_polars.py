@@ -13,14 +13,19 @@ Method
   ``CL = 0.65 sin(2a)``, ``CD = 1.7 sin^2(a)``, anchored to the
   Sheldahl & Klimas (1981) SAND80-2114 trends (CD(90 deg) ~ 1.7,
   CD(150 deg) ~ 0.4, CL(120-150 deg) ~ -0.56).
-* ``Cm``: synthetic Abbott & von Doenhoff trend (near zero attached,
-  nose-down in stall). It is **not** measured data; see
-  ``airfoil_polars/README.md``.
+* ``Cm``: NeuralFoil's ``CM`` output for ``|alpha| <= 20 deg``, blended to
+  the synthetic Abbott & von Doenhoff trend through ``20 < |alpha| < 45 deg``
+  and used alone in deep stall. NeuralFoil reports the quarter-chord moment
+  in the standard aircraft convention (positive nose-up), which is the same
+  convention this solver uses in ``Qa_cm = q * Cm * c``. For negative
+  incidence the attached-flow values are mirrored with odd symmetry.
+  The network's attached-flow Cm is **not** measured data and has visible
+  scatter (at Re = 1e6 it ranges from about -0.008 to +0.047 over
+  0-20 deg); see ``airfoil_polars/README.md``.
 
-NeuralFoil's ``CM`` output is not used: its sign convention disagrees with
-the moment convention used by this solver, and the network's post-stall
-moment is not validated. Keeping a documented synthetic Cm is more honest
-than silently mixing conventions.
+The deep-stall Cm remains synthetic: NeuralFoil's post-stall moment is not
+validated, so the table uses a documented analytic trend there rather than
+extrapolating the surrogate.
 
 Reproduce
 ---------
@@ -184,7 +189,11 @@ def _synthetic_cm(abs_deg):
 
 
 def _neuralfoil_attached(nf, kulfan, re):
-    """NeuralFoil CL, CD at 0..20 deg. Returns list indexed by integer angle."""
+    """NeuralFoil CL, CD, CM at 0..20 deg, indexed by integer angle.
+
+    ``CM`` is the quarter-chord pitching moment in the standard aircraft
+    convention (positive nose-up), which matches the solver's ``Qa_cm`` term.
+    """
     out = {}
     for a in range(0, int(ALPHA_ATTACHED_LIMIT) + 1):
         r = nf.get_aero_from_kulfan_parameters(
@@ -194,7 +203,7 @@ def _neuralfoil_attached(nf, kulfan, re):
             n_crit=N_CRIT,
             model_size=MODEL_SIZE,
         )
-        out[a] = (float(r["CL"][0]), float(r["CD"][0]))
+        out[a] = (float(r["CL"][0]), float(r["CD"][0]), float(r["CM"][0]))
     return out
 
 
@@ -207,18 +216,19 @@ def make_polar(Re, nf, kulfan):
         sgn = 1.0 if alpha >= 0 else -1.0
 
         if abs_a <= ALPHA_ATTACHED_LIMIT:
-            cl, cd = nf_attached[int(abs_a)]
+            cl, cd, cm = nf_attached[int(abs_a)]
         elif abs_a < ALPHA_DEEP_STALL:
-            cl20, cd20 = nf_attached[int(ALPHA_ATTACHED_LIMIT)]
+            cl20, cd20, cm20 = nf_attached[int(ALPHA_ATTACHED_LIMIT)]
             cl45, cd45, _ = _deep_stall(ALPHA_DEEP_STALL)
             w = _smoothstep((abs_a - ALPHA_ATTACHED_LIMIT)
                             / (ALPHA_DEEP_STALL - ALPHA_ATTACHED_LIMIT))
             cl = cl20 + (cl45 - cl20) * w
             cd = cd20 + (cd45 - cd20) * w
+            cm = cm20 + (_synthetic_cm(ALPHA_DEEP_STALL) - cm20) * w
         else:
             cl, cd, _ = _deep_stall(float(abs_a))
+            cm = _synthetic_cm(float(abs_a))
 
-        cm = _synthetic_cm(float(abs_a))
         rows.append((float(alpha), sgn * cl, cd, sgn * cm))
     return rows
 
@@ -230,7 +240,10 @@ def write_csv(Re, rows):
             f"# NACA 0012, Re = {Re:.1e}\n"
             f"# Cl/Cd: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; "
             f"flat-plate deep stall beyond\n"
-            f"# Cm: synthetic Abbott & von Doenhoff trend (not measured)\n"
+            f"# Cm: NeuralFoil CM for |alpha|<=20 deg (quarter-chord, positive "
+            f"nose-up);\n"
+            f"#     blended to synthetic Abbott & von Doenhoff trend in deep "
+            f"stall (not measured)\n"
             f"# alpha_deg, Cl, Cd, Cm\n"
         )
         for alpha, cl, cd, cm in rows:
@@ -264,7 +277,15 @@ def main():
             "flat-plate model beyond. CD(90 deg)~1.7, CD(150 deg)~0.4, "
             "CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981)."
         ),
-        cm_method="synthetic Abbott & von Doenhoff trend (not measured)",
+        cm_method=(
+            "NeuralFoil CM for |alpha|<=20 deg (quarter-chord, positive "
+            "nose-up); smoothstep to synthetic Abbott & von Doenhoff trend "
+            "for 20<|alpha|<45 deg; synthetic trend beyond. Not measured."
+        ),
+        cm_convention=(
+            "Positive Cm is nose-up about the quarter chord, matching the "
+            "solver's Qa_cm = q*Cm*c term. Negative alpha uses odd symmetry."
+        ),
         neuralfoil_version=nf_version,
         n_crit=N_CRIT,
         model_size=MODEL_SIZE,
@@ -273,8 +294,8 @@ def main():
         reynolds=RE_LIST,
         note=(
             "These tables are not raw experimental data. The attached-flow "
-            "Cl/CD come from an XFOIL-trained surrogate; deep-stall and Cm "
-            "are analytic trends."
+            "Cl, Cd and Cm come from an XFOIL-trained surrogate; deep-stall "
+            "Cl/Cd and the deep-stall Cm are analytic trends."
         ),
     )
     with open(os.path.join(_ROOT, "airfoil_polars", "provenance.json"), "w") as fh:

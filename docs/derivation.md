@@ -169,13 +169,22 @@ with $\nu = 1.5\times 10^{-5}$ m²/s (air at sea level, 15 °C).
 
 The database is a set of **synthetic** NACA 0012 tables generated for four
 Reynolds numbers ($10^5, 2\times10^5, 4\times10^5, 10^6$) and spanning
-$\alpha \in [-180°, 180°]$. Attached-flow Cl and Cd ($|\alpha| \le 20°$) come
-from NeuralFoil 0.3.3, the XFOIL-trained network; deep stall is a flat-plate
-model anchored to Sheldahl & Klimas (1981) SAND80-2114 trends. They are not
-digitised measurements. See `airfoil_polars/README.md` and
-`airfoil_polars/provenance.json` for exactly what the surrogate does and does
-not capture (in particular, Cm is a synthetic Abbott & von Doenhoff trend and
-is not measured).
+$\alpha \in [-180°, 180°]$. Attached-flow Cl, Cd and Cm ($|\alpha| \le 20°$)
+come from NeuralFoil 0.3.3, the XFOIL-trained network; deep stall is a
+flat-plate model anchored to Sheldahl & Klimas (1981) SAND80-2114 trends.
+They are not digitised measurements. See `airfoil_polars/README.md` and
+`airfoil_polars/provenance.json` for exactly what the surrogate does and
+does not capture.
+
+**Cm convention.** NeuralFoil's `CM` is the quarter-chord pitching moment in
+the standard aircraft sense (positive nose-up). The solver applies it with
+the same sign, `Qa_cm = q\,Cm\,c`; negative incidence is mirrored with odd
+symmetry. The attached-flow values are raw network output, so they are not
+zero for a symmetric section and are not monotonic across the attached
+range (at Re = $10^6$, about $-0.008$ to $+0.047$ over 0–20°). They should
+be read as a surrogate limitation, not as measured section data.
+Deep-stall Cm ($|\alpha| \ge 45°$) is the synthetic Abbott & von Doenhoff
+trend, because NeuralFoil's post-stall moment is not validated.
 
 ---
 
@@ -607,24 +616,38 @@ The following approximations are **intentional** and documented as
 limitations in the README:
 
 1. **Two-dimensional flow.** No tip vortices, no spanwise flow, no 3D
-   wake structure. The generalized Prandtl factor reduces lift by
-   $1-f_{ar}$ — about 40 % at AR ≈ 2.9 and 15 % at AR ≈ 10.5.
+   wake structure. The finite-span lift slope uses Helmbold (1942),
 
-   **Finite-span uncertainty.** The central estimate is
-   $f_{ar} = 1/(1 + 1.8/(e\,AR))$. Its uncertainty is modelled by
-   `tip_loss_multiplier`, sampled over [0.70, 1.30]. The multiplier is
-   deliberately two-sided: below 1 it represents the known low-AR
-   under-correction of the Prandtl formula (wake roll-up is stronger than
-   the elliptical-loading assumption), above 1 it explores less tip loss.
-   The previous one-sided floor [0.59, 0.84] could only *raise* $f_{ar}$
-   above the raw value, so it could not represent the collapse scenario and
-   made the short-rotor interval look artificially narrow. For the
-   small-rotor anchors the multiplier dominates the Cp variance, and the
-   low end of its range crosses the rotation-sustaining threshold (the
-   Sharp-inspired anchor falls from Cp ≈ 0.10 at multiplier 1.0 to
-   ≈ 0.003 at 0.70). The 90 % interval is therefore a scenario range, not
-   a precision estimate. The scale-up anchor (AR 10.5) is much less
-   sensitive because its raw $f_{ar}$ is already high.
+   $$
+   f_{ar} = \frac{a}{a_0}
+          = \frac{1}{\sqrt{1 + (2/AR)^2} + 2/AR},
+   \qquad a_0 = 2\pi,
+   $$
+
+   so lift is reduced by $1-f_{ar}$ — about 48 % at AR ≈ 2.9 and 17 % at
+   AR ≈ 10.5. The empirical Oswald factor $e$ enters only the induced-drag
+   term, $k = 1/(\pi e\,AR)$, where it belongs.
+
+   The previous generalized-Prandtl form $1/(1 + 1.8/(e\,AR))$ matched
+   Helmbold at high AR but was about 12 % too generous at AR 2.86 (0.588
+   vs 0.520, i.e. a lift slope of 3.70 vs 3.27 rad$^{-1}$). That bias is
+   why the central estimate changed.
+
+   **Finite-span uncertainty.** `tip_loss_multiplier` is a residual
+   two-sided multiplier around Helmbold, sampled over [0.85, 1.15] in the
+   UQ study. The old band [0.70, 1.30] was needed to cover the systematic
+   low-AR bias of the Prandtl form; with Helmbold that bias is gone, so a
+   ±15 % residual band is used instead. For the small-rotor anchors the
+   multiplier still dominates the Cp variance.
+
+   **The Sharp-inspired design sits close to the collapse threshold.**
+   The rotation-sustaining branch switches to the collapsed branch between
+   multipliers 0.955 and 0.96, i.e. about 4 % below the Helmbold central
+   value. At the central value Cp = 0.067; at 0.955 it is 0.005. Because
+   the [0.85, 1.15] band extends well below the threshold, roughly a third
+   of the UQ samples collapse, so the 90 % interval is a scenario range,
+   not a precision estimate. The scale-up anchor (AR 10.5) is much less
+   sensitive because its $f_{ar}$ is already high.
 
 2. **No flow curvature expansion.** Flux-line theory predicts the flow
    to accelerate through the rotor in a way that a 2D DMS model misses.
@@ -649,9 +672,11 @@ limitations in the README:
    literature-typical values from Pawsey's thesis, not fitted to data.
    With the XFOIL-derived polars the passive machine operates close to
    static stall, so the DS model is not a small correction there:
-   switching it off drops passive Cp from ~0.18 to ~0.03 and lets the
-   blade reach ~74° incidence. At the prescribed-pitch design point the
-   effect is only ~2 %. The DS constants are sampled in the UQ study.
+   switching it off drops Cp by 91 % at the Sharp-inspired anchor
+   (0.067 -> 0.006) and by 75 % at the optimised-passive anchor
+   (0.272 -> 0.068). At the prescribed-pitch design point the effect is
+   only ~2 %. The DS constants are sampled in the UQ study, and every
+   passive result in this archive rests on the DS model.
 
 5. **No stall-cell effects.** At low aspect ratio, stall cells can
    occupy part of the span, reducing effective lift further. Not modelled.
@@ -664,7 +689,7 @@ limitations in the README:
 
 7. **Model-form uncertainty.** The model combines several literature
    sources (lag-based dynamic stall, Adams curvilinear flow, DMS induction,
-   generalized Prandtl finite-span) that were developed for different
+   Helmbold finite-span) that were developed for different
    machines and flight regimes. The model-form error — how much the
    combined 2D BEM prediction deviates from reality due to structural
    mismatches between the component models — is not quantified. This is

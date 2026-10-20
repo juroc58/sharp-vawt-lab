@@ -82,12 +82,11 @@ PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
 PENALTY = 1000.0
 BETZ_CEILING = 0.593
 
-# Finite-span guardrail constants.  The core now uses the generalized
-# Prandtl factor (k = 1.8) with a two-sided multiplier and no default floor;
-# these constants are a *local* feasibility guardrail for the optimiser,
-# which must not park in a very-low-AR region where the Prandtl model is
-# outside its fitted range.  They are intentionally conservative and are not
-# passed to the simulation.
+# Finite-span guardrail constants.  The core uses Helmbold (1942) with a
+# two-sided residual multiplier and no default floor; these constants are a
+# *local* feasibility guardrail for the optimiser, which must not park in a
+# very-low-AR region outside the fitted range of low-AR lift-slope formulas.
+# They are intentionally conservative and are not passed to the simulation.
 TIP_LOSS_E     = 0.90
 TIP_LOSS_FLOOR = 0.85
 
@@ -114,15 +113,14 @@ class ScaledObjective:
             return PENALTY
 
         # ---- finite-span guardrail feasibility ----
-        # Prandtl's formula is fitted down to AR ~ 3; below that it
-        # under-corrects and a global optimiser will happily park in the
-        # low-AR region and report unphysical Cp.  Reject any design whose
-        # raw generalized-Prandtl factor would fall below the conservative
+        # Helmbold is empirical; a global optimiser will otherwise park in
+        # the very-low-AR region and report unphysical Cp.  Reject any design
+        # whose raw Helmbold factor would fall below the conservative
         # guardrail, so the reported optimum stays in the model's fitted
-        # range.  (The simulation itself applies the raw factor times
+        # range.  (The simulation applies the raw factor times
         # tip_loss_multiplier; it has no default floor.)
         AR = H / c
-        f_ar_raw = 1.0 / (1.0 + 1.8 / (TIP_LOSS_E * AR))
+        f_ar_raw = 1.0 / (math.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
         if f_ar_raw < TIP_LOSS_FLOOR - 1e-9:
             return PENALTY + 500.0
 

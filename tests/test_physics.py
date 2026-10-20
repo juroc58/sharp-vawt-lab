@@ -8,18 +8,18 @@ from tests.conftest import BASE_QUICK
 
 class TestTipLossBounds:
 
-    def test_default_uses_generalized_prandtl(self):
-        """Default f_ar uses generalized Prandtl formula (k=1.8) without floor."""
+    def test_default_uses_helmbold(self):
+        """Default f_ar uses the Helmbold (1942) low-AR correction."""
         s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
-        # AR = 0.445 / 0.14 = 3.18  →  Gen. Prandtl f_ar = 1/(1 + 1.8/(0.9*3.18)) ≈ 0.614
-        assert s.f_ar == pytest.approx(0.614, abs=0.01)
+        # AR = 0.445 / 0.14 = 3.18 -> Helmbold f_ar = 0.552
+        assert s.f_ar == pytest.approx(0.552, abs=0.01)
 
     def test_raw_correction_when_floor_near_zero(self):
-        """Passing ~0 uses the raw generalized Prandtl formula (same as default now)."""
+        """Passing ~0 uses the raw Helmbold formula (same as default)."""
         s = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
                                     'tip_loss_floor_override': 0.001})
-        # Gen. Prandtl: f_ar = 1/(1 + 1.8/(0.9*3.18)) ≈ 0.614
-        assert s.f_ar == pytest.approx(0.614, abs=0.01)
+        # Helmbold at AR 3.18: f_ar = 0.552
+        assert s.f_ar == pytest.approx(0.552, abs=0.01)
 
     def test_override_raises_floor(self):
         """tip_loss_floor_override > raw clamps f_ar up to the override value."""
@@ -31,11 +31,11 @@ class TestTipLossBounds:
         """An override below the raw value must not pull f_ar down."""
         s = create_sim_from_params({**BASE_QUICK, 'H': 3.0, 'c': 0.10,
                                     'tip_loss_floor_override': 0.50})
-        # AR = 30, raw Gen. Prandtl f_ar ≈ 0.94; override 0.50 should not apply
+        # AR = 30, raw Helmbold f_ar ≈ 0.935; override 0.50 should not apply
         assert s.f_ar > 0.85
 
     def test_multiplier_below_one_increases_tip_loss(self):
-        """tip_loss_multiplier < 1 represents low-AR under-correction."""
+        """tip_loss_multiplier < 1 represents residual stronger tip loss."""
         raw = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14})
         weaker = create_sim_from_params({**BASE_QUICK, 'H': 0.445, 'c': 0.14,
                                          'tip_loss_multiplier': 0.7})
@@ -70,13 +70,40 @@ class TestCmDimensions:
     """Cm moment from polars has correct dimensions and is applied correctly."""
 
     def test_cm_in_polars(self):
-        """Polar tables contain non-zero Cm values."""
+        """Polar tables contain the NeuralFoil attached-flow Cm.
+
+        Cm is the quarter-chord moment in the standard aircraft convention
+        (positive nose-up).  NeuralFoil's attached-flow Cm has visible
+        network scatter; at Re = 1e6, alpha = 15 deg it is about +0.047.
+        The test pins the surrogate value (not a physical expectation for a
+        symmetric section, whose true Cm is near zero) so that an accidental
+        table swap or sign flip is caught.
+        """
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
-        # At Re=1e6, alpha=15°, Cm should be negative (nose-down)
-        Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(15.0))
-        assert Cm < -0.001  # negative nose-down moment
-        assert Cm > -0.1  # not absurdly large
+        _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
+        assert Cm == pytest.approx(0.0465, abs=0.005)
+        assert -0.1 < Cm < 0.1  # not absurdly large
+
+    def test_cm_zero_at_zero_alpha(self):
+        """A symmetric NACA 0012 has zero moment at zero incidence."""
+        from vawt_core import PolarDatabase
+        pdb = PolarDatabase("airfoil_polars/naca0012")
+        for re in (1e5, 2e5, 4e5, 1e6):
+            _, _, Cm, _ = pdb.lookup(re, 0.0)
+            assert abs(Cm) < 1e-6
+
+    def test_cm_provenance_is_neuralfoil_attached(self):
+        """The table provenance must name the attached-flow Cm source."""
+        import json
+        from pathlib import Path
+        prov = json.loads(
+            Path("airfoil_polars/provenance.json").read_text()
+        )
+        assert "NeuralFoil" in prov["cm_method"]
+        assert "|alpha|<=20" in prov["cm_method"]
+        assert "nose-up" in prov["cm_convention"]
+        assert "synthetic" in prov["cm_method"]
 
     def test_cm_moment_dimensions(self):
         """Cm moment per unit span is independent of H (blade height).
@@ -398,8 +425,10 @@ class TestCmHubMoment:
         """
         from vawt_core import create_sim_from_params
 
-        base = dict(BASE_QUICK, free=False, prescribe_pitch=True,
-                    T_max=10.0, stride=5)
+        base = dict(BASE_QUICK, free=False, tsr=2.5,
+                    T_max=15.0, stride=5)
+        # With the blade held at fixed speed and fixed pitch, Cm no longer
+        # averages out over the revolution, so the hub-reaction term moves Cp.
         sim_with_cm = create_sim_from_params(base)
         sim_zero_cm = create_sim_from_params(base)
         assert sim_zero_cm.polar_db is not sim_with_cm.polar_db
