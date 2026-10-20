@@ -32,10 +32,10 @@ remaining differences are diagnosed in that repository's `COMPARISON_REPORT.md`.
 <!-- BEGIN GENERATED: headline_table_small -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Sharp-inspired CPPC** | **0.13** | [0.10, 0.19] | — |
-| Optimised passive (mass-balanced) | **0.27** | [0.20, 0.32] | — |
+| **Sharp-inspired CPPC** | **0.12** | [0.11, 0.13] | — |
+| Optimised passive (mass-balanced) | **0.20** | [0.19, 0.21] | — |
 | Prescribed pitch (ideal actuator) | 0.48 | — | upper bound |
-| Ham 1979 reproduction | **0.47** | [0.46, 0.47] | UQ mean matches deterministic run |
+| Ham 1979 reproduction | **0.46** | [0.46, 0.47] | UQ mean matches deterministic run |
 <!-- END GENERATED: headline_table_small -->
 
 ### Scale-up regime (R = 2.72 m, Re ≈ 5.1 × 10⁵)
@@ -43,7 +43,7 @@ remaining differences are diagnosed in that repository's `COMPARISON_REPORT.md`.
 <!-- BEGIN GENERATED: headline_table_large -->
 | Configuration | Cp | 90 % CI | Reference |
 |---|---|---|---|
-| **Scaled-up passive (R = 2.72 m)** | **0.41** | [0.40, 0.42] | ~69 % of Betz |
+| **Scaled-up passive (R = 2.72 m)** | **0.36** | [0.35, 0.36] | ~69 % of Betz |
 <!-- END GENERATED: headline_table_large -->
 
 The confidence intervals come from Saltelli sampling over eleven
