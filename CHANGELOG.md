@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Ham 1979 framing**: reframed from "reproduction"/"validation" to a
+  documented 2D upper-bound comparison. The static-only peak (Cp ≈ 0.476 at
+  TSR 2.5) is ~+9 % above Ham's 3D measured band midpoint (0.435) and above
+  his entire 0.42–0.45 band, which is the expected bias for a 2D solver
+  without finite-span (tip-loss) loss. `scripts/validate_ham.py` now reports
+  a signed bias vs an expected-bias window instead of a PASS/FAIL "inside
+  band" verdict; `tests/test_validation.py` classes were renamed
+  (TestHamReproduction → TestHamPeakComparison, TestHamVerdictLogic →
+  TestHamVerdictContract) and assert the expected bias window plus the fact
+  that the peak is NOT inside Ham's band. `scripts/plot_ham_curve.py`
+  title now reads "Ham 1979 comparison: 2D static-only upper bound vs
+  measured Cp(TSR)". No physics, polar, or golden change.
+
 ## [3.3.1] - 2026-10-20
 
 This release fixes the two substantive problems in the v11 review: the

@@ -7,6 +7,8 @@ polar (loosely after the Noll–Ham formulation), Adams (2018) curvilinear
 corrections, double-multiple-streamtube induction, and the full Lagrangian
 coupling between rotor and pitch dynamics.
 
+This is a solo research lab, not a library. See CONTRIBUTING.md for scope.
+
 The project ships one physics core and a set of validation scripts. Every
 number in this README is reproducible from the scripts in `scripts/`, except
 where a paragraph explicitly cites an external study (those numbers are
@@ -37,7 +39,7 @@ vendored in this archive, so no agreement figure is reproduced here.
 | **Sharp-inspired CPPC** | **0.04** | [0.002, 0.12] | scenario range (UQ) | S |
 | Optimised passive (mass-balanced) | **0.19** | [0.051, 0.28] | stored design point (UQ) | S |
 | Prescribed pitch (ideal actuator) | 0.50 | — | ideal-actuator upper bound (model) | U |
-| Ham 1979 reproduction | **0.49** | [0.47, 0.51] | fixed design point (validated vs lit.) | V |
+| Ham 1979 comparison | **0.49** | [0.47, 0.51] | fixed design point (2D upper-bound comparison) | V |
 <!-- END GENERATED: headline_table_small -->
 
 **Evidence levels.** `S` = scenario estimate from UQ sampling (a range, not a precision bar);
@@ -69,29 +71,36 @@ the scale-up has none.
 The confidence intervals come from Saltelli sampling over twelve
 inputs, eleven of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
 Helmbold (1942) finite-span correction; the Ham
-reproduction is run without one and without the curvature correction, using
+comparison is run without one and without the curvature correction, using
 double-multiple-streamtube induction and Ham's cosine pitch law. See the
 [Uncertainty](#-uncertainty) section for the parameter ranges and histograms.
 
 **Convention.** The headline Cp for each machine is the **UQ mean with
 tip loss ON**. Ham is the exception: his model class has no tip loss, so
-the reproduction is run without one. Deterministic design-point values
+the comparison is run without one. Deterministic design-point values
 quoted in the body text are labelled as such; the table gives the UQ mean
 over eleven active inputs. The UQ study is a scenario analysis, not a
 calibrated error bar: the finite-span multiplier alone spans ±15 %, and
 both small-rotor distributions cross a collapse threshold (see below).
 
-For Ham, the body text quotes a peak of 0.476 from
-`scripts/plot_ham_curve.py` (static polars, TSR = 2.5). The headline table
-quotes the UQ mean 0.49 [0.46, 0.51], essentially the same point: the
-anchor uses Ham's model class (DS off, no curvature, no tip loss) and
-samples the induction-lag and strut-drag constants.
+### ⚠ Ham 1979 — 2D upper-bound comparison, not a reproduction
+
+The 2D solver gives **Cp ≈ 0.476 at TSR 2.5 at Ham's geometry**
+(R = 1.83 m, c = 0.305 m, static polars, no tip loss) — roughly **+9 %
+above Ham's band midpoint** (0.435) and above the entire 3D measured
+band of 0.42–0.45. The Cp(TSR) shape also differs from Ham's measurement.
+
+This is the expected bias for a 2D solver without finite-span loss: the
+model has no tip-loss penalty, so it over-predicts Ham's 3D rotor. It is
+a **documented upper-bound comparison, not a reproduction of Ham's
+experiment**, and the peak is not expected to fall inside Ham's band.
+See `scripts/validate_ham.py` and `scripts/plot_ham_curve.py`.
 
 ### What's validated vs what's not
 
 | Claim | Evidence level | Status |
 |---|---|---|
-| Peak Ham 1979 Cp ≈ 0.476 at TSR 2.5 (static polars) | Model vs published literature (0.42–0.45 band) | **Validated within ~9 %** (peak only; curve shape mismatches at high TSR) |
+| Peak Ham 1979 Cp ≈ 0.476 at TSR 2.5 (static polars) | Model vs published literature (0.42–0.45 band) | **2D upper-bound comparison — not validated** (peak ≈ +9 % above band midpoint 0.435; expected bias for a 2D no-tip-loss solver; curve shape mismatches at high TSR) |
 | Prescribed-pitch DS sensitivity ≈ 2.2 % | Model self-check (`validate_ds_off.py`) | **Verified internally** |
 | Passive CPPC runs near static stall; DS off → collapse | Model self-check | **Verified internally; DS model uncalibrated** |
 | Pitch-torque sign restoring at stall extremes | `diag_qa.py` + tests | **Verified internally** |
@@ -475,7 +484,7 @@ anchor. Runs in ~20 min on 4 cores (`scripts/uncertainty.py --saltelli
 <!-- BEGIN GENERATED: uq_sobol -->
 | Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
 |---|---|---|---|
-| Ham 1979 reproduction | `tau_rev` | **+0.84 ± 0.29** | +0.86 ± 0.24 |
+| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.29** | +0.86 ± 0.24 |
 | Sharp-inspired CPPC | `ds_Tf` | **+0.43 ± 0.26** | +0.62 ± 0.25 |
 | Optimised passive | `tip_loss_multiplier` | **+0.51 ± 0.34** | +0.80 ± 0.28 |
 | Scale-up R = 2.72 m | `tip_loss_multiplier` | **+0.19 ± 0.18** | +0.28 ± 0.19 |
@@ -530,19 +539,19 @@ Most VAWT hobby repos report a Cp number. This one reports **four**, with the
 mechanism of each spelled out, plus a validation against the primary
 literature:
 
-1. **Ham 1979 reproduction (partial).** The same solver, run in the
-   model class Ham used (double-multiple-streamtube induction, static
-   polars, no curvature correction, cosine pitch
-   law with θ₁c = −10°), peaks at **Cp = 0.476 at TSR = 2.5** (a single
-   deterministic run; the UQ mean in the headline table is 0.49
-   [0.46, 0.51]) — about 9 % above his measured band of 0.42–0.45. The
-   **shape** of the curve does not match: the model over-predicts by
-   ~0.03 at TSR 2, is closest around the peak, over-predicts the
-   high-TSR tail (0.22 vs 0.12 at TSR 4), and with the Adams curvature
-   correction active it under-predicts at TSR 3+ (see
-   `docs/ham_curve.png`). The peak reproduction is consistent with
-   running without a finite-span correction; the shape is a residual
-   limitation of the model class, not something the peak number captures.
+1. **Ham 1979 comparison (2D upper bound, partial).** The same solver,
+   run in Ham's model class (double-multiple-streamtube induction, static
+   polars, no curvature correction, cosine pitch law with θ₁c = −10°),
+   peaks at **Cp = 0.476 at TSR = 2.5** (a single deterministic run; the
+   UQ mean in the headline table is 0.49 [0.46, 0.51]) — about **+9 %
+   above Ham's band midpoint** (0.435) and above his entire 3D measured
+   band of 0.42–0.45. The **shape** of the curve does not match: the
+   model over-predicts by ~0.03 at TSR 2, is closest around the peak,
+   over-predicts the high-TSR tail (0.22 vs 0.12 at TSR 4), and with the
+   Adams curvature correction active it under-predicts at TSR 3+ (see
+   `docs/ham_curve.png`). The peak bias is consistent with running a 2D
+   solver without a finite-span correction; the shape mismatch is a
+   residual limitation of the model class.
 2. **Dynamic-stall sensitivity depends on the regime.** At the
    prescribed-pitch design point, turning the (uncalibrated) DS model off
    changes Cp by **≈2.2 %**; the `scripts/validate_ds_off.py` tolerance is
@@ -636,7 +645,7 @@ references, is in [`docs/derivation.md`](docs/derivation.md).
 verdict logic, and factory validation. The validation scripts below also
 exit non-zero on failure, so they can be wired into CI directly.
 
-### 1. Validate against Ham 1979
+### 1. Compare against Ham 1979 (2D upper bound)
 
     python3 scripts/validate_ham.py
 
@@ -650,11 +659,15 @@ model configurations:
 These are single deterministic runs. The headline table's Ham UQ mean of
 0.49 samples the active uncertain inputs about this point.
 
-Ham 1979 published peak Cp = 0.42–0.45 at TSR = 2.5–3.0. The `+ curv` row
-drops to 0.41 because Adams fitted his coefficients at c/R = 0.418 on a
-variable-pitch machine; Ham's rig uses a fixed cosine pitch at c/R = 0.167,
-so the virtual-camber shift is not absorbed by the pitch schedule. This is a
-documented limitation of applying Adams outside his fit range.
+Ham 1979 published peak Cp = 0.42–0.45 at TSR 2.5–3.0. The static-only
+2D model runs at Cp ≈ 0.476 — above Ham's 3D measured band — which is
+the expected bias for a 2D solver without finite-span (tip-loss) loss.
+This is an upper-bound comparison, not a reproduction of Ham's experiment.
+The `+ curv` row drops to 0.41 because Adams fitted his coefficients at
+c/R = 0.418 on a variable-pitch machine; Ham's rig uses a fixed cosine
+pitch at c/R = 0.167, so the virtual-camber shift is not absorbed by the
+pitch schedule — a documented limitation of applying Adams outside his
+fit range.
 
 ### 2. Dynamic-stall sensitivity
 

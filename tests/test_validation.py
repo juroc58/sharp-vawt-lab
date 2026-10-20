@@ -7,37 +7,47 @@ iteration: `pytest -m "not slow"`.
 import pytest
 
 from vawt_core import create_sim_from_params
-from scripts.validate_ham import verdict, HAM_MID, HAM_BAND_LO, HAM_BAND_HI
+from scripts.validate_ham import (
+    verdict, HAM_MID, HAM_BAND_LO, HAM_BAND_HI, HAM_BIAS_LO, HAM_BIAS_HI,
+)
 
 
-class TestHamVerdictLogic:
-    """The pass/fail rule in scripts/validate_ham.py, without running a sim."""
+class TestHamVerdictContract:
+    """The comparison contract in scripts/validate_ham.py, without running a sim.
 
-    def test_mid_band_passes(self):
-        ok, err, in_band = verdict(HAM_MID)
-        assert ok and in_band and err == pytest.approx(0.0)
+    verdict() returns (status, bias, expected_lo, expected_hi). The model is
+    expected to over-predict Ham's 3D band (2D solver, no tip loss), so a
+    peak matching the midpoint exactly is *outside* the expected-bias window
+    — that is intentional, not a bug.
+    """
 
-    def test_band_edges_pass(self):
-        assert verdict(HAM_BAND_LO)[0] is True
-        assert verdict(HAM_BAND_HI)[0] is True
+    def test_within_expected_window(self):
+        status, bias, expected_lo, expected_hi = verdict(HAM_MID * 1.10)
+        assert status == "comparison_expected"
+        assert 0.05 <= bias <= 0.20
+        assert expected_lo == pytest.approx(HAM_MID * (1.0 + HAM_BIAS_LO))
+        assert expected_hi == pytest.approx(HAM_MID * (1.0 + HAM_BIAS_HI))
 
-    def test_within_tolerance_passes(self):
-        # +9% of mid-band is inside the 10% tolerance.
-        ok, err, in_band = verdict(HAM_MID * 1.09)
-        assert ok is True and in_band is False
+    def test_outside_expected_window_high(self):
+        status, *_ = verdict(HAM_MID * 1.30)
+        assert status == "comparison_out_of_expected_range"
 
-    def test_far_off_fails(self):
-        ok, err, in_band = verdict(HAM_MID * 1.30)
-        assert ok is False and in_band is False
-
-    def test_negative_side_within_tolerance(self):
-        ok, err, in_band = verdict(HAM_MID * 0.92)
-        assert ok is True and in_band is False
+    def test_outside_expected_window_low(self):
+        # Matching the midpoint exactly is *not* expected for a 2D
+        # no-tip-loss solver; it should over-predict instead.
+        status, *_ = verdict(HAM_MID * 1.00)
+        assert status == "comparison_out_of_expected_range"
 
 
 @pytest.mark.slow
-class TestHamReproduction:
-    """Ham 1979 Pinson C2E geometry, Ham's own model class (no DS, no tip loss)."""
+class TestHamPeakComparison:
+    """Ham 1979 Pinson C2E geometry, Ham's own model class (no DS, no tip loss).
+
+    The 2D static-only model is expected to over-predict Ham's 3D measured
+    band because it has no finite-span (tip-loss) loss. These tests document
+    the expected bias (5-20% over Ham's mid-band); they do NOT validate the
+    model against Ham's experiment.
+    """
 
     BASE_HAM = dict(
         R=1.83, c=0.305, H=1.37, N=3,
@@ -55,14 +65,28 @@ class TestHamReproduction:
         k_load=0.0004,
     )
 
-    def test_ham_tsr_2_5_within_band(self):
+    def test_ham_peak_bias_in_expected_window(self):
         r = create_sim_from_params(self.BASE_HAM).run()
-        # Ham 1979 reported Cp = 0.42-0.45 at TSR 2.5-3.0.
-        # The solver (2D, no tip loss) runs ~+11 % above the band's midpoint.
-        # New polars: static peak Cp = 0.485.
-        assert 0.42 < r['cp'] < 0.50, f"Ham Cp = {r['cp']:.3f} outside plausible band"
+        bias = (r['cp'] - HAM_MID) / HAM_MID
+        # A 2D solver without tip loss is expected to over-predict Ham's
+        # 3D measured band. The 5-20% window bounds gross regressions on
+        # both sides; it is NOT a validation tolerance.
+        assert 0.05 <= bias <= 0.20, (
+            f"Ham peak Cp = {r['cp']:.4f} gives bias {bias*100:.1f}% vs "
+            f"mid-band {HAM_MID}, outside expected 5-20% window"
+        )
 
-    def test_ham_tsr_2_0_within_band(self):
+    def test_ham_peak_not_inside_measured_band(self):
+        r = create_sim_from_params(self.BASE_HAM).run()
+        # If this starts passing, either the solver or the polar tables
+        # changed materially; re-examine before relaxing.
+        assert not (HAM_BAND_LO <= r['cp'] <= HAM_BAND_HI), (
+            f"Ham peak Cp = {r['cp']:.4f} is inside Ham's measured band "
+            f"[{HAM_BAND_LO}, {HAM_BAND_HI}], unexpected for the 2D "
+            "no-tip-loss model"
+        )
+
+    def test_ham_tsr_2_0_plausible(self):
         r = create_sim_from_params({**self.BASE_HAM, 'tsr': 2.0}).run()
         assert 0.32 < r['cp'] < 0.50
 

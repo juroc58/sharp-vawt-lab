@@ -773,7 +773,7 @@ def block_headline_table_small():
         ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range (UQ)", "S"),
         ("Optimised passive (mass-balanced)", uq["optimised_passive"], "stored design point (UQ)", "S"),
         ("Prescribed pitch (ideal actuator)", None, "ideal-actuator upper bound (model)", "U"),
-        ("Ham 1979 reproduction", uq["ham_1979"], "fixed design point (validated vs lit.)", "V"),
+        ("Ham 1979 comparison", uq["ham_1979"], "fixed design point (2D upper-bound comparison)", "V"),
     ]
     out = ["| Configuration | Cp | 90 % CI | Reference | Evidence |",
            "|---|---|---|---|---|"]
@@ -854,7 +854,7 @@ def block_uq_sobol():
     """Sobol sensitivity table from uncertainty_results.json."""
     sobol = DATA["uq"].get("sobol", {})
     labels = {
-        "ham_1979":          "Ham 1979 reproduction",
+        "ham_1979":          "Ham 1979 comparison",
         "sharp_cppc":        "Sharp-inspired CPPC",
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.72 m",

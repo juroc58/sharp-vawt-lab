@@ -1,14 +1,15 @@
 """
-Ham 1979 Cp(TSR) curve comparison.
+Ham 1979 Cp(TSR) curve comparison — 2D static-only upper bound vs measured.
 
 Runs the three model configurations on Ham's Pinson C2E geometry across
 TSR = 1.5 to 4.5 and plots them against his measured points.  Saves
 docs/ham_curve.png.
 
-Why this exists: the peak Cp of the static-polar run (Ham's own model
-class) matches his published band, but the shape of the curve does not.
-The peak-only comparison in validate_ham.py hides that; this figure
-shows it.
+Why this exists: the static-polar run (Ham's own model class, 2D with no
+finite-span loss) over-predicts Ham's 3D measured peak — the expected
+bias for a 2D solver without tip loss — and the shape of the curve also
+differs. The peak-only comparison in validate_ham.py quantifies the
+bias; this figure shows both.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -74,7 +75,7 @@ def main():
     ax.set_ylim(-0.05, 0.55)
     ax.grid(alpha=0.3)
     ax.legend(loc='upper right', fontsize=9)
-    ax.set_title("Ham 1979 reproduction: peak matches, shape does not")
+    ax.set_title("Ham 1979 comparison: 2D static-only upper bound vs measured Cp(TSR)")
     fig.tight_layout()
 
     out = os.path.join(ROOT, "docs", "ham_curve.png")
