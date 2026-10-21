@@ -58,6 +58,7 @@ except Exception:  # pragma: no cover
 PI = math.pi
 TWO_PI = 2.0 * PI
 NU_AIR = 1.5e-5
+_MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 OUT_COLS = ["t", "th", "w", "psi", "beta", "alpha", "Tsum", "Qshaft", "a", "Fx", "P_blade", "psd"]
 
@@ -160,8 +161,10 @@ def _aero_coeffs(ds, alpha, W, c, dt, Re, dyn, Tf, Tv, Ta, Kv, Clmax,
     # Cm in dynamic stall: blend between static Cm and separated Cm
     # In deep stall, Cm becomes more negative (nose-down) for positive alpha,
     # and more positive for negative alpha (odd symmetry)
-    # Use math.copysign for proper odd symmetry: sign of Cm follows -sign(ae)
-    Cm = Cm_s + (fst - fd) * (math.copysign(0.05, -ae) - Cm_s)
+    # Use math.copysign for proper odd symmetry: sign of Cm follows -sign(ae).
+    # The separated target is scaled by cm_scale as well, so cm_scale=0
+    # really means "no pitching moment" rather than "static Cm only".
+    Cm = Cm_s + (fst - fd) * (cm_scale * math.copysign(0.05, -ae) - Cm_s)
 
     # vortex lift: only while separation is lagging, decays to zero in steady flow
     sg = 1.0 if ae >= 0.0 else -1.0
@@ -405,12 +408,14 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
 # =============================================================================
 @dataclass(frozen=True)
 class Geometry:
-    R: float = 2.7179
-    c: float = 0.3861
-    H: float = 4.0568
+    # Neutral R = 0.6 m Sharp-inspired baseline.  Larger/named machines live
+    # in vawt_presets.PRESETS; do not encode a scale-up design here.
+    R: float = 0.60
+    c: float = 0.14
+    H: float = 0.40
     N: int = 3
-    ar: float = 0.3121          # rocking arm / chord
-    sp: float = 0.2181          # spar position from LE / chord
+    ar: float = 0.50           # rocking arm / chord
+    sp: float = 0.25           # spar position from LE / chord
     arm_d: float = 0.0          # support-arm width for drag (m)
     n_arm: int = 2              # arms per blade (top + bottom)
     arm_cd: float = 1.0
@@ -422,10 +427,10 @@ class Geometry:
 
 @dataclass(frozen=True)
 class MassProps:
-    mb: float = 0.92954
+    mb: float = 0.010
     xbcg: float = 0.20
-    mc: float = 2.69306
-    dcw: float = -0.1935
+    mc: float = 0.002
+    dcw: float = 0.30
     balance: int = 0         # 0: use mc,dcw as given; 1: solve dcw from mc; 2: solve mc from dcw
     bias_deg: float = 0.0
     J_hub: float = 0.02
@@ -469,20 +474,20 @@ class AeroConfig:
 @dataclass(frozen=True)
 class SimConfig:
     U: float = 8.0
-    tsr: float = 2.5
-    free: bool = True
+    tsr: float = 2.0
+    free: bool = False
     w0_frac: float = 0.9
     psi0_deg: float = 0.0
     dt: float = 2e-4
-    T_max: float = 40.0
-    stride: int = 8
+    T_max: float = 10.0
+    stride: int = 5
     gust_g: float = 0.0
     gust_t0: float = 0.0
     gust_tg: float = 0.0
     turb_I: float = 0.0
     turb_L: float = 30.0
     turb_model: str = "dryden"   # "dryden" or "vonkarman"
-    k_load: float = 4.164352
+    k_load: float = 0.0025
     rho: float = 1.225
     seed: int = 0
     n_rev_fixed: int = 16    # length of fixed-rpm runs in revolutions
@@ -520,12 +525,20 @@ class PolarDatabase:
     """Static polar tables (Cl, Cd, Cm over log Re x alpha)."""
 
     def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None):
-        self.polar_dir = polar_dir
+        # Resolve relative polar paths against the module location, never the
+        # process working directory.  A script launched from scripts/ must
+        # find the same tables as one launched from the repo root.
+        if polar_dir:
+            expanded = os.path.expanduser(str(polar_dir))
+            resolved = expanded if os.path.isabs(expanded) else os.path.join(_MODULE_DIR, expanded)
+        else:
+            resolved = ""
+        self.polar_dir = resolved
         self.alpha_grid = np.radians(np.linspace(-180.0, 180.0, 721))
-        files = sorted(glob.glob(os.path.join(polar_dir, "*.csv"))) if polar_dir else []
+        files = sorted(glob.glob(os.path.join(resolved, "*.csv"))) if resolved else []
         if files:
             self._load_csv(files)
-            self.source = "csv:" + polar_dir
+            self.source = "csv:" + str(polar_dir)
         else:
             # FIX: silent fallback to a surrogate polar model is a
             # reproducibility hazard.  If the caller passed a non-empty
@@ -535,10 +548,10 @@ class PolarDatabase:
             # files are gone).
             if polar_dir:
                 warnings.warn(
-                    f"PolarDatabase: no CSVs found in '{polar_dir}'.  "
+                    f"PolarDatabase: no CSVs found in '{resolved}'.  "
                     f"Falling back to the analytic NACA-0012 surrogate.  "
                     f"Results are NOT based on the Sheldahl-Klimas tables.  "
-                    f"Check that {polar_dir}/*.csv exist.",
+                    f"Check that {resolved}/*.csv exist.",
                     RuntimeWarning,
                     stacklevel=2,
                 )
@@ -900,7 +913,6 @@ def create_sim_from_params(param_dict: Dict[str, Any]) -> CycloturbineSim:
     for a, b in _ALIASES.items():
         if a in p and b not in p:
             p[b] = p.pop(a)
-    p.setdefault("free", True)
 
     def pick(cls):
         kw = {f.name: p[f.name] for f in fields(cls) if f.name in p}

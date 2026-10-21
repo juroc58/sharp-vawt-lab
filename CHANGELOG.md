@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`vawt_presets.py`**: named machines (`sharp_baseline`, `ham_1979`,
+  `sharp_cppc`, `optimised_passive`, `scaleup`) now live in an explicit
+  `PRESETS` dict. The dataclass defaults are a neutral R = 0.6 m,
+  H = 0.4 m baseline (fixed-rpm 10 s run, k_load = 0.0025) instead of the
+  2.7179 m scale-up, so no script silently inherits the large machine.
+  Scripts and tests that need a named machine pass its preset explicitly.
+  Regression goldens are unchanged.
+
 ### Changed
 - **Ham 1979 framing**: reframed from "reproduction"/"validation" to a
   documented 2D upper-bound comparison. The static-only peak (Cp ≈ 0.476 at
@@ -22,6 +31,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   measured Cp(TSR)". No physics, polar, or golden change.
 
 ### Fixed
+- **`cm_scale = 0` now really means no pitching moment.** The dynamic-stall
+  separated-Cm blend target (`copysign(0.05, -alpha)`) is multiplied by
+  `cm_scale` as well as the static table Cm. With `cm_scale = 0` and a
+  Cm-zeroed copy of the same polar the simulation is bit-for-bit identical
+  (new regression test). This changes UQ samples with `cm_scale < 1`; the
+  nominal `cm_scale = 1` cases are unchanged.
+- **Polar paths resolve relative to `vawt_core.py`**, not the process working
+  directory, so scripts launched from `scripts/` load the same tables. The
+  UQ cache hash now also covers `airfoil_polars/provenance.json` and fails
+  loudly if any required source file is missing.
 - **AEP figure annotations and smoothing** (`docs/aep.png`,
   `docs/aep_scaleup.png`): removed the red "free-running operating points"
   scatter from Panel 1 in both figures; Panel 1 now shows only the

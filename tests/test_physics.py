@@ -69,6 +69,22 @@ class TestTipLossBounds:
 class TestCmDimensions:
     """Cm moment from polars has correct dimensions and is applied correctly."""
 
+    def test_cm_scale_zero_equals_zeroed_cm_column(self):
+        """cm_scale=0 is exactly equivalent to a polar whose Cm column is zero.
+
+        This catches the dynamic-stall separated-Cm blend target, which must
+        also vanish: otherwise cm_scale=0 still injects a synthetic moment
+        during separation.
+        """
+        params = {**BASE_QUICK, 'free': False, 'T_max': 6.0, 'cm_scale': 0.0}
+        scaled = create_sim_from_params(params)
+        zeroed = create_sim_from_params(params)
+        zeroed.polar_db.Cm[:] = 0.0
+        r_scaled = scaled.run()
+        r_zeroed = zeroed.run()
+        assert r_scaled['cp'] == pytest.approx(r_zeroed['cp'], rel=1e-10)
+        assert r_scaled['tsr_eq'] == pytest.approx(r_zeroed['tsr_eq'], rel=1e-10)
+
     def test_cm_in_polars(self):
         """Polar tables contain the NeuralFoil attached-flow Cm.
 

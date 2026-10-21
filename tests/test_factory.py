@@ -62,11 +62,45 @@ class TestFactoryForwarding:
 
 
 class TestFactoryDefaults:
-    """Defaults must not drift."""
+    """Defaults must stay small and neutral; named designs live in PRESETS."""
 
-    def test_default_free_true(self):
-        s = create_sim_from_params({**BASE_QUICK})
+    def test_dataclass_defaults_are_neutral(self):
+        from vawt_core import AeroConfig, Geometry, MassProps, SimConfig
+        g, m, a, s = Geometry(), MassProps(), AeroConfig(), SimConfig()
+        assert g.R == pytest.approx(0.60)
+        assert g.c == pytest.approx(0.14)
+        assert g.H == pytest.approx(0.40)
+        assert m.mb == pytest.approx(0.010)
+        assert m.mc == pytest.approx(0.002)
+        assert a.polar_dir == "airfoil_polars/naca0012"
+        assert s.free is False
+        assert s.T_max == pytest.approx(10.0)
+        assert s.k_load == pytest.approx(0.0025)
+        assert s.tsr == pytest.approx(2.0)
+
+    def test_scaleup_preset_preserves_legacy_design(self):
+        from vawt_presets import PRESETS
+        p = PRESETS["scaleup"]
+        assert p["R"] == pytest.approx(2.7179)
+        assert p["c"] == pytest.approx(0.3861)
+        assert p["H"] == pytest.approx(4.0568)
+        assert p["mb"] == pytest.approx(0.92954)
+        assert p["mc"] == pytest.approx(2.69306)
+        assert p["k_load"] == pytest.approx(4.164352)
+        assert p["free"] is True
+        assert p["T_max"] == pytest.approx(40.0)
+
+    def test_explicit_free_is_forwarded(self):
+        s = create_sim_from_params({**BASE_QUICK, 'free': False})
+        assert s.sim.free is False
+        s = create_sim_from_params({**BASE_QUICK, 'free': True})
         assert s.sim.free is True
+
+    def test_polar_dir_is_module_relative(self):
+        import os
+        s = create_sim_from_params({**BASE_QUICK, 'polar_dir': 'airfoil_polars/naca0012'})
+        assert os.path.isabs(s.polar_db.polar_dir)
+        assert s.polar_db.polar_dir.endswith('airfoil_polars/naca0012')
 
     def test_N_is_int(self):
         s = create_sim_from_params({**BASE_QUICK, 'N': 3.0})

@@ -33,6 +33,7 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
+from vawt_presets import PRESETS
 from compute_aep import (
     integrate_aep, load_fair_rigid_reference,
     U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, P_RATED_W,
@@ -43,35 +44,7 @@ from compute_aep import (
 # ============================================================================
 # SCALE-UP CONFIGURATION (from optimization_scaleup.json)
 # ============================================================================
-SCALEUP_BASE = dict(
-    R=2.7179,          # m, rotor radius
-    H=4.0568,          # m, rotor height
-    N=3,               # number of blades
-    c=0.3861,          # m, chord length
-    ar=0.3121,         # rocking arm / chord ratio
-    sp=0.2181,         # spar position from LE / chord
-    mb=0.92954,        # kg, blade mass
-    xbcg=0.20,         # blade CG position (fraction of chord)
-    mc=2.69306,        # kg, counterweight mass
-    dcw=-0.1935,       # counterweight position (fraction of chord)
-    balance=0,         # use mc,dcw as given
-    bias_deg=0.0,      # degrees, fixed pitch bias
-    prescribe_pitch=False,
-    cd_add=0.002,
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,
-    win_deg=45.0,
-    cb=2e-5,
-    mu_c=3e-4,
-    free=True,
-    T_max=40.0,
-    stride=8,
-    w0_frac=0.9,
-    k_load=4.164352,
-    tsr=2.5,
-)
+SCALEUP_BASE = dict(PRESETS["scaleup"])
 
 # Override rated power for larger turbine (area ~46x bigger than R=0.6)
 # Peak power at U=12 m/s, Cp=0.41: P = 0.5*rho*A*U^3*Cp ≈ 94 kW.
