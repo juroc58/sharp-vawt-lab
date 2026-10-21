@@ -23,6 +23,7 @@ import sys
 
 import numpy as np
 from scipy.integrate import trapezoid
+from scipy.signal import medfilt
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -223,29 +224,29 @@ def main():
 
     # Panel 1
     a = ax[0]
-    a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
+    cp_tsr_smooth = medfilt(cps_tsr, 3)
+    a.plot(tsrs, cp_tsr_smooth, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
     if fr:
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        # No annotate, legend handles it.
     a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3); a.legend(fontsize=9)
+    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3)
+    a.legend(fontsize=9, loc="upper left")
 
     # Panel 2
     a = ax[1]
     if fr:
         Us  = np.array([f['U'] for f in fr])
-        cps = np.array([f['cp'] for f in fr])
+        cps = medfilt([f['cp'] for f in fr], 3)
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        
-        # Force y-limits so the drop is always visible
         a.set_ylim(0.34, 0.42)
-        
-        # Use ax.text instead of annotate. No arrows.
-        a.text(16, 0.38, "Bifurcation:\nRotor drops to\nlow-TSR branch", 
-               bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
-               ha="center", va="center")
+        # Only label a genuine drop (max drawdown), not a monotonic rise
+        drawdown = np.max(np.maximum.accumulate(cps) - cps)
+        if (np.max(cps) - np.min(cps)) > 0.03 and drawdown > 0.03:
+            a.text(16, 0.38, "Bifurcation:\nRotor drops to\nlow-TSR branch", 
+                   bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
+                   ha="center", va="center")
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (branch traced)"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
     # Panel 3

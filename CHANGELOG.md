@@ -22,15 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   measured Cp(TSR)". No physics, polar, or golden change.
 
 ### Fixed
-- **AEP figure annotations** (`docs/aep.png`, `docs/aep_scaleup.png`):
-  removed all `annotate`/leader arrows. Panel 1 identifies the
-  free-running operating points through its legend in both figures, and
-  Panel 2 uses a static `ax.text` box at (16, 0.38) with no arrow.
-  Panel 2 y-limits are fixed to 0.34–0.42 so the low-TSR drop region is
-  always in view. Note: the base `compute_aep.py` free-run curve has no
-  sampled point at U = 12.5, Cp = 0.347 (the drop is present in the
-  branch-traced `compute_aep_scaleup.py` run). Plot-only change; no
-  physics, polar, or golden change.
+- **AEP figure annotations and smoothing** (`docs/aep.png`,
+  `docs/aep_scaleup.png`): removed all `annotate`/leader arrows. Panel 1
+  identifies the free-running operating points through its legend in both
+  figures. A 3-point median filter (`scipy.signal.medfilt`) is now applied
+  to the plotted Cp(TSR) and free-running Cp(U) series to suppress
+  single-sample transients at TSR = 3.25 and U = 4. Panel 2 uses a static
+  `ax.text` box at (16, 0.38) with no arrow, y-limits fixed to 0.34–0.42,
+  and the box is drawn only when the smoothed curve has a genuine drawdown
+  greater than 0.03 Cp (so it appears in the branch-traced scale-up figure
+  but not in the flat base curve).
+
+  The filter is applied **inside the plotting code only**: JSON outputs,
+  AEP integrals, and regression goldens are unchanged. The unfiltered
+  Cp(TSR) table still peaks at 0.4122 at TSR 3.25, and that point is still
+  what the fixed-rpm AEP row interpolates; if it is a solver transient,
+  the data/design point needs a separate fix rather than plot smoothing.
 
 ## [3.3.1] - 2026-10-20
 
