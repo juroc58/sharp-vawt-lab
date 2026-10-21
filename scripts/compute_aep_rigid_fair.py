@@ -32,7 +32,8 @@ sys.path.insert(0, _HERE)
 from vawt_core import create_sim_from_params
 from compute_aep import (
     BASE, integrate_aep,
-    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, P_RATED_W,
+    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
+    rated_power_from_cp,
 )
 
 U_DESIGN = 6.0
@@ -69,7 +70,6 @@ GEOMETRIES = {
                  "mb": 0.9295, "xbcg": 0.20},
         "pitch_grid": [-5.0, 0.0, 5.0, 10.0, 15.0],
         "kload_grid": [0.5, 1.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 16.0, 20.0],
-        "rated_power_override": 25000.0,   # 46x area -> 100x rating (keeps cap non-binding)
     },
 }
 
@@ -139,7 +139,7 @@ def sweep_passive(base, kl_grid, label):
     return best
 
 
-def aep_for(base, overrides, label, rated_power=P_RATED_W):
+def aep_for(base, overrides, label, rated_power=None):
     free = []
     for U in U_REF:
         res = try_free_run({**base, **overrides}, U)
@@ -154,9 +154,14 @@ def aep_for(base, overrides, label, rated_power=P_RATED_W):
     cp_s = np.array([f[1] for f in free])
     U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
     cp_curve = np.interp(U_grid, U_s, cp_s)
-    return integrate_aep(U_grid, cp_curve, U_MEAN, K_WEIBULL,
-                         CUT_IN, CUT_OUT, rated_power,
-                         base['R'], base['H'])
+    if rated_power is None:
+        cp_at_rated = float(np.interp(U_RATED, U_grid, cp_curve))
+        rated_power = rated_power_from_cp(base['R'], base['H'], cp_at_rated)
+    res = integrate_aep(U_grid, cp_curve, U_MEAN, K_WEIBULL,
+                        CUT_IN, CUT_OUT, rated_power,
+                        base['R'], base['H'])
+    res['rated_power_W'] = float(rated_power)
+    return res
 
 
 def main():
@@ -176,14 +181,12 @@ def main():
         best_r = sweep_rigid(base, cfg["pitch_grid"], cfg["kload_grid"], label)
         best_p = sweep_passive(base, cfg["kload_grid"], label)
 
-        rated = cfg.get("rated_power_override", P_RATED_W)
-
         print(f"    AEP for passive at k_load = {best_p['k_load']:.4f}:")
         aep_p = aep_for(base, {'k_load': best_p['k_load']},
-                        f"{label}/passive",
-                        rated_power=rated)
+                        f"{label}/passive")
+        rated = aep_p['rated_power_W']
         print(f"      AEP = {aep_p['aep']:.1f} kWh/yr "
-              f"(CF {aep_p['cf']*100:.2f} %)")
+              f"(CF {aep_p['cf']*100:.2f} %, rating {rated/1000:.2f} kW)")
 
         if best_r['viable']:
             print(f"    AEP for rigid at (psi0 = {best_r['psi0']:+.1f}, "

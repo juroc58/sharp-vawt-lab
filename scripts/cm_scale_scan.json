@@ -1,0 +1,225 @@
+{
+  "note": "Deterministic scans at the nominal anchor parameters. cm_scale is a uniform model-form scale: 0 = physical symmetric-section Cm (~0), 1 = raw NeuralFoil table. tip_loss_multiplier < 1 means stronger finite-span loss than Helmbold. These are scenario probes, not measured values.",
+  "cm_scale_values": [
+    0.0,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "tip_loss_multiplier_values": [
+    0.9,
+    0.94,
+    0.95,
+    0.955,
+    0.96,
+    0.98,
+    1.0
+  ],
+  "anchors": {
+    "sharp_cppc": {
+      "cm_scale": [
+        {
+          "cp": 0.004602452742642736,
+          "tsr": 0.4864063246195906,
+          "aoa_max": 179.4081355120088,
+          "steady": true,
+          "stop_pct": 33.539731682146545,
+          "cm_scale": 0.0
+        },
+        {
+          "cp": 0.004892596239056431,
+          "tsr": 0.49661783481418376,
+          "aoa_max": 178.3448155819601,
+          "steady": true,
+          "stop_pct": 33.53530031612223,
+          "cm_scale": 0.25
+        },
+        {
+          "cp": 0.005239665791855035,
+          "tsr": 0.5079484967497427,
+          "aoa_max": 179.70492701867084,
+          "steady": true,
+          "stop_pct": 33.95311236863379,
+          "cm_scale": 0.5
+        },
+        {
+          "cp": 0.07122012185574045,
+          "tsr": 1.2178503324471717,
+          "aoa_max": 27.222147093230348,
+          "steady": true,
+          "stop_pct": 4.457364341085271,
+          "cm_scale": 0.75
+        },
+        {
+          "cp": 0.06729914751075797,
+          "tsr": 1.194943904225605,
+          "aoa_max": 29.191119943686292,
+          "steady": true,
+          "stop_pct": 6.020278833967047,
+          "cm_scale": 1.0
+        }
+      ],
+      "tip_loss_multiplier": [
+        {
+          "cp": 0.0046288651600964546,
+          "tsr": 0.48722122632700327,
+          "aoa_max": 179.52989018255593,
+          "steady": true,
+          "stop_pct": 36.31429309899199,
+          "tip_loss_multiplier": 0.9
+        },
+        {
+          "cp": 0.005137228534371958,
+          "tsr": 0.5042712385865915,
+          "aoa_max": 178.88993680154204,
+          "steady": true,
+          "stop_pct": 35.68753344034243,
+          "tip_loss_multiplier": 0.94
+        },
+        {
+          "cp": 0.005259465297533354,
+          "tsr": 0.5081838598348589,
+          "aoa_max": 179.47302492567152,
+          "steady": true,
+          "stop_pct": 35.44474393530997,
+          "tip_loss_multiplier": 0.95
+        },
+        {
+          "cp": 0.005320993366408381,
+          "tsr": 0.5101313732202815,
+          "aoa_max": 179.28658790687402,
+          "steady": true,
+          "stop_pct": 35.41666666666667,
+          "tip_loss_multiplier": 0.955
+        },
+        {
+          "cp": 0.053916015883276956,
+          "tsr": 1.109312346455554,
+          "aoa_max": 33.18083539100252,
+          "steady": true,
+          "stop_pct": 6.176470588235294,
+          "tip_loss_multiplier": 0.96
+        },
+        {
+          "cp": 0.06030626638633271,
+          "tsr": 1.151919821097449,
+          "aoa_max": 31.29799521828027,
+          "steady": true,
+          "stop_pct": 6.108735491753206,
+          "tip_loss_multiplier": 0.98
+        },
+        {
+          "cp": 0.06729914751075797,
+          "tsr": 1.194943904225605,
+          "aoa_max": 29.191119943686292,
+          "steady": true,
+          "stop_pct": 6.020278833967047,
+          "tip_loss_multiplier": 1.0
+        }
+      ]
+    },
+    "optimised_passive": {
+      "cm_scale": [
+        {
+          "cp": 0.27425151170236084,
+          "tsr": 3.192998070877762,
+          "aoa_max": 9.26757010853594,
+          "steady": true,
+          "stop_pct": 0.0,
+          "cm_scale": 0.0
+        },
+        {
+          "cp": 0.2757352556263904,
+          "tsr": 3.1987451046697553,
+          "aoa_max": 9.432111681865683,
+          "steady": true,
+          "stop_pct": 0.0,
+          "cm_scale": 0.25
+        },
+        {
+          "cp": 0.2766560844174742,
+          "tsr": 3.2022998766406685,
+          "aoa_max": 9.853773620778226,
+          "steady": true,
+          "stop_pct": 0.0,
+          "cm_scale": 0.5
+        },
+        {
+          "cp": 0.27596720360815225,
+          "tsr": 3.1996352159827723,
+          "aoa_max": 10.597532527040517,
+          "steady": true,
+          "stop_pct": 0.0,
+          "cm_scale": 0.75
+        },
+        {
+          "cp": 0.2717745195243705,
+          "tsr": 3.1833425094505565,
+          "aoa_max": 11.694084967285468,
+          "steady": true,
+          "stop_pct": 0.0,
+          "cm_scale": 1.0
+        }
+      ],
+      "tip_loss_multiplier": [
+        {
+          "cp": 0.06604565102589503,
+          "tsr": 1.9865198293914312,
+          "aoa_max": 20.151168126632044,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.9
+        },
+        {
+          "cp": 0.2512826575381376,
+          "tsr": 3.101231759809514,
+          "aoa_max": 12.75492225101974,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.94
+        },
+        {
+          "cp": 0.2559625168653958,
+          "tsr": 3.120366470312387,
+          "aoa_max": 12.564637102203116,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.95
+        },
+        {
+          "cp": 0.2581124863378412,
+          "tsr": 3.1290789543655286,
+          "aoa_max": 12.483916201359735,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.955
+        },
+        {
+          "cp": 0.2602107020853965,
+          "tsr": 3.13753522642017,
+          "aoa_max": 12.389370798154086,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.96
+        },
+        {
+          "cp": 0.2669349392480511,
+          "tsr": 3.164332901329968,
+          "aoa_max": 12.020787623493803,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 0.98
+        },
+        {
+          "cp": 0.2717745195243705,
+          "tsr": 3.1833425094505565,
+          "aoa_max": 11.694084967285468,
+          "steady": true,
+          "stop_pct": 0.0,
+          "tip_loss_multiplier": 1.0
+        }
+      ]
+    }
+  }
+}

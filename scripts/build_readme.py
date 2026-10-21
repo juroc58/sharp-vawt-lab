@@ -50,7 +50,13 @@ def _load_all():
         "aq": _j("aep_results.json"),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
+        "aq_s": _j("aep_scaleup.json"),
         "act": _j("optimization_actuator.json"),
+        "cm": _j("cm_scale_scan.json"),
+        "ham": _j("ham_finite_span_check.json"),
+        "branch_check": _j("branch_point_checks.json"),
+        "rob": _j("robust_optimization.json"),
+        "cr": _j("aep_counter_rotating.json"),
     }
 _load_all()
 
@@ -765,6 +771,59 @@ INLINE_FUNCS = {
 }
 
 
+def block_evidence_table():
+    """Evidence table, generated from the JSON result files."""
+    uq = DATA["uq"]["summary"]
+    aq = DATA["aq"]
+    act = DATA["act"]
+    gain = aq.get("gains_percent", {}).get("passive_vs_rigid_fair")
+    rows = [
+        ("**Ham 1979 Peak Cp**", f"{uq['ham_1979']['mean']:.2f}",
+         "Literature comparison (2D upper bound)"),
+        ("**Sharp-inspired Passive Cp**",
+         f"{uq['sharp_cppc']['all_mean']:.3f} all-sample; "
+         f"{uq['sharp_cppc']['working_mean']:.2f} working branch",
+         "**Model result** (uncalibrated DS; bimodal)"),
+        ("**Optimised Passive Cp**",
+         f"{uq['optimised_passive']['mean']:.2f} "
+         f"[{uq['optimised_passive']['p5']:.2f}, "
+         f"{uq['optimised_passive']['p95']:.2f}]",
+         "**Model result** (uncalibrated DS)"),
+        ("**Scale-up Passive Cp**",
+         f"{uq['scaleup']['mean']:.2f} "
+         f"[{uq['scaleup']['p5']:.2f}, {uq['scaleup']['p95']:.2f}]",
+         "**Model result** (robust)"),
+        ("**Prescribed-pitch Upper Bound**", f"{act['best_cp']:.2f}",
+         "Ideal actuator (no physical limit)"),
+    ]
+    if gain is not None:
+        rows.append(("**AEP Gain vs Rigid**", f"{gain:+.1f}%",
+                     "**Model comparison** (unproven machine)"))
+    out = ["| Metric | Value | Evidence Category |", "| :--- | :--- | :--- |"]
+    for a, b, c in rows:
+        out.append(f"| {a} | {b} | {c} |")
+    return "\n".join(out)
+
+
+def block_robust_optimization():
+    """Nominal vs robust objective for the two re-optimised designs."""
+    d = DATA["rob"]["designs"]
+    labels = {"passive": "Optimised passive (R = 0.60 m)",
+              "scaleup": "Scale-up (R = 2.72 m)"}
+    out = ["| Design | Nominal Cp | Scenario mean | Scenario p10 | Bound-active parameters |",
+           "|---|---|---|---|---|"]
+    for key in ("passive", "scaleup"):
+        r = d[key]
+        m = r["metrics"]
+        active = ", ".join(f"{a['name']} ({a['bound']})"
+                           for a in r["bound_active"]) or "none"
+        out.append(
+            f"| {labels[key]} | {m['nominal_cp']:.3f} | "
+            f"{m['mean_cp']:.3f} | {m['p10_cp']:.3f} | {active} |"
+        )
+    return "\n".join(out)
+
+
 def block_headline_table_small():
     uq = DATA["uq"]["summary"]
     # Evidence levels: M = model result at fixed inputs / S = scenario estimate from UQ
@@ -839,6 +898,7 @@ def block_uq_params_table():
         "tip_loss_multiplier":     ("0.85",  "1.15",  "residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)"),
         "cm_scale":                ("0.0",   "1.0",   "scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)"),
         "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
+        "polar_variant":           ("0.0",   "1.0",   "model form: 0 = NeuralFoil table, 1 = smoothed_lowRe variant"),
         "arm_cd":                  ("0.5",   "1.5",   "arm drag coefficient multiplier (Geometry)"),
     }
     out = ["| Parameter | Low | High | Source of uncertainty |", "|---|---|---|---|"]
@@ -883,12 +943,176 @@ def block_uq_sobol():
     return "\n".join(out)
 
 
+def block_counter_rotating():
+    """Speculative counter-rotating scenario and its factor sensitivity."""
+    d = DATA["cr"]
+    c = d["counter_rotating"]
+    s = d["sensitivity_to_fixed_interaction_factor"]
+    gains = [r["gain_vs_single_percent"] for r in s]
+    out = ["| Quantity | Value |", "|---|---|"]
+    out.append(f"| Single rotor AEP | {d['single_rotor_baseline']['aep_kWh']:,.0f} kWh/yr |")
+    out.append(f"| Two independent rotors | {c['upstream_rotor']['aep_kWh'] + c['downstream_rotor']['aep_kWh']:,.0f} kWh/yr |")
+    out.append(f"| Counter-rotating pair (heuristic) | {c['total']['aep_kWh']:,.0f} kWh/yr |")
+    out.append(f"| Gain over two independent rotors | {c['vs_two_independent_rotors_improvement_percent']:+.1f} % |")
+    out.append(f"| Fixed-factor sensitivity (0–16 %) | {min(gains):+.0f} % to {max(gains):+.0f} % vs single |")
+    return "\n".join(out)
+
+
+def block_aep_rigid_comparison():
+    """Passive vs fair rigid AEP, with the rating defined per design."""
+    r = DATA["aq_r"]["geometries"]
+    out = ["| Geometry | AR | Passive CPPC | Best rigid | Gain | Rating |",
+           "|---|---|---|---|---|---|"]
+    labels = {"sharp_inspired": "Sharp-inspired (R = 0.60 m)",
+              "scaleup": "Scale-up (R = 2.72 m)"}
+    for key in ("sharp_inspired", "scaleup"):
+        g = r[key]
+        p = g["best_passive"]
+        b = g["best_rigid"]
+        if b["viable"]:
+            rigid = f"{b['aep_kWh']:,.0f} kWh/yr"
+            gain = f"{g['gain_percent']:+.1f} %"
+        else:
+            rigid = "none (does not spin)"
+            gain = "n/a"
+        out.append(
+            f"| {labels[key]} | {g['AR']:.2f} | {p['aep_kWh']:,.0f} kWh/yr | "
+            f"{rigid} | {gain} | Cp at 12 m/s |"
+        )
+    return "\n".join(out)
+
+
+def block_aep_branches():
+    """High-seed, low-seed and branch-traced AEP with stated ICs."""
+    b = DATA["aq_s"]["branches"]
+    rows = [
+        ("High-speed seed", b["high_seed"]),
+        ("Low-speed seed", b["low_seed"]),
+        ("Branch-traced", b["branch_traced"]),
+    ]
+    out = ["| Initial condition | AEP | Capacity factor |",
+           "|---|---|---|"]
+    for label, r in rows:
+        out.append(
+            f"| {label}: w0_frac = {r['initial_w0_frac']:.2f}, "
+            f"psi0 = {r['initial_psi0_deg']:.0f}° | "
+            f"{r['aep_MWh']:.2f} MWh/yr | {r['cf']*100:.2f} % |"
+        )
+    lo, hi = b["aep_range_MWh"]
+    out.append(f"| **Range across seeds** | **{lo:.2f}–{hi:.2f} MWh/yr** | — |")
+    return "\n".join(out)
+
+
+def block_branch_point_check():
+    """Convergence check for the TSR=3.25 fixed-rpm point and U=4 m/s."""
+    d = DATA["branch_check"]
+    f = [r for r in d["fixed_tsr_3.25"] if r["T_max"] == 60.0]
+    u = [r for r in d["free_U4"] if r["T_max"] == 60.0]
+    out = ["| Check | Initial condition | Cp | TSR | Steady |",
+           "|---|---|---|---|---|"]
+    for r in f:
+        out.append(f"| fixed TSR 3.25, T_max 60 s | psi0 = {r['psi0_deg']:.0f}° | "
+                   f"{r['cp']:.4f} | {r['tsr_eq']:.3f} | {r['steady']} |")
+    for r in u:
+        out.append(f"| free U = 4 m/s, T_max 60 s | w0 = {r['w0_frac']:.2f}, "
+                   f"psi0 = {r['psi0_deg']:.0f}° | {r['cp']:.4f} | "
+                   f"{r['tsr_eq']:.3f} | {r['steady']} |")
+    return "\n".join(out)
+
+
+def block_ham_reconciliation():
+    """One table for the 0.476 and 0.49 Ham-family numbers."""
+    h = DATA["ham"]
+    labels = {
+        "static_cd005": "validate_ham static-only (cd_add = 0.005)",
+        "static_cd002": "UQ anchor nominal (cd_add = 0.002)",
+        "ds_on_cd002": "+ dynamic stall",
+        "ds_curv_cd002": "+ dynamic stall + curvature",
+        "tip_loss_helmbold": "Helmbold finite-span correction",
+    }
+    out = ["| Case | cd_add | DS | Curvature | Tip loss | Peak Cp | Bias vs mid |",
+           "|---|---|---|---|---|---|---|"]
+    for key in ["static_cd005", "static_cd002", "ds_on_cd002",
+                "ds_curv_cd002", "tip_loss_helmbold"]:
+        c = h["cases"][key]
+        out.append(
+            f"| {labels[key]} | {c['cd_add']:.3f} | "
+            f"{'on' if c['use_dynamic_stall'] else 'off'} | "
+            f"{'on' if c['use_flow_curvature'] else 'off'} | "
+            f"{'on' if c['use_tip_loss'] else 'off'} | "
+            f"{c['peak_cp']:.4f} | {c['bias_vs_ham_mid']*100:+.1f} % |"
+        )
+    return "\n".join(out)
+
+
+def block_ham_finite_span():
+    h = DATA["ham"]
+    out = ["| Blade AR (H/c) | Helmbold f_ar | Corrected peak Cp |",
+           "|---|---|---|"]
+    for r in h["ar_scan"]:
+        out.append(f"| {r['AR']:.2f} | {r['f_ar']:.3f} | {r['peak_cp']:.4f} |")
+    return "\n".join(out)
+
+
+def block_cm_scale_scan():
+    """Deterministic cm_scale / tip-loss scans (cm_scale_scan.json)."""
+    scans = DATA["cm"]["anchors"]
+    labels = {
+        "sharp_cppc": "Sharp-inspired CPPC",
+        "optimised_passive": "Optimised passive",
+    }
+    out = ["| Anchor | Cp, Cm = 0 | Cp, Cm = 0.5 | Cp, Cm = 0.75 | Cp, Cm = 1.0 | Working branch from tip multiplier |",
+           "|---|---|---|---|---|---|"]
+    for key in ("sharp_cppc", "optimised_passive"):
+        rows = {round(r["cm_scale"], 2): r["cp"] for r in scans[key]["cm_scale"]}
+        tips = scans[key].get("tip_loss_multiplier", [])
+        resume = next((r["tip_loss_multiplier"] for r in tips if r["cp"] >= 0.02),
+                      None)
+        resume_s = f"{resume:.3f}" if resume is not None else "—"
+        out.append(
+            f"| {labels[key]} | {_bound(rows[0.0])} | {_bound(rows[0.5])} | "
+            f"{_bound(rows[0.75])} | {_bound(rows[1.0])} | {resume_s} |"
+        )
+    return "\n".join(out)
+
+
+def block_uq_bimodal():
+    """Bimodal summary: physical-Cm base case vs sampled branches."""
+    uq = DATA["uq"]["summary"]
+    labels = {
+        "ham_1979":          "Ham 1979 comparison",
+        "sharp_cppc":        "Sharp-inspired CPPC",
+        "optimised_passive": "Optimised passive",
+        "scaleup":           "Scale-up R = 2.72 m",
+    }
+    out = ["| Anchor | Base Cp, Cm = 0 | All-sample mean | Working-branch mean | Collapsed fraction (Cp < 0.02) |",
+           "|---|---|---|---|---|"]
+    for key in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
+        s = uq[key]
+        out.append(
+            f"| {labels[key]} | {_bound(s['base_cm0_cp'])} | "
+            f"{_bound(s['all_mean'])} | {_bound(s['working_mean'])} | "
+            f"{_pct(s['collapse_fraction'])} |"
+        )
+    return "\n".join(out)
+
+
 BLOCKS = {
+    "evidence_table": block_evidence_table,
+    "robust_optimization": block_robust_optimization,
     "headline_table_small": block_headline_table_small,
     "headline_table_large": block_headline_table_large,
     "aep_steady": block_aep_steady_table,
     "aep_turbulent": block_aep_turbulent_table,
     "uq_params": block_uq_params_table,
+    "uq_bimodal": block_uq_bimodal,
+    "cm_scale_scan": block_cm_scale_scan,
+    "aep_rigid_comparison": block_aep_rigid_comparison,
+    "counter_rotating": block_counter_rotating,
+    "aep_branches": block_aep_branches,
+    "branch_point_check": block_branch_point_check,
+    "ham_reconciliation": block_ham_reconciliation,
+    "ham_finite_span": block_ham_finite_span,
     "uq_sobol": block_uq_sobol,
 }
 

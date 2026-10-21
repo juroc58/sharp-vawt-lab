@@ -23,7 +23,6 @@ import sys
 
 import numpy as np
 from scipy.integrate import trapezoid
-from scipy.signal import medfilt
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -36,8 +35,8 @@ from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
 from compute_aep import (
     integrate_aep, load_fair_rigid_reference,
-    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, P_RATED_W,
-    ETA_DRIVETRAIN, RHO, HOURS_YEAR,
+    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
+    ETA_DRIVETRAIN, RHO, HOURS_YEAR, rated_power_from_cp,
 )
 
 
@@ -46,26 +45,29 @@ from compute_aep import (
 # ============================================================================
 SCALEUP_BASE = dict(PRESETS["scaleup"])
 
-# Override rated power for larger turbine (area ~46x bigger than R=0.6)
-# Peak power at U=12 m/s, Cp=0.41: P = 0.5*rho*A*U^3*Cp ≈ 94 kW.
-# Use 90 kW to give a realistic capacity factor (~19%).
-# NOTE: This should be based on actual generator sizing, not area scaling.
-P_RATED_W_SCALEUP = 90000.0
-
 
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
-def compute_cp_curve(base, tsrs, label):
-    print(f"  Cp(TSR) for {label}:")
-    cps = []
+def compute_cp_curve(base, tsrs, label, n_phase=3):
+    """Phase-averaged fixed-rpm Cp(TSR); see compute_aep.compute_cp_curve."""
+    print(f"  Cp(TSR) for {label} (mean of {n_phase} initial phases):")
+    cps, los, his = [], [], []
     for tsr in tsrs:
-        r = create_sim_from_params({**base, 'free': False, 'tsr': float(tsr)}).run()
-        cp = float(r['cp'])
-        cps.append(cp)
-        print(f"    TSR = {tsr:5.2f}   Cp = {cp:+.4f}   "
-              f"α_max = {r['aoa_max']:5.1f}   steady = {r.get('steady', True)}")
-    return np.array(cps)
+        vals = []
+        for k in range(n_phase):
+            psi = 360.0 * k / n_phase
+            r = create_sim_from_params({
+                **base, 'free': False, 'tsr': float(tsr),
+                'psi0_deg': psi,
+            }).run()
+            vals.append(float(r['cp']))
+        cps.append(float(np.mean(vals)))
+        los.append(float(np.min(vals)))
+        his.append(float(np.max(vals)))
+        print(f"    TSR = {tsr:5.2f}   Cp = {np.mean(vals):+.4f} "
+              f"[{min(vals):+.4f}, {max(vals):+.4f}]")
+    return np.array(cps), np.array(los), np.array(his)
 
 
 def free_run(base, U, w0_frac=None, psi0_deg=None):
@@ -104,12 +106,13 @@ def main():
     print(f"Design TSR: {SCALEUP_BASE['tsr']}, k_load: {SCALEUP_BASE['k_load']:.3f}")
     print(f"Reynolds at tip (TSR=2.5, U=8): ~{2.5*8*SCALEUP_BASE['c']/1.5e-5:.0f}")
     print(f"Wind: Weibull k={K_WEIBULL}, mean U={U_MEAN} m/s, {CUT_IN}-{CUT_OUT} m/s")
-    print(f"Rated power: {P_RATED_W_SCALEUP/1000:.0f} kW")
+    print(f"Rated wind speed: {U_RATED} m/s (rating from the Cp curve)")
     print()
 
     # --- fixed-rpm Cp(TSR) ---
     tsrs = np.linspace(1.0, 4.0, 13)
-    cps_tsr = compute_cp_curve(SCALEUP_BASE, tsrs, "scale-up CPPC")
+    cps_tsr, cps_phase_lo, cps_phase_hi = compute_cp_curve(
+        SCALEUP_BASE, tsrs, "scale-up CPPC")
 
     # --- free-running with branch tracing ---
     print()
@@ -132,6 +135,25 @@ def main():
             psi0_deg = SCALEUP_BASE.get('psi0_deg', 0.0)
             print(f"    U = {U:4.1f}   (no equilibrium)")
 
+    # --- fixed-seed branches: high and low initial speed -----------------
+    # These are not "the" operating curve; they bracket the bistable region.
+    # The branch-traced run above follows the high branch by continuation.
+    def fixed_seed_branch(w0_seed, label):
+        rows = []
+        print(f"\n  {label} (fixed initial w0_frac={w0_seed:.2f}, psi0=0):")
+        for U in U_ref:
+            f, _ = free_run(SCALEUP_BASE, U, w0_frac=w0_seed, psi0_deg=0.0)
+            if f:
+                rows.append(f)
+                print(f"    U = {U:4.1f}   Cp = {f['cp']:+.4f}   "
+                      f"TSR = {f['tsr_eq']:5.2f}")
+            else:
+                print(f"    U = {U:4.1f}   (no equilibrium)")
+        return rows
+
+    free_high = fixed_seed_branch(1.20, "High-speed seed")
+    free_low = fixed_seed_branch(0.20, "Low-speed seed")
+
     # --- build power curves ---
     U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
     R, H = SCALEUP_BASE['R'], SCALEUP_BASE['H']
@@ -142,20 +164,37 @@ def main():
     tsr_fixed = np.clip(tsr_design * U_MEAN / U_grid, tsrs[0], tsrs[-1])
     cp_fixed = np.interp(tsr_fixed, tsrs, cps_tsr)
 
-    # Passive free-running: interpolate Cp(U) from branch-traced points
-    if len(free_passive) >= 2:
-        U_s = np.array([f['U'] for f in free_passive])
-        cp_s = np.array([f['cp'] for f in free_passive])
-        cp_passive = np.interp(U_grid, U_s, cp_s)
-        print(f"\n  Cp curve built from {len(free_passive)} branch-traced points")
-    else:
-        raise RuntimeError("Need >= 2 free-running points")
+    def curve_from_points(points, label):
+        if len(points) < 2:
+            raise RuntimeError(f"{label}: need >= 2 free-running points, "
+                               f"got {len(points)}")
+        U_s = np.array([f['U'] for f in points])
+        cp_s = np.array([f['cp'] for f in points])
+        return np.interp(U_grid, U_s, cp_s)
 
-    # --- integrate AEP ---
+    # Passive free-running: interpolate Cp(U) from branch-traced points
+    cp_passive = curve_from_points(free_passive, "branch-traced")
+    print(f"\n  Cp curve built from {len(free_passive)} branch-traced points")
+    cp_high = curve_from_points(free_high, "high-seed")
+    cp_low = curve_from_points(free_low, "low-seed")
+
+    # --- rated power for this design, from the branch-traced Cp curve ---
+    cp_at_rated = float(np.interp(U_RATED, U_grid, cp_passive))
+    p_rated = rated_power_from_cp(R, H, cp_at_rated)
+    print(f"\n  Rated power from Cp(U={U_RATED:.0f} m/s) = {cp_at_rated:.4f}: "
+          f"{p_rated/1000:.2f} kW")
+
+    # --- integrate AEP: branch-traced, fixed high seed, fixed low seed ---
     res_passive = integrate_aep(U_grid, cp_passive, U_MEAN, K_WEIBULL,
-                                CUT_IN, CUT_OUT, P_RATED_W_SCALEUP, R, H)
+                                CUT_IN, CUT_OUT, p_rated, R, H)
     res_fixed = integrate_aep(U_grid, cp_fixed, U_MEAN, K_WEIBULL,
-                              CUT_IN, CUT_OUT, P_RATED_W_SCALEUP, R, H)
+                              CUT_IN, CUT_OUT, p_rated, R, H)
+    res_high = integrate_aep(U_grid, cp_high, U_MEAN, K_WEIBULL,
+                             CUT_IN, CUT_OUT, p_rated, R, H)
+    res_low = integrate_aep(U_grid, cp_low, U_MEAN, K_WEIBULL,
+                            CUT_IN, CUT_OUT, p_rated, R, H)
+    aep_min = min(res_high['aep'], res_low['aep'], res_passive['aep'])
+    aep_max = max(res_high['aep'], res_low['aep'], res_passive['aep'])
 
     # --- fair rigid reference ---
     rigid_ref = load_fair_rigid_reference()
@@ -175,6 +214,10 @@ def main():
     print("  " + "-" * 73)
     print(f"  {'Passive CPPC, k_load (var speed)':<45} {res_passive['aep']/1000:>14.2f} {res_passive['cf']*100:>11.2f}%")
     print(f"  {'Passive CPPC, fixed rpm':<45} {res_fixed['aep']/1000:>14.2f} {res_fixed['cf']*100:>11.2f}%")
+    print(f"  {'High-speed seed (w0=1.20)':<45} {res_high['aep']/1000:>14.2f} {res_high['cf']*100:>11.2f}%")
+    print(f"  {'Low-speed seed (w0=0.20)':<45} {res_low['aep']/1000:>14.2f} {res_low['cf']*100:>11.2f}%")
+    print(f"  {'Branch-traced (continuation)':<45} {res_passive['aep']/1000:>14.2f} {res_passive['cf']*100:>11.2f}%")
+    print(f"  Branch AEP range: {aep_min/1000:.2f} - {aep_max/1000:.2f} MWh/yr")
     
     if rigid_ref and rigid_ref.get('aep_kWh') is not None:
         aep_rigid = rigid_ref['aep_kWh']
@@ -195,28 +238,36 @@ def main():
     col_fixed   = "C2"
     fr = free_passive
 
-    # Panel 1
+    # Panel 1 — raw fixed-rpm curve and free-running operating points
     a = ax[0]
-    cp_tsr_smooth = medfilt(cps_tsr, 3)
-    a.plot(tsrs, cp_tsr_smooth, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
+    a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
+    if fr:
+        a.scatter([f['tsr_eq'] for f in fr], [f['cp'] for f in fr],
+                  color="C3", marker="s", s=28, zorder=3,
+                  label="free-running operating points")
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3)
-    a.legend(fontsize=9, loc="upper left")
+    a.legend(fontsize=8, loc="upper left")
 
-    # Panel 2
+    # Panel 2 — raw free-running Cp(U), all branches, no filtering
     a = ax[1]
     if fr:
         Us  = np.array([f['U'] for f in fr])
-        cps = medfilt([f['cp'] for f in fr], 3)
-        a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        a.set_ylim(0.34, 0.42)
-        # Only label a genuine drop (max drawdown), not a monotonic rise
+        cps = np.array([f['cp'] for f in fr])
+        a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="branch-traced")
+        if free_high:
+            a.plot([f['U'] for f in free_high], [f['cp'] for f in free_high],
+                   "s--", color="C1", lw=1.2, ms=4, label="high seed (w0=1.20)")
+        if free_low:
+            a.plot([f['U'] for f in free_low], [f['cp'] for f in free_low],
+                   "v--", color="C4", lw=1.2, ms=4, label="low seed (w0=0.20)")
+        # Only label a genuine drop (max drawdown), not a monotonic rise.
         drawdown = np.max(np.maximum.accumulate(cps) - cps)
         if (np.max(cps) - np.min(cps)) > 0.03 and drawdown > 0.03:
-            a.text(16, 0.38, "Bifurcation:\nRotor drops to\nlow-TSR branch", 
+            a.text(0.98, 0.05, "Bifurcation / branch drop", transform=a.transAxes,
                    bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
-                   ha="center", va="center")
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (branch traced)"); a.grid(alpha=0.3); a.legend(fontsize=9)
+                   ha="right", va="bottom")
+    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (raw branches)"); a.grid(alpha=0.3); a.legend(fontsize=8)
 
     # Panel 3
     a = ax[2]
@@ -237,12 +288,33 @@ def main():
                      "sigma": sigma, "AR": H/SCALEUP_BASE['c']},
         "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                  "cut_in": CUT_IN, "cut_out": CUT_OUT,
-                 "p_rated_W": P_RATED_W_SCALEUP},
+                 "rated_wind_speed": U_RATED,
+                 "cp_at_rated": cp_at_rated,
+                 "p_rated_W": p_rated},
         "results": {
             "passive_k_load": {"aep_MWh": res_passive['aep']/1000,
-                               "cf": res_passive['cf']},
+                               "cf": res_passive['cf'],
+                               "cp_tsr": [float(v) for v in cps_tsr],
+                               "tsr": [float(v) for v in tsrs],
+                               "free_results": free_passive},
             "passive_fixed_rpm": {"aep_MWh": res_fixed['aep']/1000,
                                   "cf": res_fixed['cf']},
+        },
+        "branches": {
+            "high_seed": {"initial_w0_frac": 1.20, "initial_psi0_deg": 0.0,
+                          "aep_MWh": res_high['aep']/1000,
+                          "cf": res_high['cf'],
+                          "free_results": free_high},
+            "low_seed": {"initial_w0_frac": 0.20, "initial_psi0_deg": 0.0,
+                         "aep_MWh": res_low['aep']/1000,
+                         "cf": res_low['cf'],
+                         "free_results": free_low},
+            "branch_traced": {"initial_w0_frac": 0.9,
+                              "initial_psi0_deg": 0.0,
+                              "aep_MWh": res_passive['aep']/1000,
+                              "cf": res_passive['cf'],
+                              "free_results": free_passive},
+            "aep_range_MWh": [aep_min/1000, aep_max/1000],
         },
         "gains_percent": {
             "passive_vs_fixed_rpm": gain_fixed,

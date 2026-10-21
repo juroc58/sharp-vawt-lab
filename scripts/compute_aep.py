@@ -34,7 +34,6 @@ import sys
 
 import numpy as np
 from scipy.integrate import trapezoid
-from scipy.signal import medfilt
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -56,10 +55,23 @@ U_MEAN         = 6.0
 K_WEIBULL      = 2.0
 CUT_IN         = 3.0
 CUT_OUT        = 25.0
+U_RATED        = 12.0
 RHO            = 1.225
 HOURS_YEAR     = 8760.0
-P_RATED_W      = 90000.0
 ETA_DRIVETRAIN = 0.90
+
+
+def rated_power_from_cp(R, H, cp_at_rated, U_rated=U_RATED):
+    """Generator rating defined by power at a stated rated wind speed.
+
+    This replaces the old arbitrary 90 kW number.  The rating is the
+    mechanical power from the design Cp at U_rated times drivetrain
+    efficiency; it is recorded in the JSON next to the Cp used.
+    """
+    area = 2.0 * R * H
+    return float(0.5 * RHO * area * U_rated ** 3 * cp_at_rated
+                 * ETA_DRIVETRAIN)
+
 
 # Cp jump between adjacent 1 m/s free-running samples that flags a
 # possible branch switch at the U ~ 8 m/s bifurcation.
@@ -101,17 +113,33 @@ def load_fair_rigid_reference():
 # ============================================================================
 # Cp(TSR) at fixed rpm — passive
 # ============================================================================
-def compute_cp_curve(base, tsrs, label):
-    print(f"  Cp(TSR) for {label}:")
-    cps = []
+def compute_cp_curve(base, tsrs, label, n_phase=3):
+    """Phase-averaged fixed-rpm Cp(TSR).
+
+    At a fixed rpm the passive pitch mechanism can settle into different
+    limit cycles depending on the initial rotor phase.  A single psi0 = 0
+    run produced a spurious narrow maximum at TSR = 3.25 (Cp 0.4122) that
+    fell to 0.3479 for psi0 = 120 or 240 deg.  Average three equally spaced
+    initial phases so the curve is not an initial-condition artefact.
+    """
+    print(f"  Cp(TSR) for {label} (mean of {n_phase} initial phases):")
+    cps, los, his = [], [], []
     for tsr in tsrs:
-        r = create_sim_from_params({**base, 'free': False, 'tsr': float(tsr)}).run()
-        cp = float(r['cp'])
+        vals = []
+        for k in range(n_phase):
+            psi = 360.0 * k / n_phase
+            r = create_sim_from_params({
+                **base, 'free': False, 'tsr': float(tsr),
+                'psi0_deg': psi,
+            }).run()
+            vals.append(float(r['cp']))
+        cp = float(np.mean(vals))
         cps.append(cp)
-        print(f"    TSR = {tsr:5.2f}   Cp = {cp:+.4f}   "
-              f"α_max = {r['aoa_max']:5.1f}   "
-              f"steady = {r.get('steady', True)}")
-    return np.array(cps)
+        los.append(float(np.min(vals)))
+        his.append(float(np.max(vals)))
+        print(f"    TSR = {tsr:5.2f}   Cp = {cp:+.4f} "
+              f"[{min(vals):+.4f}, {max(vals):+.4f}]")
+    return np.array(cps), np.array(los), np.array(his)
 
 
 # ============================================================================
@@ -235,29 +263,32 @@ def make_plot(results, tsrs, out_path):
     R_val = 2.7179
     fr = results['passive']['free_results']
 
-    # Panel 1
+    # Panel 1 — raw fixed-rpm curve and free-running operating points
     a = ax[0]
-    cp_tsr = medfilt(results['passive']['cp_tsr'], 3)
+    cp_tsr = np.asarray(results['passive']['cp_tsr'], dtype=float)
     a.plot(tsrs, cp_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
+    if fr:
+        a.scatter([f['tsr_eq'] for f in fr], [f['cp'] for f in fr],
+                  color="C3", marker="s", s=28, zorder=3,
+                  label="free-running operating points")
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3)
-    a.legend(fontsize=9, loc="upper left")
+    a.legend(fontsize=8, loc="upper left")
 
-    # Panel 2
+    # Panel 2 — raw free-running Cp(U), no filtering or forced y-limits
     a = ax[1]
     if fr:
         Us  = np.array([f['U'] for f in fr])
-        cps = medfilt([f['cp'] for f in fr], 3)
+        cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        a.set_ylim(0.34, 0.42)
-        
-        # Only label a genuine drop (max drawdown), not a monotonic rise
+
+        # Only label a genuine drop (max drawdown), not a monotonic rise.
         drawdown = np.max(np.maximum.accumulate(cps) - cps)
         if (np.max(cps) - np.min(cps)) > 0.03 and drawdown > 0.03:
-            a.text(16, 0.38, "Bifurcation:\nRotor drops to\nlow-TSR branch", 
+            a.text(0.98, 0.05, "Bifurcation / branch drop", transform=a.transAxes,
                    bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
-                   ha="center", va="center")
-               
+                   ha="right", va="bottom")
+
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
     # Panel 3
@@ -283,14 +314,15 @@ def main():
           f"σ = {BASE['N']*BASE['c']/(2*math.pi*BASE['R']):.3f}")
     print(f"  Wind     : Weibull k = {K_WEIBULL}, mean U = {U_MEAN} m/s")
     print(f"  Cut-in   : {CUT_IN} m/s   cut-out: {CUT_OUT} m/s")
-    print(f"  Rated P  : {P_RATED_W} W")
+    print(f"  Rated wind speed: {U_RATED} m/s (rating from the Cp curve)")
     print("  Tip loss : ON (Helmbold finite-span)")
     print(f"  Drivetrain efficiency: {ETA_DRIVETRAIN*100:.0f} %")
     print()
 
     # --- fixed-rpm Cp(TSR) ---
     tsrs = np.linspace(1.0, 4.5, 15)
-    cps_passive_tsr = compute_cp_curve(BASE, tsrs, "passive CPPC")
+    cps_passive_tsr, cps_phase_lo, cps_phase_hi = compute_cp_curve(
+        BASE, tsrs, "passive CPPC")
 
     # --- free-running reference speeds (with branch tracing) ---
     # Sample every 1 m/s. The free-running equilibrium is bistable near
@@ -358,11 +390,17 @@ def main():
             f"stability of the design point."
         )
 
+    # --- rated power for this design, from the Cp curve at U_RATED ---
+    cp_at_rated = float(np.interp(U_RATED, U_grid, cp_passive))
+    p_rated = rated_power_from_cp(R, H, cp_at_rated)
+    print(f"\n  Rated power from Cp(U={U_RATED:.0f} m/s) = {cp_at_rated:.4f}: "
+          f"{p_rated/1000:.2f} kW")
+
     # --- integrate ---
     res_passive = integrate_aep(U_grid, cp_passive, U_MEAN, K_WEIBULL,
-                                CUT_IN, CUT_OUT, P_RATED_W, R, H)
+                                CUT_IN, CUT_OUT, p_rated, R, H)
     res_fixed   = integrate_aep(U_grid, cp_fixed, U_MEAN, K_WEIBULL,
-                                CUT_IN, CUT_OUT, P_RATED_W, R, H)
+                                CUT_IN, CUT_OUT, p_rated, R, H)
 
     results = {
         'passive': {**res_passive,
@@ -426,13 +464,20 @@ def main():
                      "sigma": BASE['N']*BASE['c']/(2*math.pi*R)},
         "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                  "cut_in": CUT_IN, "cut_out": CUT_OUT,
-                 "p_rated_W": P_RATED_W},
+                 "rated_wind_speed": U_RATED,
+                 "cp_at_rated": cp_at_rated,
+                 "p_rated_W": p_rated},
         "results": {
             "passive_k_load":    {"aep_kWh": res_passive['aep'],
                                   "cf": res_passive['cf'],
-                                  "branch_jumps": branch_jumps},
+                                  "branch_jumps": branch_jumps,
+                                  "cp_tsr": [float(v) for v in cps_passive_tsr],
+                                  "tsr": [float(v) for v in tsrs],
+                                  "free_results": free_passive},
             "passive_fixed_rpm": {"aep_kWh": res_fixed['aep'],
-                                  "cf": res_fixed['cf']},
+                                  "cf": res_fixed['cf'],
+                                  "cp_tsr": [float(v) for v in cps_passive_tsr],
+                                  "tsr": [float(v) for v in tsrs]},
         },
         "gains_percent": {
             "passive_vs_fixed_rpm": gain_fixed,

@@ -1,0 +1,347 @@
+{
+  "ham_geometry": {
+    "R": 1.83,
+    "c": 0.305,
+    "H": 1.37,
+    "N": 3,
+    "AR": 4.491803278688525
+  },
+  "band": [
+    0.42,
+    0.45
+  ],
+  "band_mid": 0.435,
+  "note": "The Ham 1979 paper is not in this repository. The aspect ratio comes from the tabulated geometry (H/c); an AR=3..6 scan is reported because the blade AR could not be read from the paper.",
+  "cases": {
+    "static_cd005": {
+      "cd_add": 0.005,
+      "use_dynamic_stall": false,
+      "use_flow_curvature": false,
+      "use_tip_loss": false,
+      "peak_cp": 0.4757654016211023,
+      "peak_tsr": 2.5,
+      "bias_vs_ham_mid": 0.09371356694506279,
+      "f_ar": 0.6493917004535744,
+      "sweep": [
+        {
+          "tsr": 1.5,
+          "cp": 0.18665785578944735,
+          "tsr_eq": 1.5000000000000007,
+          "steady": true
+        },
+        {
+          "tsr": 2.0,
+          "cp": 0.3819700172241567,
+          "tsr_eq": 1.9999999999999996,
+          "steady": true
+        },
+        {
+          "tsr": 2.5,
+          "cp": 0.4757654016211023,
+          "tsr_eq": 2.5,
+          "steady": true
+        },
+        {
+          "tsr": 3.0,
+          "cp": 0.4318438360397177,
+          "tsr_eq": 3.0000000000000018,
+          "steady": true
+        },
+        {
+          "tsr": 3.5,
+          "cp": 0.3445398178350257,
+          "tsr_eq": 3.5,
+          "steady": true
+        },
+        {
+          "tsr": 4.0,
+          "cp": 0.21740916758521614,
+          "tsr_eq": 3.999999999999999,
+          "steady": true
+        },
+        {
+          "tsr": 4.5,
+          "cp": 0.05304199965497243,
+          "tsr_eq": 4.5,
+          "steady": true
+        }
+      ]
+    },
+    "static_cd002": {
+      "cd_add": 0.002,
+      "use_dynamic_stall": false,
+      "use_flow_curvature": false,
+      "use_tip_loss": false,
+      "peak_cp": 0.4908992244855707,
+      "peak_tsr": 2.5,
+      "bias_vs_ham_mid": 0.12850396433464534,
+      "f_ar": 0.6493917004535744,
+      "sweep": [
+        {
+          "tsr": 1.5,
+          "cp": 0.19022513452483067,
+          "tsr_eq": 1.5000000000000007,
+          "steady": true
+        },
+        {
+          "tsr": 2.0,
+          "cp": 0.3899916511220387,
+          "tsr_eq": 1.9999999999999996,
+          "steady": true
+        },
+        {
+          "tsr": 2.5,
+          "cp": 0.4908992244855707,
+          "tsr_eq": 2.5,
+          "steady": true
+        },
+        {
+          "tsr": 3.0,
+          "cp": 0.456619905681278,
+          "tsr_eq": 3.0000000000000018,
+          "steady": true
+        },
+        {
+          "tsr": 3.5,
+          "cp": 0.38248970252976816,
+          "tsr_eq": 3.5,
+          "steady": true
+        },
+        {
+          "tsr": 4.0,
+          "cp": 0.2725002579274335,
+          "tsr_eq": 3.999999999999999,
+          "steady": true
+        },
+        {
+          "tsr": 4.5,
+          "cp": 0.1299097166796976,
+          "tsr_eq": 4.5,
+          "steady": true
+        }
+      ]
+    },
+    "ds_on_cd002": {
+      "cd_add": 0.002,
+      "use_dynamic_stall": true,
+      "use_flow_curvature": false,
+      "use_tip_loss": false,
+      "peak_cp": 0.5011074374541349,
+      "peak_tsr": 2.5,
+      "bias_vs_ham_mid": 0.15197112058421813,
+      "f_ar": 0.6493917004535744,
+      "sweep": [
+        {
+          "tsr": 1.5,
+          "cp": 0.2527297475949172,
+          "tsr_eq": 1.5000000000000007,
+          "steady": true
+        },
+        {
+          "tsr": 2.0,
+          "cp": 0.4445552520454764,
+          "tsr_eq": 1.9999999999999996,
+          "steady": true
+        },
+        {
+          "tsr": 2.5,
+          "cp": 0.5011074374541349,
+          "tsr_eq": 2.5,
+          "steady": true
+        },
+        {
+          "tsr": 3.0,
+          "cp": 0.45298999638248216,
+          "tsr_eq": 3.0000000000000018,
+          "steady": true
+        },
+        {
+          "tsr": 3.5,
+          "cp": 0.37601115237066773,
+          "tsr_eq": 3.5,
+          "steady": true
+        },
+        {
+          "tsr": 4.0,
+          "cp": 0.26604630774327964,
+          "tsr_eq": 3.999999999999999,
+          "steady": true
+        },
+        {
+          "tsr": 4.5,
+          "cp": 0.12694991521832075,
+          "tsr_eq": 4.5,
+          "steady": true
+        }
+      ]
+    },
+    "ds_curv_cd002": {
+      "cd_add": 0.002,
+      "use_dynamic_stall": true,
+      "use_flow_curvature": true,
+      "use_tip_loss": false,
+      "peak_cp": 0.4270945256955585,
+      "peak_tsr": 2.5,
+      "bias_vs_ham_mid": -0.018173504148141367,
+      "f_ar": 0.6493917004535744,
+      "sweep": [
+        {
+          "tsr": 1.5,
+          "cp": 0.24014012223782924,
+          "tsr_eq": 1.5000000000000007,
+          "steady": true
+        },
+        {
+          "tsr": 2.0,
+          "cp": 0.401588459361241,
+          "tsr_eq": 1.9999999999999996,
+          "steady": true
+        },
+        {
+          "tsr": 2.5,
+          "cp": 0.4270945256955585,
+          "tsr_eq": 2.5,
+          "steady": true
+        },
+        {
+          "tsr": 3.0,
+          "cp": 0.3180802327204534,
+          "tsr_eq": 3.0000000000000018,
+          "steady": true
+        },
+        {
+          "tsr": 3.5,
+          "cp": 0.1506047282299186,
+          "tsr_eq": 3.5,
+          "steady": true
+        },
+        {
+          "tsr": 4.0,
+          "cp": -0.07352185074564693,
+          "tsr_eq": 3.999999999999999,
+          "steady": true
+        },
+        {
+          "tsr": 4.5,
+          "cp": -0.3524217349577597,
+          "tsr_eq": 4.5,
+          "steady": true
+        }
+      ]
+    },
+    "tip_loss_helmbold": {
+      "cd_add": 0.005,
+      "use_dynamic_stall": false,
+      "use_flow_curvature": false,
+      "use_tip_loss": true,
+      "peak_cp": 0.2966260914611793,
+      "peak_tsr": 2.5,
+      "bias_vs_ham_mid": -0.3181009391697028,
+      "f_ar": 0.6493917004535744,
+      "sweep": [
+        {
+          "tsr": 1.5,
+          "cp": 0.06160650007706531,
+          "tsr_eq": 1.5000000000000007,
+          "steady": true
+        },
+        {
+          "tsr": 2.0,
+          "cp": 0.18023321502095868,
+          "tsr_eq": 1.9999999999999996,
+          "steady": true
+        },
+        {
+          "tsr": 2.5,
+          "cp": 0.2966260914611793,
+          "tsr_eq": 2.5,
+          "steady": true
+        },
+        {
+          "tsr": 3.0,
+          "cp": 0.2805471252197346,
+          "tsr_eq": 3.0000000000000018,
+          "steady": true
+        },
+        {
+          "tsr": 3.5,
+          "cp": 0.21659823976496856,
+          "tsr_eq": 3.5,
+          "steady": true
+        },
+        {
+          "tsr": 4.0,
+          "cp": 0.11780074443553802,
+          "tsr_eq": 3.999999999999999,
+          "steady": true
+        },
+        {
+          "tsr": 4.5,
+          "cp": -0.018602718940303787,
+          "tsr_eq": 4.5,
+          "steady": true
+        }
+      ]
+    }
+  },
+  "peak_no_tip": 0.4757654016211023,
+  "peak_tip_loss": 0.2966260914611793,
+  "tip_loss_undershoots_band": true,
+  "tip_loss_overshoot_cp": 0.12337390853882069,
+  "derived_bias_window": [
+    0.0,
+    0.6039229700849418
+  ],
+  "derived_bias_hi": 0.6039229700849418,
+  "ar_scan": [
+    {
+      "AR": 3.0,
+      "H": 0.915,
+      "peak_cp": 0.2353723919562405,
+      "peak_tsr": 2.5,
+      "f_ar": 0.5351837584879964
+    },
+    {
+      "AR": 3.5,
+      "H": 1.0675,
+      "peak_cp": 0.25980905131517873,
+      "peak_tsr": 2.5,
+      "f_ar": 0.5803225354712214
+    },
+    {
+      "AR": 4.0,
+      "H": 1.22,
+      "peak_cp": 0.279998764421977,
+      "peak_tsr": 2.5,
+      "f_ar": 0.6180339887498948
+    },
+    {
+      "AR": 4.5,
+      "H": 1.3725,
+      "peak_cp": 0.2968803768469603,
+      "peak_tsr": 2.5,
+      "f_ar": 0.6498730890884561
+    },
+    {
+      "AR": 5.0,
+      "H": 1.525,
+      "peak_cp": 0.31118407319252633,
+      "peak_tsr": 2.5,
+      "f_ar": 0.6770329614269006
+    },
+    {
+      "AR": 5.5,
+      "H": 1.6775,
+      "peak_cp": 0.323437464372432,
+      "peak_tsr": 2.5,
+      "f_ar": 0.7004272646108749
+    },
+    {
+      "AR": 6.0,
+      "H": 1.83,
+      "peak_cp": 0.3340353805098786,
+      "peak_tsr": 2.5,
+      "f_ar": 0.7207592200561265
+    }
+  ]
+}

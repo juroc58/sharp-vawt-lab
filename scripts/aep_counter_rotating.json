@@ -4,37 +4,71 @@
     "interaction_factor_mean": 0.01758441111613961,
     "interaction_factor_min": 0.00795899856840689,
     "interaction_factor_max": 0.03316249403502871,
-    "interaction_factor_note": "Physics-based momentum theory model: upstream rotor induction factor from Ct=4a(1-a), wake recovery between rotors, counter-rotating channeling from blades moving toward each other in gap. Factor varies with wind speed, TSR, and spacing.",
+    "interaction_factor_note": "heuristic scenario model momentum theory model: upstream rotor induction factor from Ct=4a(1-a), wake recovery between rotors, counter-rotating channeling from blades moving toward each other in gap. Factor varies with wind speed, TSR, and spacing.",
     "description": "Two counter-rotating Sharp cycloturbines with bluff-body flow acceleration between rotors",
     "paper_reference": "VUB wind-tunnel study (closely spaced counter-rotating VAWT pairs); Dabiri et al., Energies 2019, 12(14):2724",
-    "claimed_improvement": "+3.3% combined improvement over two independent rotors (physics-based)"
+    "speculative_scenario_gain_percent": "+2.8% combined improvement over two independent rotors (heuristic scenario model)"
   },
   "wind_resource": {
     "mean_U": 6.0,
     "k_weibull": 2.0,
     "cut_in": 3.0,
-    "cut_out": 25.0
+    "cut_out": 25.0,
+    "rated_wind_speed": 12.0,
+    "p_rated_W_pair": 17109.97812231268
   },
   "single_rotor_baseline": {
-    "aep_kWh": 17245.77040910242,
-    "capacity_factor": 0.021874391690896017
+    "aep_kWh": 15518.394377026836,
+    "capacity_factor": 0.2070728781485675
   },
   "counter_rotating": {
     "upstream_rotor": {
-      "aep_kWh": 17245.77040910242,
-      "capacity_factor": 0.021874391690896017
+      "aep_kWh": 15518.394377026836,
+      "capacity_factor": 0.2070728781485675
     },
     "downstream_rotor": {
-      "aep_kWh": 18390.612868752818,
-      "capacity_factor": 0.02332650034088384
+      "aep_kWh": 16402.571144377023,
+      "capacity_factor": 0.21887107218585408
     },
     "total": {
-      "aep_kWh": 35626.11165987743,
-      "capacity_factor": 0.045187863597003344
+      "aep_kWh": 31920.96552140386,
+      "capacity_factor": 0.2129719751672108
     },
-    "vs_single_rotor_improvement_percent": 106.57883535938618,
-    "vs_two_independent_rotors_improvement_percent": 3.289417679693085
+    "vs_single_rotor_improvement_percent": 105.69760469974337,
+    "vs_two_independent_rotors_improvement_percent": 2.848802349871682
   },
+  "sensitivity_to_fixed_interaction_factor": [
+    {
+      "interaction_factor": 0.0,
+      "aep_kWh": 31036.788754053672,
+      "cf": 0.2070728781485675,
+      "gain_vs_single_percent": 100.0
+    },
+    {
+      "interaction_factor": 0.04,
+      "aep_kWh": 32521.39279436241,
+      "cf": 0.2169779373985381,
+      "gain_vs_single_percent": 109.56673741006688
+    },
+    {
+      "interaction_factor": 0.08,
+      "aep_kWh": 34127.14321522076,
+      "cf": 0.22769126743633025,
+      "gain_vs_single_percent": 119.91413793260723
+    },
+    {
+      "interaction_factor": 0.12,
+      "aep_kWh": 35857.497301493975,
+      "cf": 0.2392359347567833,
+      "gain_vs_single_percent": 131.0644801924663
+    },
+    {
+      "interaction_factor": 0.16,
+      "aep_kWh": 37719.287890304935,
+      "cf": 0.2516575270416697,
+      "gain_vs_single_percent": 143.06179475721996
+    }
+  ],
   "power_curves": {
     "U_range": [
       3.0,

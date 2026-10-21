@@ -16,26 +16,34 @@ class TestHamVerdictContract:
     """The comparison contract in scripts/validate_ham.py, without running a sim.
 
     verdict() returns (status, bias, expected_lo, expected_hi). The model is
-    expected to over-predict Ham's 3D band (2D solver, no tip loss), so a
-    peak matching the midpoint exactly is *outside* the expected-bias window
-    — that is intentional, not a bug.
+    expected to over-predict Ham's 3D band (2D solver, no tip loss). The
+    window is derived from scripts/ham_finite_span_check.py: 0 % (no-tip
+    cannot be worse than measured) to the Helmbold-correction magnitude at
+    Ham's AR. It is a plausibility window, not a validation tolerance.
     """
 
     def test_within_expected_window(self):
         status, bias, expected_lo, expected_hi = verdict(HAM_MID * 1.10)
         assert status == "comparison_expected"
-        assert 0.05 <= bias <= 0.20
+        assert HAM_BIAS_LO <= bias <= HAM_BIAS_HI
         assert expected_lo == pytest.approx(HAM_MID * (1.0 + HAM_BIAS_LO))
         assert expected_hi == pytest.approx(HAM_MID * (1.0 + HAM_BIAS_HI))
 
+    def test_window_is_derived_from_finite_span_check(self):
+        import json
+        from pathlib import Path
+        path = Path(__file__).resolve().parent.parent / "scripts" / "ham_finite_span_check.json"
+        data = json.loads(path.read_text())
+        assert HAM_BIAS_LO == pytest.approx(data["derived_bias_window"][0])
+        assert HAM_BIAS_HI == pytest.approx(data["derived_bias_window"][1])
+
     def test_outside_expected_window_high(self):
-        status, *_ = verdict(HAM_MID * 1.30)
+        status, *_ = verdict(HAM_MID * 1.80)
         assert status == "comparison_out_of_expected_range"
 
     def test_outside_expected_window_low(self):
-        # Matching the midpoint exactly is *not* expected for a 2D
-        # no-tip-loss solver; it should over-predict instead.
-        status, *_ = verdict(HAM_MID * 1.00)
+        # A 2D no-tip solver should not fall below the 3D measured midpoint.
+        status, *_ = verdict(HAM_MID * 0.95)
         assert status == "comparison_out_of_expected_range"
 
 
@@ -44,9 +52,9 @@ class TestHamPeakComparison:
     """Ham 1979 Pinson C2E geometry, Ham's own model class (no DS, no tip loss).
 
     The 2D static-only model is expected to over-predict Ham's 3D measured
-    band because it has no finite-span (tip-loss) loss. These tests document
-    the expected bias (5-20% over Ham's mid-band); they do NOT validate the
-    model against Ham's experiment.
+    band because it has no finite-span (tip-loss) loss. The window is
+    derived from `scripts/ham_finite_span_check.py`; these tests do NOT
+    validate the model against Ham's experiment.
     """
 
     BASE_HAM = dict(
@@ -68,12 +76,12 @@ class TestHamPeakComparison:
     def test_ham_peak_bias_in_expected_window(self):
         r = create_sim_from_params(self.BASE_HAM).run()
         bias = (r['cp'] - HAM_MID) / HAM_MID
-        # A 2D solver without tip loss is expected to over-predict Ham's
-        # 3D measured band. The 5-20% window bounds gross regressions on
-        # both sides; it is NOT a validation tolerance.
-        assert 0.05 <= bias <= 0.20, (
+        # Window derived from the finite-span check (0 % to the Helmbold
+        # correction magnitude); it is NOT a validation tolerance.
+        assert HAM_BIAS_LO <= bias <= HAM_BIAS_HI, (
             f"Ham peak Cp = {r['cp']:.4f} gives bias {bias*100:.1f}% vs "
-            f"mid-band {HAM_MID}, outside expected 5-20% window"
+            f"mid-band {HAM_MID}, outside expected "
+            f"{HAM_BIAS_LO*100:.0f}-{HAM_BIAS_HI*100:.1f}% window"
         )
 
     def test_ham_peak_not_inside_measured_band(self):

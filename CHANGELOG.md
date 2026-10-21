@@ -17,6 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `2*pi*1.1` slope line and removes the 12 deg bubble dip by enforcing
   monotone Cl to 20 deg. It is documented as a model-form sensitivity
   variant, not data. It is also a categorical (0/1) UQ input.
+- **`scripts/scan_cm_scale.py`** (`cm_scale_scan.json`): deterministic
+  scans of `cm_scale` and `tip_loss_multiplier` for the Sharp-inspired and
+  optimised-passive anchors. The Sharp rotor collapses for `cm_scale`
+  ≤ 0.5 and for a tip multiplier ≤ 0.955; the optimised rotor survives at
+  zero Cm.
+- **`scripts/ham_finite_span_check.py`** (`ham_finite_span_check.json`):
+  reconciles the static-only 0.476 and the UQ 0.49 in one table and scans
+  blade AR = 3–6 with the Helmbold correction. The paper is not in the
+  repo; the geometric AR = H/c is also reported.
+- **`scripts/check_branch_points.py`** (`branch_point_checks.json`):
+  longer `T_max` and three initial conditions for the TSR = 3.25 and
+  U = 4 m/s points.
+- **`scripts/robust_reopt.py`** (`robust_optimization.json`): bounded
+  local re-optimisation of the passive and scale-up designs for the
+  scenario mean/p10 over `cm_scale = 0`, `tip_loss_multiplier = 0.96`,
+  both, and higher `cd_add`. Reports nominal, mean, p10 and bound-active
+  parameters.
 - **`vawt_presets.py`**: named machines (`sharp_baseline`, `ham_1979`,
   `sharp_cppc`, `optimised_passive`, `scaleup`) now live in an explicit
   `PRESETS` dict. The dataclass defaults are a neutral R = 0.6 m,
@@ -35,15 +52,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ham 1979 framing**: reframed from "reproduction"/"validation" to a
   documented 2D upper-bound comparison. The static-only peak (Cp ≈ 0.476 at
   TSR 2.5) is ~+9 % above Ham's 3D measured band midpoint (0.435) and above
-  his entire 0.42–0.45 band, which is the expected bias for a 2D solver
-  without finite-span (tip-loss) loss. `scripts/validate_ham.py` now reports
-  a signed bias vs an expected-bias window instead of a PASS/FAIL "inside
-  band" verdict; `tests/test_validation.py` classes were renamed
+  his entire 0.42–0.45 band. `scripts/ham_finite_span_check.py` shows that
+  applying Helmbold at Ham's geometry AR = 4.49 gives only Cp ≈ 0.297,
+  below the measured band, so the finite-span model over-corrects for this
+  rig; the no-tip peak remains the documented upper bound. The 0.476 and
+  0.49 numbers are reconciled in one generated table as different
+  configurations (`cd_add` 0.005 vs 0.002). `scripts/validate_ham.py`
+  reports a signed bias vs a window derived from that finite-span check
+  (0 % to the Helmbold-correction magnitude) instead of a post-hoc
+  +5–20 % band or a PASS/FAIL "inside band" verdict; `tests/test_validation.py` classes were renamed
   (TestHamReproduction → TestHamPeakComparison, TestHamVerdictLogic →
   TestHamVerdictContract) and assert the expected bias window plus the fact
   that the peak is NOT inside Ham's band. `scripts/plot_ham_curve.py`
   title now reads "Ham 1979 comparison: 2D static-only upper bound vs
   measured Cp(TSR)". No physics, polar, or golden change.
+
+- **UQ now samples thirteen inputs, twelve active.** `polar_variant` is a
+  categorical 0/1 model-form input; `arm_cd` remains inert because every
+  anchor has `arm_d = 0`. The Saltelli run was regenerated (960 samples,
+  3840 runs). The summary now reports base Cp at `cm_scale = 0`, all-sample
+  mean, working-branch mean and collapsed fraction. The Sharp-inspired
+  anchor is strongly bimodal: all-sample mean Cp = 0.033, working-branch
+  mean = 0.095, collapse fraction 69.3 %, versus a physical-Cm base case of
+  Cp = 0.0046. The optimised-passive collapse fraction is 1.0 %. These
+  replace the earlier 56.8 %/2.0 % split because the corrected
+  `cm_scale` blend and the polar model-form input are now sampled.
+- **Rated power is defined per design, not fixed at 90 kW.** The rating is
+  the mechanical power at U = 12 m/s using the design Cp at that speed
+  times drivetrain efficiency (8.55 kW for the scale-up). The old 90 kW
+  number was about ten times too large and made capacity factors look like
+  ~2 %. Scale-up AEP therefore changes from 17.26 to 15.49 MWh/yr: the
+  lower rating clips power above 12 m/s. The fair rigid baseline is
+  14.15 MWh/yr with the same rule, so the passive-vs-rigid gain is +10.6 %
+  (was +13.9 %). These are mandated rating/AEP changes, not physics
+  changes; the Cp curves are unchanged except for the phase average below.
+- **Fixed-rpm Cp(TSR) is phase-averaged.** A single `psi0 = 0` run gave a
+  narrow TSR = 3.25 maximum (Cp 0.4122) that fell to 0.3479 at `psi0 =
+  120°/240°`; this is an initial-phase limit-cycle artefact, not a
+  transient. The curve now averages three phases at every TSR. The
+  free-running U = 4 m/s point is independent of `T_max` and seed.
+- **Scale-up AEP branches are reported with initial conditions.** High-seed
+  (`w0_frac = 1.20`), low-seed (`0.20`) and branch-traced runs all converge
+  to the same high-TSR branch at every sampled wind speed from cut-in to
+  cut-out; no low branch was found, so the branch AEP range is degenerate
+  (15.48–15.48 MWh/yr). The earlier plotted drop is not reproduced by the
+  current raw runs.
+- **Counter-rotating pair is a scenario with a factor sweep.**
+  `scripts/compute_aep_counter_rotating.py` now stores a fixed-factor
+  sensitivity sweep (0–16 % downstream velocity increase). At the modelled
+  0.37 D spacing the heuristic pair gain over two independent rotors is
+  +2.8 %, not a headline array prediction. The 16 % cap is a literature
+  bound, not a calibration of this pair.
+- **Robust re-optimisation.** Starting from the stored optima, the passive
+  design gives nominal/mean/p10 Cp = 0.270/0.262/0.254 with no bound-active
+  parameters. The scale-up gives 0.417/0.409/0.400 with the arm ratio at
+  its lower bound (ar = 0.30). Scenario set and full parameters are in
+  `scripts/robust_optimization.json`.
 
 ### Fixed
 - **`cm_scale = 0` now really means no pitching moment.** The dynamic-stall
@@ -56,23 +120,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   directory, so scripts launched from `scripts/` load the same tables. The
   UQ cache hash now also covers `airfoil_polars/provenance.json` and fails
   loudly if any required source file is missing.
-- **AEP figure annotations and smoothing** (`docs/aep.png`,
-  `docs/aep_scaleup.png`): removed the red "free-running operating points"
-  scatter from Panel 1 in both figures; Panel 1 now shows only the
-  fixed-rpm Cp(TSR) curve. A 3-point median filter
-  (`scipy.signal.medfilt`) is applied to the plotted Cp(TSR) and
-  free-running Cp(U) series to suppress single-sample transients at
-  TSR = 3.25 and U = 4. Panel 2 uses a static `ax.text` box at
-  (16, 0.38) with no arrow, y-limits fixed to 0.34–0.42, and the box is
-  drawn only when the smoothed curve has a genuine drawdown greater than
-  0.03 Cp (so it appears in the branch-traced scale-up figure but not in
-  the flat base curve).
+- **AEP plots now show raw data** (`docs/aep.png`,
+  `docs/aep_scaleup.png`). The earlier `scipy.signal.medfilt` smoothing,
+  fixed y-limits and removed free-running scatter are gone: Panel 1 shows
+  the raw fixed-rpm Cp(TSR) curve plus the free-running operating points,
+  and Panel 2 shows the raw free-running Cp(U) curves with automatic
+  y-limits. No data are filtered or hidden in the plots.
 
-  The filter is applied **inside the plotting code only**: JSON outputs,
-  AEP integrals, and regression goldens are unchanged. The unfiltered
-  Cp(TSR) table still peaks at 0.4122 at TSR 3.25, and that point is still
-  what the fixed-rpm AEP row interpolates; if it is a solver transient,
-  the data/design point needs a separate fix rather than plot smoothing.
+  The TSR = 3.25 spike was investigated rather than smoothed: it is a
+  phase-locked limit cycle (`psi0 = 0°` gives Cp ≈ 0.412, `psi0 = 120°`
+  and `240°` give ≈ 0.348 at the same T_max). The fixed-rpm curve now
+  averages three equally spaced initial rotor phases at every TSR, which
+  removes the initial-phase artefact. The free-running U = 4 m/s point is
+  unchanged by longer runs or different seeds. See
+  `scripts/check_branch_points.py` and `scripts/branch_point_checks.json`.
 
 ## [3.3.1] - 2026-10-20
 

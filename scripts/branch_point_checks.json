@@ -1,0 +1,121 @@
+{
+  "note": "Suspicious AEP points re-run with longer T_max and several initial conditions. 'baseline' matches the production setup. This is a convergence check, not new measured data.",
+  "fixed_tsr_3.25": [
+    {
+      "T_max": 25.0,
+      "psi0_deg": 0.0,
+      "cp": 0.41215411864193,
+      "tsr_eq": 3.25,
+      "aoa_max": 14.28785780263961,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 25.0,
+      "psi0_deg": 120.0,
+      "cp": 0.347944861381596,
+      "tsr_eq": 3.25,
+      "aoa_max": 11.818620125967257,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 25.0,
+      "psi0_deg": 240.0,
+      "cp": 0.3479448613815914,
+      "tsr_eq": 3.25,
+      "aoa_max": 11.818620125966673,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "psi0_deg": 0.0,
+      "cp": 0.41215411864193,
+      "tsr_eq": 3.25,
+      "aoa_max": 14.28785780263961,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "psi0_deg": 120.0,
+      "cp": 0.347944861381596,
+      "tsr_eq": 3.25,
+      "aoa_max": 11.818620125967257,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "psi0_deg": 240.0,
+      "cp": 0.3479448613815914,
+      "tsr_eq": 3.25,
+      "aoa_max": 11.818620125966673,
+      "steady": true,
+      "stop_pct": 0.0
+    }
+  ],
+  "free_U4": [
+    {
+      "T_max": 25.0,
+      "w0_frac": 0.9,
+      "psi0_deg": 0.0,
+      "cp": 0.38185721742014095,
+      "tsr_eq": 2.918731663644352,
+      "aoa_max": 10.654092511692124,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 25.0,
+      "w0_frac": 1.2,
+      "psi0_deg": 120.0,
+      "cp": 0.38185840962101014,
+      "tsr_eq": 2.918734708104534,
+      "aoa_max": 10.653974474014781,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 25.0,
+      "w0_frac": 0.6,
+      "psi0_deg": 240.0,
+      "cp": 0.3818515339409128,
+      "tsr_eq": 2.9187171823677214,
+      "aoa_max": 10.653900458862264,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "w0_frac": 0.9,
+      "psi0_deg": 0.0,
+      "cp": 0.381858396474547,
+      "tsr_eq": 2.9187346717326137,
+      "aoa_max": 10.654011296183729,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "w0_frac": 1.2,
+      "psi0_deg": 120.0,
+      "cp": 0.381857915327783,
+      "tsr_eq": 2.918733443506215,
+      "aoa_max": 10.654037391189085,
+      "steady": true,
+      "stop_pct": 0.0
+    },
+    {
+      "T_max": 60.0,
+      "w0_frac": 0.6,
+      "psi0_deg": 240.0,
+      "cp": 0.3818581892266718,
+      "tsr_eq": 2.918734142430733,
+      "aoa_max": 10.653927195693704,
+      "steady": true,
+      "stop_pct": 0.0
+    }
+  ]
+}

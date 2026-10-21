@@ -16,14 +16,16 @@ quoted, not reproduced here).
 
 ## Evidence Table
 
+<!-- BEGIN GENERATED: evidence_table -->
 | Metric | Value | Evidence Category |
 | :--- | :--- | :--- |
-| **Ham 1979 Peak Cp** | ~0.49 | Literature comparison (2D upper bound) |
-| **Sharp-inspired Passive Cp** | 0.04 [0.00, 0.12] | **Model result** (uncalibrated DS) |
-| **Optimised Passive Cp** | 0.19 [0.05, 0.28] | **Model result** (uncalibrated DS) |
-| **Scale-up Passive Cp** | 0.38 [0.33, 0.42] | **Model result** (robust) |
+| **Ham 1979 Peak Cp** | 0.49 | Literature comparison (2D upper bound) |
+| **Sharp-inspired Passive Cp** | 0.033 all-sample; 0.10 working branch | **Model result** (uncalibrated DS; bimodal) |
+| **Optimised Passive Cp** | 0.19 [0.06, 0.28] | **Model result** (uncalibrated DS) |
+| **Scale-up Passive Cp** | 0.39 [0.33, 0.43] | **Model result** (robust) |
 | **Prescribed-pitch Upper Bound** | 0.50 | Ideal actuator (no physical limit) |
-| **AEP Gain vs Rigid** | +13.9% | **Model comparison** (unproven machine) |
+| **AEP Gain vs Rigid** | +10.6% | **Model comparison** (unproven machine) |
+<!-- END GENERATED: evidence_table -->
 
 ## Scope and Limitations
 
@@ -60,10 +62,10 @@ vendored in this archive, so no agreement figure is reproduced here.
 <!-- BEGIN GENERATED: headline_table_small -->
 | Configuration | Cp | 90 % CI | Reference | Evidence |
 |---|---|---|---|---|
-| **Sharp-inspired CPPC** | **0.04** | [0.002, 0.12] | scenario range (UQ) | S |
-| Optimised passive (mass-balanced) | **0.19** | [0.051, 0.28] | stored design point (UQ) | S |
+| **Sharp-inspired CPPC** | **0.03** | [0.003, 0.11] | scenario range (UQ) | S |
+| Optimised passive (mass-balanced) | **0.19** | [0.061, 0.28] | stored design point (UQ) | S |
 | Prescribed pitch (ideal actuator) | 0.50 | — | ideal-actuator upper bound (model) | U |
-| Ham 1979 comparison | **0.49** | [0.47, 0.51] | fixed design point (2D upper-bound comparison) | V |
+| Ham 1979 comparison | **0.49** | [0.46, 0.51] | fixed design point (2D upper-bound comparison) | V |
 <!-- END GENERATED: headline_table_small -->
 
 **Evidence levels.** `S` = scenario estimate from UQ sampling (a range, not a precision bar);
@@ -89,11 +91,11 @@ the scale-up has none.
 <!-- BEGIN GENERATED: headline_table_large -->
 | Configuration | Cp | 90 % CI | Reference | Evidence |
 |---|---|---|---|---|
-| **Scaled-up passive (R = 2.72 m)** | **0.38** | [0.33, 0.42] | ~65 % of Betz | S |
+| **Scaled-up passive (R = 2.72 m)** | **0.39** | [0.33, 0.43] | ~65 % of Betz | S |
 <!-- END GENERATED: headline_table_large -->
 
-The confidence intervals come from Saltelli sampling over twelve
-inputs, eleven of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
+The confidence intervals come from Saltelli sampling over thirteen
+inputs, twelve of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
 Helmbold (1942) finite-span correction; the Ham
 comparison is run without one and without the curvature correction, using
 double-multiple-streamtube induction and Ham's cosine pitch law. See the
@@ -103,7 +105,7 @@ double-multiple-streamtube induction and Ham's cosine pitch law. See the
 tip loss ON**. Ham is the exception: his model class has no tip loss, so
 the comparison is run without one. Deterministic design-point values
 quoted in the body text are labelled as such; the table gives the UQ mean
-over eleven active inputs. The UQ study is a scenario analysis, not a
+over twelve active inputs. The UQ study is a scenario analysis, not a
 calibrated error bar: the finite-span multiplier alone spans ±15 %, and
 both small-rotor distributions cross a collapse threshold (see below).
 
@@ -126,7 +128,7 @@ This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
 control) but not his **geometry**. It uses a light counterweight 0.30
 chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
 At R = 0.60 m, with the finite-span correction on and the UQ spread
-over eleven active inputs, the anchor (c = 0.14 m, m_c = 0.002 kg,
+over twelve active inputs, the anchor (c = 0.14 m, m_c = 0.002 kg,
 d_cw = 0.30c) reaches the interval shown in the headline table.
 
 **The mechanism fails inside Sharp's own parameter range.** With a
@@ -161,22 +163,31 @@ speeds — see the AEP section below.
 
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with a relatively heavy counterweight
-and a large arm ratio. Re-running the optimiser on the current polars gives a
-deterministic design point of **Cp = 0.270** (verified at T_max = 40 s,
-steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10°, no stops),
-with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g, d_cw ≈ +0.066c,
-ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
+and a large arm ratio. The stored design point is Cp ≈ 0.270 (verified at
+T_max = 40 s, steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10°,
+no stops), with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g,
+d_cw ≈ +0.066c, ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
 
-The UQ mean at the fixed optimiser anchor point is **0.19 [0.051, 0.28]**
-over eleven active inputs — the deterministic optimum (0.270) sits near the
-top of its own interval, a residual winner's-curse effect. Re-optimisation
-confirms the previously stored point (Cp = 0.272) was already near-optimal
-on the new polars, so the winner's curse is modest here, but the UQ spread
-remains large: the spread is **0.231**, and 2.0 % of samples fall on the
-collapsed branch. Note the optimised arm ratio **ar ≈ 0.87** now sits at the
-upper bound of the searched range (0.2–1.5), unlike the earlier stored point
-(ar = 0.260). The optimiser snapshot in `scripts/optimization_passive.json`
-records the re-optimized parameters.
+The UQ mean at the fixed anchor is **0.19 [0.06, 0.28]** over twelve active
+inputs — the deterministic optimum sits near the top of its own interval, a
+residual winner's-curse effect. Only about 1 % of samples fall on the
+collapsed branch, so this design is much less bimodal than the
+Sharp-inspired one.
+
+The robust objective below maximises the **scenario mean**, not the nominal
+Cp, over a small explicit scenario set (`cm_scale = 0`, a stronger tip-loss
+multiplier, both, and a higher parasitic drag). It starts from the stored
+solution and runs a bounded local refinement. The table reports nominal Cp,
+scenario mean and scenario p10, plus any parameter sitting on a bound.
+The full global optimisers were not re-run; this is a local robust
+re-optimisation, and the scenario set is a subset of the UQ ranges.
+
+<!-- BEGIN GENERATED: robust_optimization -->
+| Design | Nominal Cp | Scenario mean | Scenario p10 | Bound-active parameters |
+|---|---|---|---|---|
+| Optimised passive (R = 0.60 m) | 0.270 | 0.262 | 0.254 | none |
+| Scale-up (R = 2.72 m) | 0.417 | 0.409 | 0.400 | ar (lower) |
+<!-- END GENERATED: robust_optimization -->
 
 At this design point the aerodynamic pitch moment dominates the
 centrifugal restoring torque from the counterweight. The blade pitches
@@ -186,13 +197,15 @@ CPPC regime.
 
 ### Scaled-up passive design
 
-Extending the joint optimiser to radius R ∈ [0.6, 3.0] m now finds
+Extending the joint optimiser to radius R ∈ [0.6, 3.0] m finds
 **R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
 enabled *inside the optimiser*, the optimum sits at **H/R = 1.49**, i.e.
-H/D = 0.75. The fixed design point evaluates to Cp = 0.384 on the current
-polars; the UQ mean is **0.36 [0.30, 0.42]** (61 % of the Betz limit).
-The optimiser snapshot in `scripts/optimization_scaleup.json` (Cp = 0.43)
-predates the polar revision and was not re-run.
+H/D = 0.75. The fixed design point evaluates to Cp ≈ 0.39 on the current
+polars; the UQ mean is **0.39 [0.33, 0.43]**. The robust local
+re-optimisation moves R slightly and pushes the arm ratio to its lower
+bound; its nominal/mean/p10 values are in the robust table above. The
+stored `scripts/optimization_scaleup.json` is the earlier global snapshot
+(Cp = 0.43), retained for provenance.
 
 The movement is the point: with the correction hidden (the pre-fix
 configuration), the optimiser preferred a short fat cylinder
@@ -280,71 +293,136 @@ own optimal pitch and load**, not a blade locked at zero pitch inheriting
 the passive machine's load. `scripts/compute_aep_rigid_fair.py` runs that
 comparison at both design points:
 
-| Geometry | AR | Passive CPPC | Best rigid | Gain | Evidence |
+<!-- BEGIN GENERATED: aep_rigid_comparison -->
+| Geometry | AR | Passive CPPC | Best rigid | Gain | Rating |
 |---|---|---|---|---|---|
-| **Sharp-inspired (R = 0.60 m)** | 2.86 | **75.5 kWh/yr** | none (does not spin) | **n/a** | model comparison |
-| **Scale-up (R = 2.72 m)** | 10.5 | **17,330 kWh/yr** | 15,221 kWh/yr | **+13.9 %** | model comparison |
+| Sharp-inspired (R = 0.60 m) | 2.86 | 63 kWh/yr | none (does not spin) | n/a | Cp at 12 m/s |
+| Scale-up (R = 2.72 m) | 10.51 | 15,650 kWh/yr | 14,147 kWh/yr | +10.6 % | Cp at 12 m/s |
+<!-- END GENERATED: aep_rigid_comparison -->
 
-Sharp's published claim is **25–30 % more energy than a fixed-blade
-rotor**. The model gives **+13.9 %** at the scale-up geometry, where a
-rigid blade actually works. This is the closest agreement with Sharp in
-the repo, and it required the fair baseline to surface. **This is a model
+Sharp's published claim is a substantial energy gain over a fixed-blade
+rotor. The model's gain at the scale-up geometry, where a rigid blade
+actually works, is the closest comparison in the repo. **This is a model
 comparison between two configurations of the same 2-D BEM solver — not an
 energy forecast.** The gap is a model-class result, not a fitted correction.
 
 The two rows describe different regimes. At AR 2.86 no fixed-pitch
 configuration produces a steady rotation at all: uncapped induced drag
-(Cd_i ≈ 0.11 at this AR) kills fixed-pitch operation, so the CPPC
-mechanism is the difference between a working machine and a dead one, not
-an efficiency gain. At AR 10.5, a rigid blade at ψ₀ = +5°, k_load = 6.0
-reaches Cp = 0.381 with no pitching at all; the passive CPPC machine
-reaches 0.373 at its best k_load. The passive machine wins on annual
-energy, not on peak Cp.
+kills fixed-pitch operation, so the CPPC mechanism is the difference
+between a working machine and a dead one, not an efficiency gain. At
+AR 10.5 a rigid blade does work, but the passive CPPC machine wins on
+annual energy, not on peak Cp.
+
+**Rated power is defined per design**, not taken from an arbitrary number:
+the generator rating is the mechanical power at a stated rated wind speed
+(12 m/s) using that design's Cp at that speed, times drivetrain efficiency.
+It is recorded in each JSON file. A fixed rating changes capacity factor
+and any AEP that clips above rated power; the old 90 kW value was about
+ten times too large for the scale-up rotor and made the capacity factors
+look like 2 %.
 
 **Caveat.** Both geometries were optimised *for* CPPC. The comparison is
 fair in the sense of "same rotor, same wind, only the pitch mechanism
 differs" — it is not a claim that rigid VAWTs are useless at other
 geometries. A rotor designed from scratch for fixed-pitch operation would
-likely do better than 15 221 kWh/yr at AR 10.5.
+likely do better at AR 10.5.
 
-The two scale-up AEP values quoted in this README (17,330 kWh/yr here and
-16,763 kWh/yr in the fixed-rpm table below) come from slightly different
-setups: the rigid comparison sweeps the k_load grid and picks 4.0 with
-`T_max = 30 s`, while the steady table uses the stored operating point
-k_load = 4.164 with `T_max = 25 s`. The 3.4 % difference is the
-evaluation setup, not a physics change.
+The fair-comparison script sweeps the passive k_load grid and picks its
+best value; `scripts/compute_aep.py` uses the stored operating point.
+Both use the same rating rule. The small AEP difference is that
+operating-point choice, not a physics change.
 
 ### Fixed-rpm penalty
 
-For the scale-up design (R = 2.72 m, peak Cp ≈ 0.384):
+For the scale-up design (R = 2.72 m):
 
 <!-- BEGIN GENERATED: aep_steady -->
 | Strategy | AEP | Capacity factor |
 |---|---|---|
-| **Passive k_load (variable speed)** | **17256 kWh/yr** | **2.2 %** |
-| Fixed-rpm generator | 10565 kWh/yr | 1.3 % |
+| **Passive k_load (variable speed)** | **15492 kWh/yr** | **20.7 %** |
+| Fixed-rpm generator | 10455 kWh/yr | 14.0 % |
 <!-- END GENERATED: aep_steady -->
 
-The passive machine produces **1.55× more energy** than the same rotor on
-a fixed-rpm generator because the k_load·ω² torque tracks the wind's
-power curve: the rotor speed adjusts so the tip-speed ratio stays near
-its optimum at every wind speed. A fixed-speed generator drifts far from
-the design point as the wind varies and only operates near peak
-efficiency in a narrow window around its design wind speed.
+The passive machine produces more energy than the same rotor on a
+fixed-rpm generator because the k_load·ω² torque tracks the wind's power
+curve: the rotor speed adjusts so the tip-speed ratio stays near its
+optimum at every wind speed. A fixed-speed generator drifts far from the
+design point as the wind varies and only operates near peak efficiency in
+a narrow window around its design wind speed.
+
+**Branches and initial conditions.** The scale-up AEP is not a
+single-trajectory number. The table below reruns the free-running curve
+from a high-speed seed, a low-speed seed and the continuation
+(branch-traced) state. In the current model all three converge to the same
+high-TSR branch at every sampled wind speed from cut-in to cut-out; **no
+low branch was found**, so the AEP range is degenerate. The earlier
+apparent drop in `docs/aep_scaleup.png` was a transient/plotting artefact,
+not a second equilibrium. The initial conditions are stated in the table
+so the claim can be checked.
+
+<!-- BEGIN GENERATED: aep_branches -->
+| Initial condition | AEP | Capacity factor |
+|---|---|---|
+| High-speed seed: w0_frac = 1.20, psi0 = 0° | 15.48 MWh/yr | 20.74 % |
+| Low-speed seed: w0_frac = 0.20, psi0 = 0° | 15.48 MWh/yr | 20.74 % |
+| Branch-traced: w0_frac = 0.90, psi0 = 0° | 15.48 MWh/yr | 20.74 % |
+| **Range across seeds** | **15.48–15.48 MWh/yr** | — |
+<!-- END GENERATED: aep_branches -->
+
+The suspicious fixed-rpm point at TSR = 3.25 was re-run with longer
+`T_max` and three initial rotor phases. It is a phase-locked limit cycle,
+not a transient: `psi0 = 0°` gives Cp ≈ 0.412 while `psi0 = 120°` and
+`240°` give ≈ 0.348, independent of `T_max`. The production curve now
+averages three equally spaced phases at every TSR, which removes that
+initial-phase artefact. The free-running U = 4 m/s point is unchanged by
+`T_max` or seed.
+
+<!-- BEGIN GENERATED: branch_point_check -->
+| Check | Initial condition | Cp | TSR | Steady |
+|---|---|---|---|---|
+| fixed TSR 3.25, T_max 60 s | psi0 = 0° | 0.4122 | 3.250 | True |
+| fixed TSR 3.25, T_max 60 s | psi0 = 120° | 0.3479 | 3.250 | True |
+| fixed TSR 3.25, T_max 60 s | psi0 = 240° | 0.3479 | 3.250 | True |
+| free U = 4 m/s, T_max 60 s | w0 = 0.90, psi0 = 0° | 0.3819 | 2.919 | True |
+| free U = 4 m/s, T_max 60 s | w0 = 1.20, psi0 = 120° | 0.3819 | 2.919 | True |
+| free U = 4 m/s, T_max 60 s | w0 = 0.60, psi0 = 240° | 0.3819 | 2.919 | True |
+<!-- END GENERATED: branch_point_check -->
 
 This is the physical claim Sharp's paper makes for CPPC. The passive
 mechanism adapts to wind speed without any external control.
+
+### Counter-rotating pair — speculative scenario
+
+The counter-rotating-pair calculation is **not** a BEM prediction of array
+performance. It is a heuristic scenario: the downstream rotor sees an
+assumed velocity increase from a momentum/wake/channeling model, capped by
+a literature value. At the modelled 0.37 D spacing (2 m) 2D BEM cannot
+resolve the 3D wake, blockage or turbulence. The table gives the scenario
+and a sensitivity sweep of the fixed interaction factor; the pair gain
+over two independent rotors is small because the heuristic factor is only
+a few per cent at this spacing.
+
+<!-- BEGIN GENERATED: counter_rotating -->
+| Quantity | Value |
+|---|---|
+| Single rotor AEP | 15,518 kWh/yr |
+| Two independent rotors | 31,921 kWh/yr |
+| Counter-rotating pair (heuristic) | 31,921 kWh/yr |
+| Gain over two independent rotors | +2.8 % |
+| Fixed-factor sensitivity (0–16 %) | +100 % to +143 % vs single |
+<!-- END GENERATED: counter_rotating -->
 
 ## 📊 Uncertainty
 
 ![uncertainty](docs/uncertainty.png)
 
-Twelve inputs are sampled, but **`arm_cd` is inert**: every anchor sets
+Thirteen inputs are sampled, but **`arm_cd` is inert**: every anchor sets
 `arm_d = 0`, so the support-arm drag term is identically zero and `arm_cd`
-cannot affect Cp. Only eleven inputs are active — nine model constants that
+cannot affect Cp. Only twelve inputs are active — nine model constants that
 come from the source papers but were not fitted to this specific machine,
-plus the finite-span multiplier and the attached-flow Cm scale (both
-model-form uncertainties, not constants). Saltelli sampling (N = 64,
+plus the finite-span multiplier, the attached-flow Cm scale and the
+polar model-form variant (all model-form uncertainties, not constants).
+Saltelli sampling (N = 64,
 1664 runs per anchor) propagates that uncertainty through each headline
 case and yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 
@@ -362,68 +440,66 @@ case and yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 | `tip_loss_multiplier` | 0.85 | 1.15 | residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker) |
 | `cm_scale` | 0.0 | 1.0 | scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value) |
 | `ds_Knc` | 0.5 | 1.5 | apparent-mass lift multiplier (k_nc) |
+| `polar_variant` | 0.0 | 1.0 | model form: 0 = NeuralFoil table, 1 = smoothed_lowRe variant |
 | `arm_cd` | 0.5 | 1.5 | arm drag coefficient multiplier (Geometry) |
 <!-- END GENERATED: uq_params -->
 
-The 90 % confidence width is ~0.04 Cp for Ham, ~0.09 for the
-scale-up, ~0.12 for Sharp-inspired CPPC and ~0.23 for optimised
-passive. These are scenario widths, not calibrated error bars: the Sharp
-and optimised-passive distributions are bimodal because part of the
-finite-span band crosses a collapse threshold. The widths are not directly
-comparable to v3.3.0, which used a double-scaled sampler (see CHANGELOG).
+The widths differ by anchor and are **scenario widths, not calibrated
+error bars**. Ham's distribution is narrow; Sharp-inspired CPPC is the
+widest because it crosses the collapse threshold. The widths are not
+directly comparable to v3.3.0, which used a double-scaled sampler (see
+CHANGELOG).
 
-**Only Ham's induction lag is clearly dominant at N = 64.** `tau_rev`
-has S₁ = 0.84 ± 0.29 (its CI does not span zero); every other first-order
-index carries a 95 % half-width of 0.12–0.34, so the rankings below are
-indicative, not precise, and indices whose CI spans zero are not used
-for ranking. For Sharp-inspired CPPC, the separation lag (`ds_Tf`,
-S₁ = 0.43 ± 0.26) and the finite-span multiplier (S₁ = 0.41 ± 0.27)
-are nearly tied first-order; the Cm scale (`cm_scale`, S₁ = 0.05 ± 0.12)
-is not significant first-order but has total-order 0.14 ± 0.09, so
-pitching-moment uncertainty interacts with the other parameters. For the
-optimised-passive anchor the multiplier leads first-order (S₁ = 0.51,
-total-order 0.80 ± 0.28) with `ds_Tf` second (0.17 ± 0.11). At the
-scale-up no first-order index is significant; total-order indices are
-interaction-heavy (`c_scale_override` 0.32 ± 0.35, `cm_scale` 0.28 ±
-0.15, `tip_loss_multiplier` 0.28 ± 0.19) — the old reading that
-`ds_Knc` dominated the scale-up does not survive `cm_scale` being sampled
-(its S₁ CI spans zero at N = 64). The multiplier is a model-form
-uncertainty, not a fitted constant: the Helmbold factor is multiplied by a
-residual value in [0.85, 1.15]. The Helmbold central value is a standard
-low-AR lift-slope estimate, so the band is narrower than the old ±30 %
-that was needed to cover the generalized-Prandtl bias. At AR 10.5
-Helmbold gives f_ar = 0.828, close to the old formula's 0.840; at AR 2.86
-it gives 0.521 where the old formula gave 0.588.
+**Read the Sobol bands, not just the point values.** With N = 64 the
+confidence intervals are wide, so only indices whose interval excludes
+zero are used for ranking; sums above 1.0 can be within that uncertainty.
+The regenerated table is in `scripts/uncertainty_results.json` and below.
+`arm_cd` is exactly zero in every anchor because `arm_d = 0`, and
+`polar_variant` is a categorical 0/1 model-form input.
+The finite-span multiplier is a model-form uncertainty, not a fitted
+constant: the Helmbold factor is multiplied by a residual value in
+[0.85, 1.15].
 
-**Read the Sobol bands, not just the point values.** With N = 64 the 95 %
-confidence half-widths are 0.2–0.3 for the dominant indices (table above).
-Sums above 1.0 would be within that uncertainty; the largest total-order
-index now is the optimised-passive multiplier at 0.80 ± 0.28.
-They are not evidence of a physical interaction of that size. Indices
-whose confidence interval spans zero are not used for ranking.
-`arm_cd` is exactly zero in every anchor because `arm_d = 0`.
+**The small-rotor distribution is bimodal.** Below a multiplier of about
+0.96 the Sharp-inspired rotor cannot sustain rotation; the scan in
+`scripts/cm_scale_scan.json` shows the transition. The UQ samples are
+therefore reported three ways: the physical-Cm base case (`cm_scale = 0`,
+the symmetric-section value), the all-sample mean, and the mean of the
+samples that stay on the working branch. The collapsed fraction is the
+share of samples with Cp below 0.02.
 
-**The small-rotor distributions cross a collapse threshold.** Below a
-multiplier of about 0.955 the Sharp-inspired rotor cannot sustain rotation:
-`scripts/scan_tip_loss.py` gives Cp = 0.067 at 1.00, 0.054 at 0.96,
-0.005 at 0.955 and 0.002 at 0.70. The UQ samples put **56.8 % of the
-Sharp-inspired distribution and 2.0 % of the optimised-passive
-distribution on that collapsed branch** (Cp < 0.02). The 90 % intervals
-are therefore **scenario ranges** — "runs at ~0.07 with the Helmbold
-estimate, collapses to ~0.003 with modestly stronger tip loss or zero Cm scale" — not
-precision estimates. [0.002, 0.12] and [0.051, 0.28] are therefore scenario
-ranges. The scale-up (AR 10.5) has no collapsed samples; its minimum is
-0.2544.
+<!-- BEGIN GENERATED: uq_bimodal -->
+| Anchor | Base Cp, Cm = 0 | All-sample mean | Working-branch mean | Collapsed fraction (Cp < 0.02) |
+|---|---|---|---|---|
+| Ham 1979 comparison | 0.49 | 0.49 | 0.49 | 0.0 % |
+| Sharp-inspired CPPC | 0.005 | 0.033 | 0.095 | 69.3 % |
+| Optimised passive | 0.27 | 0.19 | 0.20 | 1.0 % |
+| Scale-up R = 2.72 m | 0.42 | 0.39 | 0.39 | 0.0 % |
+<!-- END GENERATED: uq_bimodal -->
 
-The same collapse is reachable through the pitching moment, not just tip
-loss: the UQ samples the attached-flow Cm scale (`cm_scale`, 0 = no
-pitching moment, 1 = full NeuralFoil table value), and with `cm_scale =
-0` the Sharp-inspired rotor does not self-sustain at all (Cp ≈ 0.005,
-TSR ≈ 0.49). Its headline number therefore rests on the NeuralFoil Cm
-table, whose attached-flow values are noisy and sign-changing for a
+`scripts/scan_cm_scale.py` (output `scripts/cm_scale_scan.json`) makes the
+two knobs explicit: a uniform `cm_scale` from 0 (physical symmetric-section
+Cm ≈ 0) to 1 (raw NeuralFoil table), and the finite-span multiplier. The
+Sharp-inspired rotor only sustains rotation above `cm_scale ≈ 0.75` or
+above a tip multiplier near 0.96; the optimised passive rotor survives at
+Cm = 0.
+
+<!-- BEGIN GENERATED: cm_scale_scan -->
+| Anchor | Cp, Cm = 0 | Cp, Cm = 0.5 | Cp, Cm = 0.75 | Cp, Cm = 1.0 | Working branch from tip multiplier |
+|---|---|---|---|---|---|
+| Sharp-inspired CPPC | 0.005 | 0.005 | 0.071 | 0.067 | 0.960 |
+| Optimised passive | 0.27 | 0.28 | 0.28 | 0.27 | 0.900 |
+<!-- END GENERATED: cm_scale_scan -->
+
+The 90 % intervals are therefore **scenario ranges** — a working branch
+near the deterministic value plus a collapsed branch — not precision
+estimates. The same collapse is reachable through the pitching moment, not
+just tip loss: with `cm_scale = 0` the Sharp-inspired rotor does not
+self-sustain at all. Its headline number therefore rests on the NeuralFoil
+Cm table, whose attached-flow values are noisy and sign-changing for a
 symmetric section — a documented surrogate limitation
-(see `airfoil_polars/README.md`). The optimised-passive anchor is
-insensitive to Cm (Cp ≈ 0.274 with Cm = 0) and is the more robust result.
+(see `airfoil_polars/README.md`). The optimised-passive anchor is much
+less sensitive to Cm and is the more robust result.
 
 `tau_rev` (induction lag) dominates Ham's uncertainty (S₁ = 0.84), with
 `cd_add` second (S₁ = 0.17). Ham's raw samples span 0.456–0.518; the 90 %
@@ -488,10 +564,10 @@ anchor. Runs in ~20 min on 4 cores (`scripts/uncertainty.py --saltelli
 <!-- BEGIN GENERATED: uq_sobol -->
 | Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
 |---|---|---|---|
-| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.28** | +0.86 ± 0.24 |
-| Sharp-inspired CPPC | `ds_Tf` | **+0.43 ± 0.25** | +0.62 ± 0.23 |
-| Optimised passive | `tip_loss_multiplier` | **+0.51 ± 0.31** | +0.80 ± 0.23 |
-| Scale-up R = 2.72 m | `tip_loss_multiplier` | **+0.19 ± 0.22** | +0.28 ± 0.21 |
+| Ham 1979 comparison | `tau_rev` | **+0.77 ± 0.29** | +0.78 ± 0.26 |
+| Sharp-inspired CPPC | `tip_loss_multiplier` | **+0.44 ± 0.35** | +0.75 ± 0.27 |
+| Optimised passive | `tip_loss_multiplier` | **+0.72 ± 0.28** | +0.99 ± 0.26 |
+| Scale-up R = 2.72 m | `tip_loss_multiplier` | **+0.30 ± 0.17** | +0.28 ± 0.14 |
 <!-- END GENERATED: uq_sobol -->
 
 **The finite-span multiplier and separation lag drive the two small-rotor anchors.** Direct
@@ -562,6 +638,43 @@ literature:
    `docs/ham_curve.png`). The peak bias is consistent with running a 2D
    solver without a finite-span correction; the shape mismatch is a
    residual limitation of the model class.
+
+   The 0.476 and 0.49 numbers are **not the same configuration**. The
+   validation run uses `cd_add = 0.005`; the UQ anchor preset inherits the
+   core default `cd_add = 0.002`. Dynamic stall, curvature and tip loss
+   are off in both. The generated table shows each step:
+
+<!-- BEGIN GENERATED: ham_reconciliation -->
+| Case | cd_add | DS | Curvature | Tip loss | Peak Cp | Bias vs mid |
+|---|---|---|---|---|---|---|
+| validate_ham static-only (cd_add = 0.005) | 0.005 | off | off | off | 0.4758 | +9.4 % |
+| UQ anchor nominal (cd_add = 0.002) | 0.002 | off | off | off | 0.4909 | +12.9 % |
+| + dynamic stall | 0.002 | on | off | off | 0.5011 | +15.2 % |
+| + dynamic stall + curvature | 0.002 | on | on | off | 0.4271 | -1.8 % |
+| Helmbold finite-span correction | 0.005 | off | off | on | 0.2966 | -31.8 % |
+<!-- END GENERATED: ham_reconciliation -->
+
+   **Finite-span check.** Ham's tabulated geometry gives H/c = 4.49. The
+   Ham paper itself is not in this repository, so the blade aspect ratio
+   is taken from that geometry and an AR = 3–6 scan is reported as well.
+   Applying the Helmbold correction at that AR gives a peak far below the
+   measured band (table below). The finite-span model is therefore
+   **over-correcting for Ham's rig**, not a plausible explanation of the
+   2-D over-prediction. The no-tip 2D peak remains the documented upper
+   bound, and the CI bias window is derived from the no-tip/corrected
+   ratio rather than fitted after the fact.
+
+<!-- BEGIN GENERATED: ham_finite_span -->
+| Blade AR (H/c) | Helmbold f_ar | Corrected peak Cp |
+|---|---|---|
+| 3.00 | 0.535 | 0.2354 |
+| 3.50 | 0.580 | 0.2598 |
+| 4.00 | 0.618 | 0.2800 |
+| 4.50 | 0.650 | 0.2969 |
+| 5.00 | 0.677 | 0.3112 |
+| 5.50 | 0.700 | 0.3234 |
+| 6.00 | 0.721 | 0.3340 |
+<!-- END GENERATED: ham_finite_span -->
 2. **Dynamic-stall sensitivity depends on the regime.** At the
    prescribed-pitch design point, turning the (uncalibrated) DS model off
    changes Cp by **≈2.2 %**; the `scripts/validate_ds_off.py` tolerance is

@@ -79,6 +79,10 @@ UQ_HIGH  = np.array([s[2] for s in UQ_SPEC])
 
 N_SAMPLES = 40
 SEED = 42
+# Cp below which a sample is counted as collapsed.  The Sharp-inspired
+# working branch is ~0.04-0.07 and the collapsed branch ~0.003-0.005, so the
+# exact threshold is not sensitive.
+COLLAPSE_CP = 0.02
 
 # Disk cache for UQ runs (interrupt-safe resume)
 CACHE_DIR = ".uq_cache"
@@ -143,6 +147,22 @@ def _cache_key(anchor_name: str, anchor_params: dict, uq_params: dict) -> str:
 
 def _cache_path(key: str) -> str:
     return os.path.join(CACHE_DIR, f"{key}.json")
+
+
+def _base_cm0(anchor_params: Dict[str, Any]) -> Dict[str, float]:
+    """Deterministic base case with physically plausible Cm = 0.
+
+    For a symmetric NACA 0012 the attached-flow Cm should be near zero; the
+    NeuralFoil table is noisy.  This run is the "physical Cm" scenario and is
+    reported alongside the UQ distribution, not used to condition it.
+    """
+    try:
+        r = create_sim_from_params({**anchor_params, "cm_scale": 0.0}).run()
+        return dict(cp=float(r["cp"]), tsr=float(r["tsr_eq"]),
+                    steady=bool(r.get("steady", True)))
+    except Exception as exc:  # pragma: no cover - diagnostic path
+        return dict(cp=float("nan"), tsr=float("nan"), steady=False,
+                    error=str(exc)[:120])
 
 
 def _load_from_cache(key: str) -> Optional[dict]:
@@ -324,6 +344,15 @@ def main():
         samples = [sample_to_params(unit[i]) for i in range(N_SAMPLES)]
         print(f"  Generated {len(samples)} LHS samples")
 
+    # Deterministic physical-Cm base case per anchor (Cm = 0).
+    print("  Base case with physical attached-flow Cm (cm_scale = 0):")
+    base_cm0 = {}
+    for name, p in ANCHORS.items():
+        base_cm0[name] = _base_cm0(p)
+        b = base_cm0[name]
+        print(f"    {name:<22s} Cp = {b['cp']:.4f}  TSR = {b['tsr']:.3f}")
+    print()
+
     # Build task list
     tasks = []
     for s_idx, uq in enumerate(samples):
@@ -373,9 +402,20 @@ def main():
         p5  = float(np.percentile(cps, 5))
         p95 = float(np.percentile(cps, 95))
         width = p95 - p5
-        summary[name] = dict(mean=m, median=med, p5=p5, p95=p95,
-                             std=float(np.std(cps)), n_ok=len(cps),
-                             n_fail=failures[name])
+        working = cps[cps >= COLLAPSE_CP]
+        summary[name] = dict(
+            mean=m,
+            all_mean=m,
+            working_mean=float(np.mean(working)) if len(working) else float("nan"),
+            median=med, p5=p5, p95=p95,
+            std=float(np.std(cps)), n_ok=len(cps),
+            n_fail=failures[name],
+            n_working=int(len(working)),
+            collapse_fraction=float(np.mean(cps < COLLAPSE_CP)),
+            collapse_cp_threshold=float(COLLAPSE_CP),
+            base_cm0_cp=float(base_cm0[name]["cp"]),
+            base_cm0_tsr=float(base_cm0[name]["tsr"]),
+        )
         print(f"{name:<22} {len(cps):>5} {failures[name]:>5} "
               f"{m:>8.4f} {med:>8.4f} {p5:>8.4f} {p95:>8.4f} {width:>8.4f}")
 
@@ -445,7 +485,7 @@ def main():
         ax.set_title(f"{name}  (N = {s['n_ok']})")
         ax.grid(alpha=0.3)
         ax.legend(fontsize=8, loc="upper left")
-    fig.suptitle("Uncertainty propagation — 12 sampled inputs (11 active)",
+    fig.suptitle("Uncertainty propagation — 13 sampled inputs (12 active)",
                  fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.96])
     out_png = os.path.join(_ROOT, "docs", "uncertainty.png")
@@ -462,6 +502,8 @@ def main():
             "method": "saltelli" if use_saltelli else "lhs",
             "parameters": UQ_SPEC,
             "summary": summary,
+            "base_cm0": base_cm0,
+            "collapse_cp_threshold": COLLAPSE_CP,
             "sobol": sobol_results,
             "raw": raw_rows,
         }, fh, indent=2)

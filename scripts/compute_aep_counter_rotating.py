@@ -27,9 +27,9 @@ This script explores a heuristic scenario model:
 4. Compares against single rotor baseline
 5. Integrates power curves against Weibull wind distribution
 
-The interaction factor is estimated using a heuristic composite of 
-momentum theory, assumed wake recovery, and an assumed channeling factor,
-calibrated to an empirical cap from external experiments:
+The interaction factor is estimated using a heuristic composite of
+momentum theory, assumed wake recovery, and an assumed channeling factor.
+It is capped by a literature value, not calibrated to a model of this pair:
 
   - Upstream rotor induction factor a from thrust coefficient Ct = 4a(1-a)
   - Assumed wake velocity recovery between rotors (exponential decay of deficit)
@@ -63,6 +63,7 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
+from compute_aep import U_RATED, rated_power_from_cp
 
 
 # ============================================================================
@@ -106,7 +107,6 @@ CUT_IN = 3.0         # m/s, cut-in wind speed
 CUT_OUT = 25.0       # m/s, cut-out wind speed
 RHO = 1.225          # kg/m^3, air density
 HOURS_YEAR = 8760.0  # hours/year
-P_RATED_W = 90000.0    # W, rated power for scale-up rotor (≈90 kW, based on peak power at U=12 m/s)
 ETA_DRIVETRAIN = 0.90 # drivetrain efficiency
 
 # Counter-rotating specific parameters
@@ -354,8 +354,15 @@ def main():
     # === SINGLE ROTOR BASELINE ===
     print("Computing single rotor baseline...")
     _, P_single = compute_power_curve(BASE, U_range, interaction_factor=0.0, is_upstream=True)
+    # Rating per design: two rotors, each rated at its Cp(U_RATED) power.
+    area = 2.0 * BASE['R'] * BASE['H']
+    i_rated = int(np.argmin(np.abs(U_range - U_RATED)))
+    cp_rated = (P_single[i_rated] /
+                (0.5 * RHO * area * U_range[i_rated] ** 3))
+    p_rated = 2.0 * rated_power_from_cp(BASE['R'], BASE['H'], cp_rated)
+    print(f"  Design rating (two rotors): {p_rated/1000:.2f} kW")
     aep_single, cf_single = integrate_aep(U_range, P_single, U_MEAN, K_WEIBULL,
-                                         CUT_IN, CUT_OUT, P_RATED_W)
+                                         CUT_IN, CUT_OUT, p_rated / 2.0)
     print(f"  Single rotor AEP: {aep_single:.1f} kWh/yr (CF: {cf_single*100:.1f}%)")
 
     # === COUNTER-ROTATING ROTORS ===
@@ -402,13 +409,13 @@ def main():
 
     # Calculate AEP for counter-rotating configuration
     aep_total, cf_total = integrate_aep(U_range, P_total, U_MEAN, K_WEIBULL,
-                                       CUT_IN, CUT_OUT, P_RATED_W)
+                                       CUT_IN, CUT_OUT, p_rated)
 
-    # Calculate individual rotor AEPs for reporting
+    # Calculate individual rotor AEPs for reporting (half the pair rating)
     aep_up, cf_up = integrate_aep(U_range, P_up, U_MEAN, K_WEIBULL,
-                                 CUT_IN, CUT_OUT, P_RATED_W)
+                                 CUT_IN, CUT_OUT, p_rated / 2.0)
     aep_down, cf_down = integrate_aep(U_range, P_down, U_MEAN, K_WEIBULL,
-                                     CUT_IN, CUT_OUT, P_RATED_W)
+                                     CUT_IN, CUT_OUT, p_rated / 2.0)
 
     print(f"  Upstream rotor AEP: {aep_up:.1f} kWh/yr (CF: {cf_up*100:.1f}%)")
     print(f"  Downstream rotor AEP: {aep_down:.1f} kWh/yr (CF: {cf_down*100:.1f}%)")
@@ -418,6 +425,33 @@ def main():
     f_min, f_max = interaction_factors.min(), interaction_factors.max()
     f_mean = interaction_factors.mean()
     print(f"\n  Interaction factor range: {f_min*100:.1f}% - {f_max*100:.1f}% (mean: {f_mean*100:.1f}%)")
+
+    # === SENSITIVITY: fixed interaction factor, not a headline gain ===
+    # The heuristic factor is the largest source of model-form uncertainty.
+    # Sweep it explicitly instead of presenting one number as a prediction.
+    print("\n  Sensitivity to a fixed downstream interaction factor:")
+    sensitivity = []
+    for f in (0.00, 0.04, 0.08, 0.12, 0.16):
+        P_d = []
+        for U in U_range:
+            U_eff = U * (1.0 + f)
+            res = run_single_rotor(BASE, U_eff)
+            if res['steady'] and res['cp'] > 0:
+                P_d.append(power_from_cp(res['cp'], U_eff, BASE['R'], BASE['H']))
+            else:
+                P_d.append(0.0)
+        aep_f, cf_f = integrate_aep(U_range, P_up + np.array(P_d),
+                                    U_MEAN, K_WEIBULL,
+                                    CUT_IN, CUT_OUT, p_rated)
+        gain_f = ((aep_f / aep_single) - 1.0) * 100.0 if aep_single > 0 else 0.0
+        sensitivity.append(dict(
+            interaction_factor=float(f),
+            aep_kWh=float(aep_f),
+            cf=float(cf_f),
+            gain_vs_single_percent=float(gain_f),
+        ))
+        print(f"    f = {f:.2f}  AEP = {aep_f:.1f} kWh/yr  "
+              f"gain vs single = {gain_f:+.1f}%")
 
     # Calculate improvement over single rotor
     if aep_single > 0:
@@ -557,7 +591,9 @@ def main():
             "mean_U": U_MEAN,
             "k_weibull": K_WEIBULL,
             "cut_in": CUT_IN,
-            "cut_out": CUT_OUT
+            "cut_out": CUT_OUT,
+            "rated_wind_speed": U_RATED,
+            "p_rated_W_pair": float(p_rated)
         },
         "single_rotor_baseline": {
             "aep_kWh": aep_single,
@@ -579,6 +615,7 @@ def main():
             "vs_single_rotor_improvement_percent": improvement_over_single,
             "vs_two_independent_rotors_improvement_percent": improvement_over_two
         },
+        "sensitivity_to_fixed_interaction_factor": sensitivity,
         "power_curves": {
             "U_range": U_range.tolist(),
             "P_single_W": P_single.tolist(),
