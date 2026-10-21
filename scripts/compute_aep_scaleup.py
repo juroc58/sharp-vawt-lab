@@ -228,11 +228,11 @@ def main():
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        # FIX: Place text close to the red dots so the arrow is short
+        # Curved arrow, placed close to the dots
         a.annotate("Free-running\noperating points", 
                    xy=(2.8, 0.35), 
-                   xytext=(3.5, 0.25), 
-                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
+                   xytext=(3.3, 0.25), 
+                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5, connectionstyle="arc3,rad=-0.2"),
                    bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3); a.legend(fontsize=9)

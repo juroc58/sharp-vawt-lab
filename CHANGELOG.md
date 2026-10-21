@@ -23,12 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **AEP figure annotations** (`docs/aep.png`, `docs/aep_scaleup.png`):
-  repositioned the free-running and bifurcation callouts next to the data
-  they describe, so the leader arrows are short and no longer cross the
-  plots. In `aep.png` the bifurcation callout now marks the actual low-TSR
-  dip at U = 5 m/s, Cp ≈ 0.368 (the previous 12.5 m/s coordinate belongs
-  to the branch-traced scale-up run, not this dataset, and was clipped
-  outside the axes). Plot-only change; no physics, polar, or golden change.
+  curved leader arrows for the free-running callouts in both figures,
+  placed close to the red operating points. `aep.png` Panel 2 now sets
+  explicit y-limits (0.34–0.42) and anchors the bifurcation callout at
+  the specified (12.5, 0.347) coordinate. Note: the base
+  `compute_aep.py` free-run sampling does not itself produce a sampled
+  point at U = 12.5, Cp = 0.347 (its curve stays near Cp ≈ 0.407 there);
+  that drop is present in the branch-traced `compute_aep_scaleup.py`
+  run. Plot-only change; no physics, polar, or golden change.
 
 ## [3.3.1] - 2026-10-20
 

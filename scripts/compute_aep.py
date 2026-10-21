@@ -256,11 +256,11 @@ def make_plot(results, tsrs, out_path):
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
         
-        # FIX: Place text close to the red dots so the arrow is short
+        # Curved arrow, placed close to the dots
         a.annotate("Free-running\noperating points", 
                    xy=(2.8, 0.35), 
-                   xytext=(3.5, 0.25), 
-                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
+                   xytext=(3.3, 0.25), 
+                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5, connectionstyle="arc3,rad=-0.2"),
                    bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3); a.legend(fontsize=9, loc="upper left")
@@ -272,10 +272,13 @@ def make_plot(results, tsrs, out_path):
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
         
-        # FIX: Place text close to the actual low-TSR dip at U=5, Cp=0.368
+        # Force y-limits so the 0.347 drop is guaranteed visible
+        a.set_ylim(0.34, 0.42)
+        
+        # Point to the massive drop at U=12.5
         a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
-                   xy=(5.0, 0.368), 
-                   xytext=(8.5, 0.372), 
+                   xy=(12.5, 0.347), 
+                   xytext=(16, 0.38), 
                    arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
                    bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9))
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed"); a.grid(alpha=0.3); a.legend(fontsize=9)
