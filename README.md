@@ -423,9 +423,9 @@ cannot affect Cp. Only twelve inputs are active — nine model constants that
 come from the source papers but were not fitted to this specific machine,
 plus the finite-span multiplier, the attached-flow Cm scale and the
 polar model-form variant (all model-form uncertainties, not constants).
-Saltelli sampling (N = 64,
-1664 runs per anchor) propagates that uncertainty through each headline
-case and yields first-order (S₁) and total-order (Sₜ) Sobol indices:
+Saltelli sampling (N = 64, 960 runs per anchor with thirteen inputs,
+first-order) propagates that uncertainty through each headline case and
+yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 
 <!-- BEGIN GENERATED: uq_params -->
 | Parameter | Low | High | Source of uncertainty |
@@ -502,17 +502,17 @@ symmetric section — a documented surrogate limitation
 (see `airfoil_polars/README.md`). The optimised-passive anchor is much
 less sensitive to Cm and is the more robust result.
 
-`tau_rev` (induction lag) dominates Ham's uncertainty (S₁ = 0.84), with
-`cd_add` second (S₁ = 0.17). Ham's raw samples span 0.456–0.518; the 90 %
-interval is [0.464, 0.512].
+`tau_rev` (induction lag) is the dominant first-order term for Ham, with
+`cd_add` second; the generated Sobol table and interval above give the
+current values.
 
 Every sample in all four anchors produced a finite, positive Cp, so no
 outlier was excluded (`n_fail = 0`). The lowest Sharp-inspired sample is
 0.0019, not a negative or NaN result.
 
-To reproduce: `python3 scripts/uncertainty.py --saltelli --saltelli-n 64
---saltelli-second-order` (~20 min on 4 cores; the result is cached in
-`.uq_cache/` so an interrupted run resumes).
+To reproduce: `python3 scripts/uncertainty.py --saltelli --saltelli-n 64`
+(~20 min on 4 cores; the result is cached in `.uq_cache/` so an interrupted
+run resumes).
 
 ## 🌪️ Turbulent-wind sensitivity
 
@@ -558,9 +558,9 @@ rather than "turbulence improves the machine."
 
 ### Which parameter drives the spread?
 
-Saltelli Sobol sensitivity indices (N = 64, 1664 runs per anchor) for each
-anchor. Runs in ~20 min on 4 cores (`scripts/uncertainty.py --saltelli
---saltelli-n 64 --saltelli-second-order`).
+Saltelli Sobol sensitivity indices (N = 64, 960 runs per anchor with
+thirteen inputs, first-order) for each anchor. Runs in ~20 min on 4 cores
+(`scripts/uncertainty.py --saltelli --saltelli-n 64`).
 
 <!-- BEGIN GENERATED: uq_sobol -->
 | Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
@@ -588,31 +588,34 @@ parameter interval.
 
 **Physical reading:**
 
-- **`ham_1979`**: prescribed pitch bypasses the dynamic-stall model, so the
-  surviving uncertainty is the wake/induction relaxation (`tau_rev`,
-  S₁ = 0.84) plus `cd_add` (0.14). This is the cleanest single-parameter
-  result.
-- **`sharp_cppc`**: separation lag `ds_Tf` S₁ = 0.43 (total-order 0.62)
-  and the finite-span multiplier S₁ = 0.41 (total-order 0.57) are nearly
-  tied; `cm_scale` S₁ = 0.05 (CI spans zero) is minor first-order but
-  has total-order 0.14.
-- **`optimised_passive`**: multiplier S₁ = 0.51 (total-order 0.80),
-  then `ds_Tf` (0.17).
-- **`scaleup`**: no first-order index is significant at N = 64; the
-  largest is `tip_loss_multiplier` S₁ = 0.19 (total-order 0.28), with
-  `c_scale_override` (total-order 0.32) and `cm_scale` (total-order
-  0.28) interaction-heavy. The old `ds_Knc`-dominated reading does not
-  survive `cm_scale` being sampled.
+- **`ham_1979`**: prescribed pitch bypasses the dynamic-stall model, so
+  the surviving uncertainty is the wake/induction relaxation (`tau_rev`,
+  S₁ = 0.77 ± 0.29) plus `cd_add` (S₁ = 0.17 ± 0.13). This is the
+  cleanest single-parameter result.
+- **`sharp_cppc`**: the finite-span multiplier has the largest first-order
+  term (S₁ = 0.44 ± 0.35, total-order 0.75 ± 0.27) but its first-order CI
+  spans zero; separation lag `ds_Tf` is next (S₁ = 0.25 ± 0.24,
+  total-order 0.44 ± 0.22) and the `polar_variant` model-form input is a
+  further first-order term (S₁ = 0.22 ± 0.15). `cm_scale` is small
+  first-order (0.01 ± 0.11) but has total-order 0.13 ± 0.10.
+- **`optimised_passive`**: the multiplier dominates (S₁ = 0.72 ± 0.28,
+  total-order 0.99 ± 0.26); the remaining total-order terms are the
+  separation lag (0.15) and the polar variant (0.14), both with wide CIs.
+- **`scaleup`**: the leading terms are `tip_loss_multiplier`
+  (S₁ = 0.30 ± 0.17), `cm_scale` (0.20 ± 0.18) and `ds_Knc`
+  (0.15 ± 0.13); `c_scale_override` is interaction-heavy (total-order
+  0.21 ± 0.37). No single parameter dominates, and the old
+  `ds_Knc`-only reading is not supported.
 
 
 **Actionable conclusion.** For the small rotors the single most valuable
 measurement is a low-aspect-ratio finite-span/tip-loss calibration for the
 actual rotor geometry; it would replace the ±15 % multiplier band that
-drives those anchors' variance. At the scale-up no single parameter is
-significant at N = 64, so no single measurement is clearly dominant there;
-a strut-drag measurement (`cd_add`) and a wake-induction relaxation
-measurement (`tau_rev`) are the next most useful after a tip-loss
-calibration.
+drives those anchors' variance. At the scale-up the leading terms are the
+tip-loss multiplier, `cm_scale` and `ds_Knc`, all with wide intervals; no
+single measurement is clearly dominant. A strut-drag measurement
+(`cd_add`) and a wake-induction relaxation measurement (`tau_rev`) are the
+next most useful after a tip-loss calibration.
 
 ## 📚 Deep Dive Details
 
@@ -949,8 +952,10 @@ maximum-power pitch schedule from first principles is not implemented. The
 prescribed-pitch optimiser searches a Fourier parametrisation instead.
 
 
-Uncertainty interactions. The Saltelli study (N=64, second-order) computes
-full Sobol S1/ST/S2 indices including parameter interactions. See `scripts/uncertainty_results.json` and the Uncertainty section.
+Uncertainty interactions. The Saltelli study (N = 64, first-order with
+thirteen inputs) computes S1/ST indices, including the total-order terms
+that absorb interactions. See `scripts/uncertainty_results.json` and the
+Uncertainty section.
 
 Model-form uncertainty. The model combines literature sources developed
 for different machines and flight regimes (lag-based Noll–Ham-style

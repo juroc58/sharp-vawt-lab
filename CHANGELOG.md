@@ -114,6 +114,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `scripts/robust_optimization.json`.
 
 ### Fixed
+- **README Sobol prose matched an old run.** The text still quoted 1664
+  second-order runs and the old `tau_rev`/`ds_Tf` index values. It now
+  states the actual N = 64, 960-run first-order Saltelli set (3840 runs
+  across four anchors) and points at the generated table instead of
+  repeating stale indices.
 - **`cm_scale = 0` now really means no pitching moment.** The dynamic-stall
   separated-Cm blend target (`copysign(0.05, -alpha)`) is multiplied by
   `cm_scale` as well as the static table Cm. With `cm_scale = 0` and a
