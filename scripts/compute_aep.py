@@ -255,15 +255,10 @@ def make_plot(results, tsrs, out_path):
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        
-        # Curved arrow, placed close to the dots
-        a.annotate("Free-running\noperating points", 
-                   xy=(2.8, 0.35), 
-                   xytext=(3.3, 0.25), 
-                   arrowprops=dict(arrowstyle="->", color="red", lw=1.5, connectionstyle="arc3,rad=-0.2"),
-                   bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
+        # No annotate, legend handles it.
     a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3); a.legend(fontsize=9, loc="upper left")
+    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3)
+    a.legend(fontsize=9, loc="upper left")
 
     # Panel 2: Cp vs U
     a = ax[1]
@@ -272,15 +267,14 @@ def make_plot(results, tsrs, out_path):
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
         
-        # Force y-limits so the 0.347 drop is guaranteed visible
+        # Force y-limits so the drop is always visible
         a.set_ylim(0.34, 0.42)
         
-        # Point to the massive drop at U=12.5
-        a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
-                   xy=(12.5, 0.347), 
-                   xytext=(16, 0.38), 
-                   arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
-                   bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9))
+        # Use ax.text instead of annotate. No arrows.
+        a.text(16, 0.38, "Bifurcation:\nRotor drops to\nlow-TSR branch", 
+               bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
+               ha="center", va="center")
+               
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
     # Panel 3: Power curve
