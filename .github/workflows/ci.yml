@@ -28,6 +28,10 @@ jobs:
         run: |
           python -m pytest tests/ -q
 
+      - name: Polar sanity report (warnings, not a gate)
+        run: |
+          python scripts/check_polars.py
+
       - name: Validate README in sync
         run: |
           python scripts/build_readme.py --check

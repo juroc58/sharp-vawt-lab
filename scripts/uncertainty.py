@@ -1,10 +1,11 @@
 """
 Uncertainty quantification for the Sharp cycloturbine model.
 
-Twelve inputs are sampled: nine uncalibrated model constants, the
-finite-span multiplier, and the attached-flow Cm scale are active
-(11 active inputs); the arm-drag multiplier is inert because every
-anchor sets arm_d = 0, so only 11 of the 12 enter the calculation.
+Thirteen inputs are sampled: nine uncalibrated model constants, the
+finite-span multiplier, the attached-flow Cm scale, the polar model-form
+variant, and the arm-drag multiplier (13 dimensions); the arm-drag
+multiplier is inert because every anchor sets arm_d = 0, so 12 of the 13
+enter the calculation.
 They are propagated with Latin hypercube sampling (default) or Saltelli
 sampling (for Sobol indices) through the four anchor cases documented in
 the README.
@@ -69,6 +70,7 @@ UQ_SPEC = [
     ("tip_loss_multiplier",       0.85,  1.15),    # residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)
     ("cm_scale",                  0.0,   1.0),     # scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
+    ("polar_variant",            0.0,   1.0),     # model form: 0 = neuralfoil table, 1 = smoothed_lowRe variant
     ("arm_cd",                   0.5,   1.5),     # arm drag coefficient multiplier (Geometry)
 ]
 UQ_NAMES = [s[0] for s in UQ_SPEC]
@@ -221,6 +223,13 @@ def run_one_task(args):
 
     try:
         params = {**anchor_params, **uq_params}
+        # Categorical model-form input: 0 = raw NeuralFoil table, 1 = the
+        # smoothed low-Re variant.  Keep the raw UQ row numeric so Sobol
+        # analysis can treat it as a 0/1 indicator.
+        if "polar_variant" in params:
+            params["polar_variant"] = ("smoothed_lowRe"
+                                       if float(params["polar_variant"]) >= 0.5
+                                       else "neuralfoil")
         r = create_sim_from_params(params).run()
         cp = float(r["cp"])
         if not np.isfinite(cp) or cp <= 0.0:

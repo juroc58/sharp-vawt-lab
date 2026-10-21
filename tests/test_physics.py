@@ -121,6 +121,23 @@ class TestCmDimensions:
         assert "nose-up" in prov["cm_convention"]
         assert "synthetic" in prov["cm_method"]
 
+    def test_smoothed_low_re_variant_caps_slope_only_at_low_re(self):
+        """The smoothed_lowRe variant is a documented model-form change."""
+        from vawt_core import PolarDatabase, _SMOOTH_LOW_RE_CAP
+        raw = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
+        smooth = PolarDatabase("airfoil_polars/naca0012",
+                               variant="smoothed_lowRe")
+        # Re=1e5 row is first in the sorted grid.
+        assert abs(raw.cla_re[0]) > _SMOOTH_LOW_RE_CAP
+        assert abs(smooth.cla_re[0]) <= _SMOOTH_LOW_RE_CAP * 1.001
+        # The highest-Re row is untouched.
+        import numpy as np
+        assert np.array_equal(smooth.Cl[-1], raw.Cl[-1])
+        # The low-Re Cl dip at 12 deg is removed (monotone up to 20 deg).
+        ag = np.degrees(smooth.alpha_grid)
+        m = (ag >= 0.0) & (ag <= 20.0)
+        assert np.all(np.diff(smooth.Cl[0, m]) >= -1e-9)
+
     def test_cm_moment_dimensions(self):
         """Cm moment per unit span is independent of H (blade height).
 

@@ -439,6 +439,7 @@ class MassProps:
 @dataclass(frozen=True)
 class AeroConfig:
     polar_dir: str = "airfoil_polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
+    polar_variant: str = "neuralfoil"    # "neuralfoil" or "smoothed_lowRe" model-form variant
     use_dynamic_stall: bool = True
     use_tip_loss: bool = True           # finite-span correction (lift slope + induced drag)
     use_dmst: bool = True
@@ -501,6 +502,14 @@ _CLA = [5.0, 5.5, 5.9, 6.06, 6.06]        # per rad
 _CLMAX = [0.80, 0.90, 1.15, 1.40, 1.50]
 _CD0 = [0.020, 0.015, 0.010, 0.0075, 0.0065]
 
+# Model-form variants for the CSV polars.  "neuralfoil" is the committed
+# table.  "smoothed_lowRe" is a sensitivity variant, not data: for Re <= 1e5
+# it caps the attached lift magnitude by a 2*pi*1.1 slope line and removes
+# the laminar-bubble dip by enforcing monotone Cl up to 20 deg.
+POLAR_VARIANTS = ("neuralfoil", "smoothed_lowRe")
+_SMOOTH_LOW_RE_CAP = 2.0 * PI * 1.1
+_SMOOTH_LOW_RE_MAX_RE = 1.0e5
+
 
 def surrogate_cla(Re):
     return float(np.interp(math.log10(max(Re, 1.0)), _RE_PTS, _CLA))
@@ -524,7 +533,14 @@ def surrogate_polar(Re, alpha):
 class PolarDatabase:
     """Static polar tables (Cl, Cd, Cm over log Re x alpha)."""
 
-    def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None):
+    def __init__(self, polar_dir: str = "", geo: Optional[Geometry] = None,
+                 variant: str = "neuralfoil"):
+        if variant not in POLAR_VARIANTS:
+            raise ValueError(
+                f"PolarDatabase: unknown polar variant {variant!r}; "
+                f"choose one of {POLAR_VARIANTS}"
+            )
+        self.variant = variant
         # Resolve relative polar paths against the module location, never the
         # process working directory.  A script launched from scripts/ must
         # find the same tables as one launched from the repo root.
@@ -613,6 +629,8 @@ class PolarDatabase:
         self.Cl = np.array(cls_)[o]
         self.Cd = np.array(cds)[o]
         self.Cm = np.array(cms)[o]
+        if self.variant == "smoothed_lowRe":
+            self._apply_smoothed_low_re(np.array(res)[o])
         sel = np.abs(ag) <= 4.0
         self.cla_re = np.array([np.polyfit(self.alpha_grid[sel], self.Cl[r][sel], 1)[0]
                                 for r in range(len(res))])
@@ -628,6 +646,36 @@ class PolarDatabase:
                                      for i in range(self.Cm.shape[1])] for l in lg])
                 self.cla_re = np.interp(lg, self.logRe_grid, self.cla_re)
                 self.logRe_grid = lg
+
+    def _apply_smoothed_low_re(self, re_rows):
+        """Cap the low-Re attached lift and remove the bubble kink.
+
+        This is a model-form sensitivity variant, NOT data.  For each table
+        with Re <= 1e5 and |alpha| <= 20 deg:
+
+        * the lift magnitude is capped by ``2*pi*1.1 * sin(a) * cos(a)``;
+        * the remaining curve is made monotone in |alpha| from 0 to 20 deg,
+          which removes the NeuralFoil dip at 12 deg (the laminar-bubble
+          kink) while keeping the original peak.
+
+        Re > 1e5 rows and the drag/moment columns are untouched.
+        """
+        ag = np.degrees(self.alpha_grid)
+        for r, Re in enumerate(re_rows):
+            if Re > _SMOOTH_LOW_RE_MAX_RE:
+                continue
+            for sgn, mask in ((1.0, (ag >= 0.0) & (ag <= 20.0)),
+                              (-1.0, (ag < 0.0) & (ag >= -20.0))):
+                idx = np.where(mask)[0]
+                if len(idx) == 0:
+                    continue
+                order = idx[np.argsort(np.abs(ag[idx]))]
+                a = np.radians(np.abs(ag[order]))
+                vals = sgn * self.Cl[r, order]
+                cap = _SMOOTH_LOW_RE_CAP * np.sin(a) * np.cos(a)
+                vals = np.minimum(vals, cap)
+                vals = np.maximum.accumulate(vals)
+                self.Cl[r, order] = sgn * vals
 
     def _finish(self):
         self.Cl = np.ascontiguousarray(self.Cl, dtype=np.float64)
@@ -656,7 +704,8 @@ class CycloturbineSim:
         self.xm = 0.50 * geo.c - self.sp_len
         self.xb = -self.sp_len + mass.xbcg * geo.c
         self._resolve_balance()
-        self.polar_db = polar_db or PolarDatabase(aero.polar_dir, geo)
+        self.polar_db = polar_db or PolarDatabase(aero.polar_dir, geo,
+                                                  variant=aero.polar_variant)
         self.wstop = aero.wstop
         self.win = math.radians(aero.win_deg)
         self.ks = self.Ip * self.wstop ** 2

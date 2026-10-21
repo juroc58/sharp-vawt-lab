@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`scripts/check_polars.py`** prints a warning report (not a CI failure)
+  for attached lift slopes above `1.15*2*pi`, Cl non-monotonicity / the
+  low-Re bubble kink before 20 deg, and Cm sign changes. CI runs it after
+  the test suite.
+- **`polar_variant`** (`"neuralfoil"` default, `"smoothed_lowRe"`) on
+  `AeroConfig`. The smoothed variant caps the Re <= 1e5 attached lift by a
+  `2*pi*1.1` slope line and removes the 12 deg bubble dip by enforcing
+  monotone Cl to 20 deg. It is documented as a model-form sensitivity
+  variant, not data. It is also a categorical (0/1) UQ input.
 - **`vawt_presets.py`**: named machines (`sharp_baseline`, `ham_1979`,
   `sharp_cppc`, `optimised_passive`, `scaleup`) now live in an explicit
   `PRESETS` dict. The dataclass defaults are a neutral R = 0.6 m,
@@ -17,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Regression goldens are unchanged.
 
 ### Changed
+- **Polar provenance docs**: NeuralFoil is documented as least reliable
+  post-stall; `n_crit = 9` is a clean-tunnel value and rotor blades in
+  turbulence usually have a lower effective `n_crit`. `provenance.json`
+  records this note. Deep-stall amplitudes are named constants
+  (`DEEP_STALL_*` in `scripts/gen_real_polars.py`) marked
+  provisional/unverified, not a fit to data.
 - **Ham 1979 framing**: reframed from "reproduction"/"validation" to a
   documented 2D upper-bound comparison. The static-only peak (Cp ≈ 0.476 at
   TSR 2.5) is ~+9 % above Ham's 3D measured band midpoint (0.435) and above

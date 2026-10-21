@@ -10,9 +10,14 @@ Method
 * ``20 deg < |alpha| < 45 deg``: smoothstep blend between the NeuralFoil value
   at 20 deg and a flat-plate deep-stall model at 45 deg.
 * ``|alpha| >= 45 deg``: flat-plate deep-stall model,
-  ``CL = 0.65 sin(2a)``, ``CD = 1.7 sin^2(a)``, anchored to the
+  ``CL = 0.65 sin(2a)``, ``CD = 1.66 sin^2(a) + 0.02``, anchored to the
   Sheldahl & Klimas (1981) SAND80-2114 trends (CD(90 deg) ~ 1.7,
-  CD(150 deg) ~ 0.4, CL(120-150 deg) ~ -0.56).
+  CD(150 deg) ~ 0.4, CL(120-150 deg) ~ -0.56).  The amplitudes are named
+  constants in this file and are provisional/unverified, not a fit to
+  digitised data in this repository.
+* NeuralFoil is a surrogate trained mostly on XFOIL; it is least reliable
+  post-stall.  ``n_crit = 9`` is a clean-tunnel (e^9) value; rotor blades
+  in atmospheric turbulence usually see a lower effective ``n_crit``.
 * ``Cm``: NeuralFoil's ``CM`` output for ``|alpha| <= 20 deg``, blended to
   the synthetic Abbott & von Doenhoff trend through ``20 < |alpha| < 45 deg``
   and used alone in deep stall. NeuralFoil reports the quarter-chord moment
@@ -56,6 +61,15 @@ ALPHA_ATTACHED_LIMIT = 20.0
 ALPHA_DEEP_STALL = 45.0
 N_CRIT = 9.0          # standard wind-tunnel / e^9 transition criterion
 MODEL_SIZE = "xlarge"
+
+# Flat-plate deep-stall constants.  PROVISIONAL, UNVERIFIED: these are
+# literature-typical flat-plate trends anchored to the Sheldahl & Klimas
+# (1981) SAND80-2114 values quoted in the module docstring, not a fit to
+# digitised data in this repository.  Change them only with a source.
+DEEP_STALL_CL_AMP = 0.65       # CL = amp * sin(2*alpha)
+DEEP_STALL_CD_AMP = 1.66       # CD = amp * sin^2(alpha) + offset
+DEEP_STALL_CD_OFFSET = 0.02
+DEEP_STALL_CM_AMP = -0.05      # synthetic nose-down moment in deep stall
 
 
 # ---------------------------------------------------------------------------
@@ -165,12 +179,16 @@ def _smoothstep(t):
 
 
 def _deep_stall(abs_deg):
-    """Flat-plate deep-stall coefficients, SAND80-2114-anchored."""
+    """Flat-plate deep-stall coefficients, SAND80-2114-anchored.
+
+    The amplitudes are provisional/unverified literature-typical values (see
+    the module constants); they are not fitted to measured data here.
+    """
     a = math.radians(abs_deg)
-    cl = 0.65 * math.sin(2.0 * a)
-    cd = 1.66 * math.sin(a) ** 2 + 0.02
+    cl = DEEP_STALL_CL_AMP * math.sin(2.0 * a)
+    cd = DEEP_STALL_CD_AMP * math.sin(a) ** 2 + DEEP_STALL_CD_OFFSET
     # Synthetic moment: near zero attached, nose-down through the stall band.
-    cm = -0.05 * math.sin(a) ** 2
+    cm = DEEP_STALL_CM_AMP * math.sin(a) ** 2
     return cl, cd, cm
 
 
@@ -274,8 +292,9 @@ def main():
         method=(
             "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; "
             "smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; "
-            "flat-plate model beyond. CD(90 deg)~1.7, CD(150 deg)~0.4, "
-            "CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981)."
+            "flat-plate model beyond. CD(90 deg)~1.66, CD(150 deg)~0.4, "
+            "CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981). "
+            "Deep-stall amplitudes are provisional/unverified."
         ),
         cm_method=(
             "NeuralFoil CM for |alpha|<=20 deg (quarter-chord, positive "
@@ -288,6 +307,11 @@ def main():
         ),
         neuralfoil_version=nf_version,
         n_crit=N_CRIT,
+        n_crit_note=(
+            "n_crit=9 is a clean-tunnel e^9 transition value. Rotor blades "
+            "in atmospheric turbulence usually have a lower effective n_crit, "
+            "so these attached-flow polars are optimistic for field operation."
+        ),
         model_size=MODEL_SIZE,
         aerosandbox_shim=shimmed,
         cst_fit_max_error_chord=fit_err,

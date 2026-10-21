@@ -1,10 +1,11 @@
 {
   "generator": "scripts/gen_real_polars.py",
-  "method": "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; flat-plate model beyond. CD(90 deg)~1.7, CD(150 deg)~0.4, CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981).",
+  "method": "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg; smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; flat-plate model beyond. CD(90 deg)~1.66, CD(150 deg)~0.4, CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981). Deep-stall amplitudes are provisional/unverified.",
   "cm_method": "NeuralFoil CM for |alpha|<=20 deg (quarter-chord, positive nose-up); smoothstep to synthetic Abbott & von Doenhoff trend for 20<|alpha|<45 deg; synthetic trend beyond. Not measured.",
   "cm_convention": "Positive Cm is nose-up about the quarter chord, matching the solver's Qa_cm = q*Cm*c term. Negative alpha uses odd symmetry.",
   "neuralfoil_version": "0.3.3",
   "n_crit": 9.0,
+  "n_crit_note": "n_crit=9 is a clean-tunnel e^9 transition value. Rotor blades in atmospheric turbulence usually have a lower effective n_crit, so these attached-flow polars are optimistic for field operation.",
   "model_size": "xlarge",
   "aerosandbox_shim": true,
   "cst_fit_max_error_chord": 0.0001368347882649435,

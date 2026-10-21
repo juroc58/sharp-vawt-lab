@@ -78,7 +78,32 @@ generator.
    indicative and compare against measured low-Re NACA 0012 data before
    using them quantitatively.
 
-4. **Reynolds interpolation** uses a bilinear fit in (log Re, α). That is
+   `scripts/check_polars.py` prints a warning report for this pattern
+   (attached slope > 1.15·2π, non-monotone Cl before stall, Cm sign
+   changes). It is deliberately not a CI failure.
+
+4. **Post-stall reliability and `n_crit`.** NeuralFoil is a surrogate trained
+   mostly on XFOIL; it is least reliable after stall. The tables use
+   `n_crit = 9`, a clean-tunnel e⁹ transition value. Rotor blades in
+   atmospheric turbulence usually have a lower effective `n_crit`, so the
+   attached-flow polars are optimistic for field operation. `n_crit` is
+   recorded in `provenance.json`.
+
+5. **`polar_variant="smoothed_lowRe"` is a model-form sensitivity option,
+   not data.** For tables with Re ≤ 1 × 10⁵ and |α| ≤ 20°, it caps the lift
+   magnitude by `2π·1.1·sin(α)cos(α)` and then enforces monotone Cl in
+   |α| from 0 to 20°, removing the 12° bubble dip. It leaves Re > 10⁵ and
+   the Cd/Cm columns unchanged. It exists so the UQ can test how much a
+   result depends on the low-Re surrogate artefact; the default remains
+   `"neuralfoil"` (raw table).
+
+6. **Deep-stall constants are provisional.** The flat-plate amplitudes
+   (`CL = 0.65 sin 2α`, `CD = 1.66 sin²α + 0.02`, synthetic Cm) are named
+   constants in `scripts/gen_real_polars.py`. They are literature-typical
+   trends anchored to Sheldahl & Klimas (1981) SAND80-2114, not a fit to
+   digitised data in this repository, and are marked provisional/unverified.
+
+7. **Reynolds interpolation** uses a bilinear fit in (log Re, α). That is
    standard but hides the real Re-dependent shape changes in the stall band.
 
 ## To use real data
