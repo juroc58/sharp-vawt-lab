@@ -253,10 +253,6 @@ def make_plot(results, tsrs, out_path):
     a = ax[0]
     cp_tsr = medfilt(results['passive']['cp_tsr'], 3)
     a.plot(tsrs, cp_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
-    if fr:
-        tsr_pts = [f['tsr_eq'] for f in fr]
-        cp_pts = [f['cp'] for f in fr]
-        a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
     a.axhline(0, color="k", lw=0.5)
     a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3)
     a.legend(fontsize=9, loc="upper left")

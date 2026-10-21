@@ -23,15 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **AEP figure annotations and smoothing** (`docs/aep.png`,
-  `docs/aep_scaleup.png`): removed all `annotate`/leader arrows. Panel 1
-  identifies the free-running operating points through its legend in both
-  figures. A 3-point median filter (`scipy.signal.medfilt`) is now applied
-  to the plotted Cp(TSR) and free-running Cp(U) series to suppress
-  single-sample transients at TSR = 3.25 and U = 4. Panel 2 uses a static
-  `ax.text` box at (16, 0.38) with no arrow, y-limits fixed to 0.34–0.42,
-  and the box is drawn only when the smoothed curve has a genuine drawdown
-  greater than 0.03 Cp (so it appears in the branch-traced scale-up figure
-  but not in the flat base curve).
+  `docs/aep_scaleup.png`): removed the red "free-running operating points"
+  scatter from Panel 1 in both figures; Panel 1 now shows only the
+  fixed-rpm Cp(TSR) curve. A 3-point median filter
+  (`scipy.signal.medfilt`) is applied to the plotted Cp(TSR) and
+  free-running Cp(U) series to suppress single-sample transients at
+  TSR = 3.25 and U = 4. Panel 2 uses a static `ax.text` box at
+  (16, 0.38) with no arrow, y-limits fixed to 0.34–0.42, and the box is
+  drawn only when the smoothed curve has a genuine drawdown greater than
+  0.03 Cp (so it appears in the branch-traced scale-up figure but not in
+  the flat base curve).
 
   The filter is applied **inside the plotting code only**: JSON outputs,
   AEP integrals, and regression goldens are unchanged. The unfiltered
