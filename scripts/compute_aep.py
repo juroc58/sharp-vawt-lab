@@ -248,41 +248,43 @@ def make_plot(results, tsrs, out_path):
     R_val = 2.7179
     fr = results['passive']['free_results']
 
-    # Panel 1
+    # Panel 1: Cp vs TSR
     a = ax[0]
     a.plot(tsrs, results['passive']['cp_tsr'], "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
     if fr:
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        # FIX: Place text at bottom left (x=1.2, y=0.15)
+        
+        # FIX: Place text close to the red dots so the arrow is short
         a.annotate("Free-running\noperating points", 
-                   xy=(tsr_pts[0], cp_pts[0]), 
-                   xytext=(1.2, 0.15),
+                   xy=(2.8, 0.35), 
+                   xytext=(3.5, 0.25), 
                    arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
                    bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
     a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3); a.legend(fontsize=9)
+    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3); a.legend(fontsize=9, loc="upper left")
 
-    # Panel 2
+    # Panel 2: Cp vs U
     a = ax[1]
     if fr:
         Us  = np.array([f['U'] for f in fr])
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        # FIX: Point specifically to the drop at U=12.5, Cp=0.347. Place text at x=16, y=0.37
+        
+        # FIX: Place text close to the actual low-TSR dip at U=5, Cp=0.368
         a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
-                   xy=(12.5, 0.347), 
-                   xytext=(16, 0.37),
+                   xy=(5.0, 0.368), 
+                   xytext=(8.5, 0.372), 
                    arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
                    bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9))
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed"); a.grid(alpha=0.3); a.legend(fontsize=9)
 
-    # Panel 3
+    # Panel 3: Power curve
     a = ax[2]
     a.plot(results['passive']['U'], results['passive']['P'], "-", color=col_passive, lw=2.0, label="passive CPPC, k_load")
     a.plot(results['fixed']['U'], results['fixed']['P'], "--", color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("electrical power [W]"); a.set_title("Power curve"); a.grid(alpha=0.3); a.legend(fontsize=9); a.set_xlim(CUT_IN, CUT_OUT)
+    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("electrical power [W]"); a.set_title("Power curve"); a.grid(alpha=0.3); a.legend(fontsize=9, loc="upper left"); a.set_xlim(CUT_IN, CUT_OUT)
 
     fig.suptitle(f"AEP — Scale-up CPPC, R = {R_val:.2f} m", fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])

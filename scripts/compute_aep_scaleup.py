@@ -228,10 +228,10 @@ def main():
         tsr_pts = [f['tsr_eq'] for f in fr]
         cp_pts = [f['cp'] for f in fr]
         a.scatter(tsr_pts, cp_pts, color='red', zorder=5, label='free-running operating points')
-        # FIX: Place text at bottom left (x=1.2, y=0.15)
+        # FIX: Place text close to the red dots so the arrow is short
         a.annotate("Free-running\noperating points", 
-                   xy=(tsr_pts[0], cp_pts[0]), 
-                   xytext=(1.2, 0.15),
+                   xy=(2.8, 0.35), 
+                   xytext=(3.5, 0.25), 
                    arrowprops=dict(arrowstyle="->", color="red", lw=1.5),
                    bbox=dict(boxstyle="round", fc="white", ec="red", alpha=0.9))
     a.axhline(0, color="k", lw=0.5)
@@ -243,10 +243,10 @@ def main():
         Us  = np.array([f['U'] for f in fr])
         cps = np.array([f['cp'] for f in fr])
         a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-        # FIX: Point specifically to the drop at U=12.5, Cp=0.347. Place text at x=16, y=0.37
+        # FIX: Place text right above the drop (x=16, y=0.38)
         a.annotate("Bifurcation:\nRotor drops to\nlow-TSR branch", 
                    xy=(12.5, 0.347), 
-                   xytext=(16, 0.37),
+                   xytext=(16, 0.38),
                    arrowprops=dict(arrowstyle="->", color="black", lw=1.5),
                    bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9))
     a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (branch traced)"); a.grid(alpha=0.3); a.legend(fontsize=9)
