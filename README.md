@@ -142,9 +142,10 @@ solves the counterweight position from the equilibrium (d_cw = −0.31,
 behind the pivot) also runs cleanly: Cp = 0.128, TSR = 1.76, no stops.
 That is not Sharp's CPPC
 regime. The light-counterweight anchor (m_c = 0.002 kg) survives at
-Cp = 0.067 deterministically (UQ mean 0.048), but it sits only about 4 %
-above the collapse threshold; the Sharp-like mass pushes the offset
-designs over it.
+Cp = 0.067 deterministically; its UQ all-sample mean is 0.033 and its
+working-branch mean is 0.095, because most samples collapse. It sits only
+about 4 % above the collapse threshold; the Sharp-like mass pushes the
+offset designs over it.
 
 `scripts/passive_sharp.py` sweeps counterweight mass and offset. The
 offset sweep is meaningful only with `balance = 0` (the default
@@ -524,9 +525,9 @@ length scale L = 30 m (von Kármán spectrum with √0.47 variance scaling). See
 <!-- BEGIN GENERATED: aep_turbulent -->
 | | AEP | CF |
 |---|---|---|
-| Steady wind | 16885.7 kWh/yr | 12.85 % |
-| Turbulent wind (I = 12 %) | 18132.9 kWh/yr | 13.80 % |
-| **Effect** | **+7.4 %** | **+0.95 pp** |
+| Steady wind | 15606.0 kWh/yr | 20.82 % |
+| Turbulent wind (I = 12 %) | 16633.4 kWh/yr | 22.20 % |
+| **Effect** | **+6.6 %** | **+1.37 pp** |
 <!-- END GENERATED: aep_turbulent -->
 
 ### Why turbulence gives a gain, not a loss

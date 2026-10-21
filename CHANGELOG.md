@@ -84,8 +84,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ~2 %. Scale-up AEP therefore changes from 17.26 to 15.49 MWh/yr: the
   lower rating clips power above 12 m/s. The fair rigid baseline is
   14.15 MWh/yr with the same rule, so the passive-vs-rigid gain is +10.6 %
-  (was +13.9 %). These are mandated rating/AEP changes, not physics
-  changes; the Cp curves are unchanged except for the phase average below.
+  (was +13.9 %). The same per-design rule replaces the fixed 15 kW rating
+  in `compute_aep_turbulent.py` (8.56 kW) and the 90 kW pair rating in the
+  counter-rotating scenario; turbulent AEP becomes 15.61 MWh/yr steady and
+  16.63 MWh/yr with turbulence. These are mandated rating/AEP changes, not
+  physics changes; the Cp curves are unchanged except for the phase average
+  below.
 - **Fixed-rpm Cp(TSR) is phase-averaged.** A single `psi0 = 0` run gave a
   narrow TSR = 3.25 maximum (Cp 0.4122) that fell to 0.3479 at `psi0 =
   120°/240°`; this is an initial-phase limit-cycle artefact, not a

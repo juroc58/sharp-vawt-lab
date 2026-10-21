@@ -24,6 +24,7 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
+from compute_aep import U_RATED, rated_power_from_cp
 
 
 # ----------------------------------------------------------------------------
@@ -52,7 +53,6 @@ CUT_IN         = 3.0
 CUT_OUT        = 25.0
 RHO            = 1.225
 HOURS_YEAR     = 8760.0
-P_RATED_W      = 15000.0
 ETA_DRIVETRAIN = 0.90
 
 TURB_I  = 0.12
@@ -132,7 +132,7 @@ def main():
     print(f"  Turbulence     : I = {TURB_I*100:.0f} %, L = {TURB_L:.0f} m")
     print(f"  Realisations   : {N_SEEDS} per wind speed")
     print(f"  Wind resource  : Weibull k = {K_WEIBULL}, mean U = {U_MEAN} m/s")
-    print(f"  Rated P        : {P_RATED_W} W, drivetrain eta = {ETA_DRIVETRAIN:.2f}")
+    print(f"  Drivetrain eta : {ETA_DRIVETRAIN:.2f}")
     print()
 
     steady_rows = []      # (U, P, cp, tsr)
@@ -174,16 +174,23 @@ def main():
     U_t = np.array([r[0] for r in turb_rows])
     P_t = np.array([r[1] for r in turb_rows])
 
+    # Per-design rating: mechanical power at U_RATED using this rotor's Cp.
+    i_rated = int(np.argmin(np.abs(U_s - U_RATED)))
+    cp_rated = float(steady_rows[i_rated][2])
+    p_rated = rated_power_from_cp(BASE['R'], BASE['H'], cp_rated)
+    print(f"  Rated P        : {p_rated:.0f} W at U = {U_RATED:.1f} m/s "
+          f"(Cp = {cp_rated:.4f}), eta = {ETA_DRIVETRAIN:.2f}")
+
     U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
-    P_s_g = np.minimum(np.interp(U_grid, U_s, P_s) * ETA_DRIVETRAIN, P_RATED_W)
-    P_t_g = np.minimum(np.interp(U_grid, U_t, P_t) * ETA_DRIVETRAIN, P_RATED_W)
+    P_s_g = np.minimum(np.interp(U_grid, U_s, P_s) * ETA_DRIVETRAIN, p_rated)
+    P_t_g = np.minimum(np.interp(U_grid, U_t, P_t) * ETA_DRIVETRAIN, p_rated)
 
     pdf = weibull_pdf(U_grid, U_MEAN, K_WEIBULL)
     aep_s = float(trapezoid(P_s_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
     aep_t = float(trapezoid(P_t_g * pdf, U_grid) * HOURS_YEAR / 1000.0)
 
-    cf_s = aep_s * 1000.0 / (P_RATED_W * HOURS_YEAR)
-    cf_t = aep_t * 1000.0 / (P_RATED_W * HOURS_YEAR)
+    cf_s = aep_s * 1000.0 / (p_rated * HOURS_YEAR)
+    cf_t = aep_t * 1000.0 / (p_rated * HOURS_YEAR)
     # Signed turbulence effect on AEP (positive = turbulence increases AEP).
     effect = (aep_t - aep_s) / aep_s * 100.0 if aep_s > 0 else 0.0
 
@@ -264,7 +271,9 @@ def main():
             "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
             "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                      "cut_in": CUT_IN, "cut_out": CUT_OUT,
-                     "p_rated_W": P_RATED_W, "eta_drivetrain": ETA_DRIVETRAIN},
+                     "p_rated_W": float(p_rated),
+                     "rated_wind_speed": U_RATED,
+                     "eta_drivetrain": ETA_DRIVETRAIN},
             "steady":    {"aep_kWh": aep_s, "cf": cf_s},
             "turbulent": {"aep_kWh": aep_t, "cf": cf_t},
             "turbulence_effect_pct": effect,

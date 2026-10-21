@@ -9,18 +9,19 @@
     "k_weibull": 2.0,
     "cut_in": 3.0,
     "cut_out": 25.0,
-    "p_rated_W": 15000.0,
+    "p_rated_W": 8554.840127092848,
+    "rated_wind_speed": 12.0,
     "eta_drivetrain": 0.9
   },
   "steady": {
-    "aep_kWh": 16885.73265008776,
-    "cf": 0.12850633675865875
+    "aep_kWh": 15606.0039316674,
+    "cf": 0.20824553956228625
   },
   "turbulent": {
-    "aep_kWh": 18132.866906218067,
-    "cf": 0.1379974650397113
+    "aep_kWh": 16633.4450750875,
+    "cf": 0.2219556498645045
   },
-  "turbulence_effect_pct": 7.385727832921864,
+  "turbulence_effect_pct": 6.583627352132327,
   "per_wind_speed": [
     {
       "U": 3.0,
