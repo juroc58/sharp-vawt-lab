@@ -810,7 +810,7 @@ def block_robust_optimization():
     d = DATA["rob"]["designs"]
     labels = {"passive": "Optimised passive (R = 0.60 m)",
               "scaleup": "Scale-up (R = 2.72 m)"}
-    out = ["| Design | Nominal Cp | Scenario mean | Scenario p10 | Bound-active parameters |",
+    out = ["| Design | Nominal Cp | UQ-scenario mean | UQ-scenario p10 | Bound-active parameters |",
            "|---|---|---|---|---|"]
     for key in ("passive", "scaleup"):
         r = d[key]

@@ -175,16 +175,17 @@ residual winner's-curse effect. Only about 1 % of samples fall on the
 collapsed branch, so this design is much less bimodal than the
 Sharp-inspired one.
 
-The robust objective below maximises the **scenario mean**, not the nominal
-Cp, over a small explicit scenario set (`cm_scale = 0`, a stronger tip-loss
-multiplier, both, and a higher parasitic drag). It starts from the stored
-solution and runs a bounded local refinement. The table reports nominal Cp,
-scenario mean and scenario p10, plus any parameter sitting on a bound.
+The robust objective below maximises the **UQ-scenario mean**, not the
+nominal Cp, over a small explicit scenario set (`cm_scale = 0`, a stronger
+tip-loss multiplier, both, and a higher parasitic drag). It starts from the
+stored solution and runs a bounded local refinement. The table reports
+nominal Cp, UQ-scenario mean and UQ-scenario p10, plus any parameter
+sitting on a bound.
 The full global optimisers were not re-run; this is a local robust
 re-optimisation, and the scenario set is a subset of the UQ ranges.
 
 <!-- BEGIN GENERATED: robust_optimization -->
-| Design | Nominal Cp | Scenario mean | Scenario p10 | Bound-active parameters |
+| Design | Nominal Cp | UQ-scenario mean | UQ-scenario p10 | Bound-active parameters |
 |---|---|---|---|---|
 | Optimised passive (R = 0.60 m) | 0.270 | 0.262 | 0.254 | none |
 | Scale-up (R = 2.72 m) | 0.417 | 0.409 | 0.400 | ar (lower) |
