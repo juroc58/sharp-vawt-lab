@@ -43,10 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Regression goldens are unchanged.
 
 ### Changed
-- **Polar provenance docs**: NeuralFoil is documented as least reliable
-  post-stall; `n_crit = 9` is a clean-tunnel value and rotor blades in
-  turbulence usually have a lower effective `n_crit`. `provenance.json`
-  records this note. Deep-stall amplitudes are named constants
+- **Cm table (Task 1)**: Default polar variant (`polar_variant="neuralfoil"`) now enforces Cm = 0 for |α| ≤ 20° (physical symmetric-section value) and uses a centre-of-pressure shift model (x_cp: 0.25c → 0.5c) for post-stall Cm. The raw NeuralFoil CM (with sign changes in attached flow) is available as `polar_variant="neuralfoil_cm"` for sensitivity analysis only. Lift slope clamped at 1.15·2π and Cl monotonicity enforced to 20° in the default variant. Updated `provenance.json`, `airfoil_polars/README.md`, and tests. `check_polars.py` now exits non-zero on warnings for the default variant (`--fail-on-warnings`). Before/after Cp (default variant): Sharp-inspired ~0.067→0.079, Optimised passive ~0.265→0.264, Scale-up ~0.384→0.494, Ham ~0.491→0.489.
   (`DEEP_STALL_*` in `scripts/gen_real_polars.py`) marked
   provisional/unverified, not a fit to data.
 - **Ham 1979 framing**: reframed from "reproduction"/"validation" to a

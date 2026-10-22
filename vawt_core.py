@@ -438,8 +438,8 @@ class MassProps:
 
 @dataclass(frozen=True)
 class AeroConfig:
-    polar_dir: str = "airfoil_polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd); else surrogate
-    polar_variant: str = "neuralfoil"    # "neuralfoil" or "smoothed_lowRe" model-form variant
+    polar_dir: str = "airfoil_polars/naca0012"   # folder of Re_<number>.csv (alpha_deg,cl,cd,cm_default,cm_nf); else surrogate
+    polar_variant: str = "neuralfoil"    # "neuralfoil" (default, physical Cm), "neuralfoil_cm" (raw NeuralFoil CM, sensitivity), or "smoothed_lowRe"
     use_dynamic_stall: bool = True
     use_tip_loss: bool = True           # finite-span correction (lift slope + induced drag)
     use_dmst: bool = True
@@ -503,10 +503,12 @@ _CLMAX = [0.80, 0.90, 1.15, 1.40, 1.50]
 _CD0 = [0.020, 0.015, 0.010, 0.0075, 0.0065]
 
 # Model-form variants for the CSV polars.  "neuralfoil" is the committed
-# table.  "smoothed_lowRe" is a sensitivity variant, not data: for Re <= 1e5
-# it caps the attached lift magnitude by a 2*pi*1.1 slope line and removes
-# the laminar-bubble dip by enforcing monotone Cl up to 20 deg.
-POLAR_VARIANTS = ("neuralfoil", "smoothed_lowRe")
+# table (default, with physical Cm=0 in attached flow).  "neuralfoil_cm" uses
+# the raw NeuralFoil CM for sensitivity analysis.  "smoothed_lowRe" is a
+# sensitivity variant, not data: for Re <= 1e5 it caps the attached lift
+# magnitude by a 2*pi*1.1 slope line and removes the laminar-bubble dip by
+# enforcing monotone Cl up to 20 deg.
+POLAR_VARIANTS = ("neuralfoil", "neuralfoil_cm", "smoothed_lowRe")
 _SMOOTH_LOW_RE_CAP = 2.0 * PI * 1.1
 _SMOOTH_LOW_RE_MAX_RE = 1.0e5
 
@@ -618,7 +620,10 @@ class PolarDatabase:
             d = np.genfromtxt(f, delimiter=",", comments="#")
             d = d[~np.isnan(d).any(axis=1)] if d.ndim == 2 else d
             a, cl, cd = d[:, 0], d[:, 1], d[:, 2]
-            cm = d[:, 3] if d.shape[1] >= 4 else np.zeros_like(a)
+            # Column 3 (index 3) is Cm_default, column 4 (index 4) is Cm_neuralfoil
+            cm_default = d[:, 3] if d.shape[1] >= 4 else np.zeros_like(a)
+            cm_nf = d[:, 4] if d.shape[1] >= 5 else cm_default
+            cm = cm_nf if self.variant == "neuralfoil_cm" else cm_default
             o = np.argsort(a)
             res.append(Re)
             cls_.append(np.interp(ag, a[o], cl[o], period=None))

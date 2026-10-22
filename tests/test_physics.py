@@ -86,20 +86,25 @@ class TestCmDimensions:
         assert r_scaled['tsr_eq'] == pytest.approx(r_zeroed['tsr_eq'], rel=1e-10)
 
     def test_cm_in_polars(self):
-        """Polar tables contain the NeuralFoil attached-flow Cm.
+        """Default variant has Cm=0 in attached flow; neuralfoil_cm variant has raw NeuralFoil CM.
 
-        Cm is the quarter-chord moment in the standard aircraft convention
-        (positive nose-up).  NeuralFoil's attached-flow Cm has visible
-        network scatter; at Re = 1e6, alpha = 15 deg it is about +0.047.
-        The test pins the surrogate value (not a physical expectation for a
-        symmetric section, whose true Cm is near zero) so that an accidental
-        table swap or sign flip is caught.
+        The default variant (polar_variant="neuralfoil") enforces Cm=0 for
+        |alpha| <= 20 deg (physical symmetric-section value). The raw
+        NeuralFoil CM is available as the "neuralfoil_cm" variant for
+        sensitivity analysis.
         """
         from vawt_core import PolarDatabase
-        pdb = PolarDatabase("airfoil_polars/naca0012")
+        # Default variant: Cm = 0 in attached flow
+        pdb = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
-        assert Cm == pytest.approx(0.0465, abs=0.005)
-        assert -0.1 < Cm < 0.1  # not absurdly large
+        assert abs(Cm) < 1e-6
+
+        # neuralfoil_cm variant: raw NeuralFoil CM
+        pdb_nf = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil_cm")
+        _, _, Cm_nf, _ = pdb_nf.lookup(1e6, math.radians(15.0))
+        # NeuralFoil's attached-flow Cm at Re=1e6, alpha=15 deg is ~+0.047
+        assert Cm_nf == pytest.approx(0.0465, abs=0.005)
+        assert -0.1 < Cm_nf < 0.1
 
     def test_cm_zero_at_zero_alpha(self):
         """A symmetric NACA 0012 has zero moment at zero incidence."""
@@ -117,26 +122,34 @@ class TestCmDimensions:
             Path("airfoil_polars/provenance.json").read_text()
         )
         assert "NeuralFoil" in prov["cm_method"]
-        assert "|alpha|<=20" in prov["cm_method"]
+        assert "Cm=0" in prov["cm_method"] or "|alpha|<=20" in prov["cm_method"]
         assert "nose-up" in prov["cm_convention"]
         assert "synthetic" in prov["cm_method"]
+        assert "neuralfoil_cm" in prov["cm_method"]
 
     def test_smoothed_low_re_variant_caps_slope_only_at_low_re(self):
-        """The smoothed_lowRe variant is a documented model-form change."""
+        """The smoothed_lowRe variant is a documented model-form change.
+
+        The default "neuralfoil" variant already has clamped slope and
+        monotone Cl. The "smoothed_lowRe" variant applies additional
+        aggressive clamping (1.1 * 2pi slope cap) as a sensitivity bound.
+        """
+        import numpy as np
         from vawt_core import PolarDatabase, _SMOOTH_LOW_RE_CAP
-        raw = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
+        default = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
         smooth = PolarDatabase("airfoil_polars/naca0012",
                                variant="smoothed_lowRe")
         # Re=1e5 row is first in the sorted grid.
-        assert abs(raw.cla_re[0]) > _SMOOTH_LOW_RE_CAP
+        # Default already has slope <= 1.15*2pi; smoothed applies 1.1*2pi
+        assert abs(default.cla_re[0]) <= 1.15 * 2.0 * np.pi * 1.001
         assert abs(smooth.cla_re[0]) <= _SMOOTH_LOW_RE_CAP * 1.001
-        # The highest-Re row is untouched.
-        import numpy as np
-        assert np.array_equal(smooth.Cl[-1], raw.Cl[-1])
-        # The low-Re Cl dip at 12 deg is removed (monotone up to 20 deg).
+        # The highest-Re row is untouched by smoothed_lowRe.
+        assert np.array_equal(smooth.Cl[-1], default.Cl[-1])
+        # Both variants have monotone Cl up to 20 deg.
         ag = np.degrees(smooth.alpha_grid)
         m = (ag >= 0.0) & (ag <= 20.0)
         assert np.all(np.diff(smooth.Cl[0, m]) >= -1e-9)
+        assert np.all(np.diff(default.Cl[0, m]) >= -1e-9)
 
     def test_cm_moment_dimensions(self):
         """Cm moment per unit span is independent of H (blade height).
@@ -409,13 +422,21 @@ class TestFnRatio:
 class TestCmHubMoment:
     """Cm pitch-moment coupling: non-zero Cm drives hub reaction torque."""
 
-    def test_cm_nonzero_in_polar(self):
-        """Polar tables contain non-zero Cm values at 15°."""
+    def test_cm_neuralfoil_variant_nonzero_in_polar(self):
+        """The neuralfoil_cm variant has non-zero Cm at 15° (raw NeuralFoil)."""
         from vawt_core import PolarDatabase
         import math
-        pdb = PolarDatabase("airfoil_polars/naca0012")
+        pdb = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil_cm")
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
+
+    def test_cm_default_variant_zero_in_attached(self):
+        """Default variant has Cm=0 in attached flow (physical symmetric section)."""
+        from vawt_core import PolarDatabase
+        import math
+        pdb = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
+        _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
+        assert abs(Cm) < 1e-6, f"Default Cm at 15° should be zero, got {Cm:.6f}"
 
     def test_cm_sign_test_locked_blade(self):
         """Three-value locked-blade Cm sign test.
@@ -452,6 +473,7 @@ class TestCmHubMoment:
     def test_cm_zeroed_column_changes_cp(self):
         """Same polar, only the Cm column zeroed: Cp must change.
 
+        Uses the neuralfoil_cm variant which has non-zero attached-flow Cm.
         Comparing against a surrogate polar changes Cl and Cd as well, so it
         cannot isolate the hub-reaction term. Here both simulators load the
         same CSV tables; the second has ``Cm[:] = 0`` applied in memory.
@@ -459,7 +481,8 @@ class TestCmHubMoment:
         from vawt_core import create_sim_from_params
 
         base = dict(BASE_QUICK, free=False, tsr=2.5,
-                    T_max=15.0, stride=5)
+                    T_max=15.0, stride=5,
+                    polar_variant="neuralfoil_cm")
         # With the blade held at fixed speed and fixed pitch, Cm no longer
         # averages out over the revolution, so the hub-reaction term moves Cp.
         sim_with_cm = create_sim_from_params(base)

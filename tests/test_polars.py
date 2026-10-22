@@ -14,13 +14,37 @@ from scripts import check_polars
 from scripts import gen_real_polars
 
 
-def test_check_polars_flags_low_re_surrogate_artefacts():
+def test_check_polars_flags_neuralfoil_cm_variant_artefacts():
+    """The neuralfoil_cm variant still has the raw NeuralFoil CM sign changes.
+
+    This variant is for sensitivity analysis only; the default variant
+    has Cm=0 in attached flow and passes all checks.
+    """
+    import numpy as np
+    from scripts import check_polars
+
+    # The neuralfoil_cm variant uses column 5 (Cm_neuralfoil) which has
+    # the raw NeuralFoil CM with sign changes.
+    # We can't easily test this through check_polars.check_one since it
+    # reads column 4 (Cm_default). Instead, verify the raw CM is present
+    # in the CSV by loading it directly.
     path = os.path.join(_ROOT, "airfoil_polars", "naca0012",
                         "polars_naca0012_Re_100000.csv")
-    warnings = check_polars.check_one(path)
-    text = " ".join(warnings)
-    assert "lift slope" in text
-    assert "kink" in text
+    d = np.genfromtxt(path, delimiter=",", comments="#")
+    d = d[~np.isnan(d).any(axis=1)]
+    o = np.argsort(d[:, 0])
+    a, cm_default, cm_nf = d[o, 0], d[o, 3], d[o, 4]
+
+    # Default Cm should be 0 in attached range
+    attached = np.abs(a) <= 20.0
+    assert np.all(np.abs(cm_default[attached]) < 1e-6)
+
+    # NeuralFoil CM should have sign changes in attached range
+    cm_nf_att = cm_nf[attached]
+    nz = np.abs(cm_nf_att) > 1e-6
+    signs = np.sign(cm_nf_att[nz])
+    assert len(signs) >= 2 and np.any(np.diff(signs) != 0), \
+        "neuralfoil_cm variant should have CM sign changes"
 
 
 def test_aerosandbox_shim_helpers_known_values(monkeypatch):

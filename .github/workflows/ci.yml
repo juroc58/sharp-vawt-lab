@@ -30,7 +30,7 @@ jobs:
 
       - name: Polar sanity report (warnings, not a gate)
         run: |
-          python scripts/check_polars.py
+          python scripts/check_polars.py --fail-on-warnings
 
       - name: Validate README in sync
         run: |

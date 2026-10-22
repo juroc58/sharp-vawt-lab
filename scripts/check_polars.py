@@ -91,6 +91,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--polar-glob", default=POLAR_GLOB,
                     help="glob for polar CSVs (default: airfoil_polars/**/*.csv)")
+    ap.add_argument("--fail-on-warnings", action="store_true",
+                    help="exit non-zero if any warnings are found (for CI gate)")
     args = ap.parse_args(argv)
 
     files = sorted(glob.glob(args.polar_glob, recursive=True))
@@ -99,7 +101,7 @@ def main(argv=None):
         return 1
 
     n_warn = 0
-    print("Polar sanity report (warnings only; not a validation gate)")
+    print("Polar sanity report")
     print(f"  files: {len(files)}")
     for path in files:
         rel = os.path.relpath(path, _ROOT)
@@ -113,8 +115,12 @@ def main(argv=None):
             print(f"    WARNING: {w}")
             n_warn += 1
     print(f"  total warnings: {n_warn}")
-    print("  These are known surrogate/model-form limitations; see "
-          "airfoil_polars/README.md.")
+    if n_warn > 0:
+        print("  See airfoil_polars/README.md for provenance.")
+        if args.fail_on_warnings:
+            return 1
+    else:
+        print("  All checks passed for the default variant.")
     return 0
 
 
