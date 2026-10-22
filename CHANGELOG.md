@@ -8,10 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **`scripts/check_polars.py`** prints a warning report (not a CI failure)
-  for attached lift slopes above `1.15*2*pi`, Cl non-monotonicity / the
-  low-Re bubble kink before 20 deg, and Cm sign changes. CI runs it after
-  the test suite.
+- **`scripts/plot_style.py`**: shared plotting style module (figsize 15x4.6 for 3-panel, 15x8 for 4-panel, dpi 200, constrained layout, fixed colour map, consistent fonts/grid/units).
+- **`scripts/plot_aep.py`**: unified plotting module reading JSON from compute scripts; generates all four AEP figures (small-rotor, scale-up, turbulent, counter-rotating) with consistent style.
+- **`scripts/diag_aep_branches.py`**: diagnostic script that runs fixed-TSR and free-running points with multiple initial conditions (psi0 in {0,120,240}, w0_frac in {0.2,0.9,1.2}) to diagnose bistability. Outputs `scripts/diag_aep_branches.json`.
+- **`scripts/make_figures.sh`**: shell script to regenerate all four AEP figures from JSON; callable from README sync step.
+- **AEP figure redesign (Task 3/4/5)**: Redesigned all four AEP figures with:
+  - Panel 1 (Cp vs TSR): phase-averaged fixed-rpm curve with shaded phase-spread >3% band, free-running equilibria overlaid; y-axis from 0.
+  - Panel 2 (free-running Cp vs U): branch-traced, high-seed (w0=1.20), low-seed (w0=0.20) branches with envelope shading; y-axis from 0; no annotation boxes over data.
+  - Panel 3 (power curve): passive k_load, fixed rpm, fair rigid baseline in kW; Weibull pdf as secondary axis; rated power as horizontal line.
+  - Panel 4 (AEP bar chart): AEP in MWh/yr and CF per strategy, with low/high branch error bars, gain over rigid baseline printed on bars.
+  - Counter-rotating figure includes interaction-factor sensitivity sweep and explicit "SPECULATIVE SCENARIO" label.
+  - All figures use raw data, no smoothing/filtering/hiding; legends outside data; units in kW/MWh.
+- **`tests/test_figures.py`**: headless test (MPLBACKEND=Agg) asserting PNG exists, ≥1500 px wide, JSON hash in PNG metadata, point counts match JSON arrays, both branches plotted when present, unit labels contain "kW".
+- **`scripts/compute_aep.py` and `scripts/compute_aep_scaleup.py`**: now only write JSON; plotting removed and delegated to `scripts/plot_aep.py`.
+- **`scripts/make_figures.sh`**: regenerates all figures from JSON; called from README sync step.
 - **`polar_variant`** (`"neuralfoil"` default, `"smoothed_lowRe"`) on
   `AeroConfig`. The smoothed variant caps the Re <= 1e5 attached lift by a
   `2*pi*1.1` slope line and removes the 12 deg bubble dip by enforcing
@@ -116,6 +126,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   states the actual N = 64, 960-run first-order Saltelli set (3840 runs
   across four anchors) and points at the generated table instead of
   repeating stale indices.
+- **AEP figures redesigned from JSON (Task 3/4/5).** The old inline plotting
+  in `compute_aep.py` and `compute_aep_scaleup.py` used medfilt smoothing,
+  fixed y-limits, hid free-running scatter, and had inconsistent units/colours.
+  The new `scripts/plot_aep.py` reads JSON and generates all four figures with
+  a shared style module. Key fixes:
+  - Panel 1 now shows phase-averaged Cp(TSR) with shaded bistable regions
+    (TSR 3.25 and 3.50), free-running points overlaid.
+  - Panel 2 shows all branches (traced, high-seed, low-seed) with envelope
+    shading; no annotation boxes over data; y-axis from 0.
+  - Panel 3 uses kW consistently; Weibull pdf on secondary axis; rated power
+    line shown.
+  - Panel 4 adds AEP bar chart with low/high error bars and gain over rigid.
+  - Counter-rotating figure labelled "SPECULATIVE SCENARIO" with factor sweep.
+  - Figures use raw data, no medfilt; legends outside data; units in kW/MWh.
+  - `scripts/make_figures.sh` regenerates all figures from JSON; tests in
+    `tests/test_figures.py` verify PNG metadata and point counts.
 - **`cm_scale = 0` now really means no pitching moment.** The dynamic-stall
   separated-Cm blend target (`copysign(0.05, -alpha)`) is multiplied by
   `cm_scale` as well as the static table Cm. With `cm_scale = 0` and a

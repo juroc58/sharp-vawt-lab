@@ -23,7 +23,8 @@ Tip-loss correction is ON (Helmbold finite-span),
 matching the convention used in the README headline results.
 
 Integrates each power curve against a Weibull wind distribution to give
-kWh/year.  Produces docs/aep.png.
+kWh/year.  Produces scripts/aep_results.json.  Plotting is done by
+scripts/plot_aep.py from the JSON output.
 """
 from __future__ import annotations
 
@@ -34,9 +35,6 @@ import sys
 
 import numpy as np
 from scipy.integrate import trapezoid
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
@@ -253,54 +251,8 @@ def integrate_aep(U_grid, cp_curve, U_mean, k_weibull,
     return dict(U=U_grid, cp=cp_curve, P=P, pdf=pdf, aep=aep, cf=cf)
 
 
-# ============================================================================
-# Plot
-# ============================================================================
-def make_plot(results, tsrs, out_path):
-    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
-    col_passive = "C0"
-    col_fixed   = "C2"
-    R_val = 2.7179
-    fr = results['passive']['free_results']
-
-    # Panel 1 — raw fixed-rpm curve and free-running operating points
-    a = ax[0]
-    cp_tsr = np.asarray(results['passive']['cp_tsr'], dtype=float)
-    a.plot(tsrs, cp_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
-    if fr:
-        a.scatter([f['tsr_eq'] for f in fr], [f['cp'] for f in fr],
-                  color="C3", marker="s", s=28, zorder=3,
-                  label="free-running operating points")
-    a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR"); a.grid(alpha=0.3)
-    a.legend(fontsize=8, loc="upper left")
-
-    # Panel 2 — raw free-running Cp(U), no filtering or forced y-limits
-    a = ax[1]
-    if fr:
-        Us  = np.array([f['U'] for f in fr])
-        cps = np.array([f['cp'] for f in fr])
-        a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="passive CPPC")
-
-        # Only label a genuine drop (max drawdown), not a monotonic rise.
-        drawdown = np.max(np.maximum.accumulate(cps) - cps)
-        if (np.max(cps) - np.min(cps)) > 0.03 and drawdown > 0.03:
-            a.text(0.98, 0.05, "Bifurcation / branch drop", transform=a.transAxes,
-                   bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
-                   ha="right", va="bottom")
-
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed"); a.grid(alpha=0.3); a.legend(fontsize=9)
-
-    # Panel 3
-    a = ax[2]
-    a.plot(results['passive']['U'], results['passive']['P'], "-", color=col_passive, lw=2.0, label="passive CPPC, k_load")
-    a.plot(results['fixed']['U'], results['fixed']['P'], "--", color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("electrical power [W]"); a.set_title("Power curve"); a.grid(alpha=0.3); a.legend(fontsize=9, loc="upper left"); a.set_xlim(CUT_IN, CUT_OUT)
-
-    fig.suptitle(f"AEP — Scale-up CPPC, R = {R_val:.2f} m", fontsize=13, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
-    fig.savefig(out_path, dpi=150)
-    print(f"\nWrote {out_path}")
+# Plotting is now done by scripts/plot_aep.py from the JSON output.
+# The make_plot function has been moved to scripts/plot_aep.py.
 
 
 # ============================================================================
@@ -454,10 +406,6 @@ def main():
               f"n/a (no viable rigid configuration)")
 
     # --- plot ---
-    out_path = os.path.join(_ROOT, "docs", "aep.png")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    make_plot(results, tsrs, out_path)
-
     # --- json dump ---
     summary = {
         "geometry": {"R": R, "c": BASE['c'], "N": BASE['N'],

@@ -11,7 +11,8 @@ Compares:
 2. Passive CPPC, fixed-rpm (shows penalty of not tracking wind)
 3. Fair rigid baseline (from compute_aep_rigid_fair.py)
 
-Integrates power curves against Weibull wind distribution.
+Integrates power curves against Weibull wind distribution.  Produces scripts/aep_scaleup.json.  Plotting is done by
+scripts/plot_aep.py from the JSON output.
 """
 
 from __future__ import annotations
@@ -23,9 +24,6 @@ import sys
 
 import numpy as np
 from scipy.integrate import trapezoid
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
@@ -33,7 +31,7 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
-from compute_aep import (
+from scripts.compute_aep import (
     integrate_aep, load_fair_rigid_reference,
     U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
     ETA_DRIVETRAIN, RHO, HOURS_YEAR, rated_power_from_cp,
@@ -231,116 +229,3 @@ def main():
     gain_fixed = (res_passive['aep'] / max(res_fixed['aep'], 1e-9) - 1.0) * 100
     print(f"  Passive CPPC vs fixed-rpm, same physics : {gain_fixed:+.1f}%")
 
-    # --- plotting ---
-    print("\nGenerating plot...")
-    fig, ax = plt.subplots(1, 3, figsize=(16, 5))
-    col_passive = "C0"
-    col_fixed   = "C2"
-    fr = free_passive
-
-    # Panel 1 — raw fixed-rpm curve and free-running operating points
-    a = ax[0]
-    a.plot(tsrs, cps_tsr, "o-", color=col_passive, lw=1.8, label="passive CPPC (fixed rpm)")
-    if fr:
-        a.scatter([f['tsr_eq'] for f in fr], [f['cp'] for f in fr],
-                  color="C3", marker="s", s=28, zorder=3,
-                  label="free-running operating points")
-    a.axhline(0, color="k", lw=0.5)
-    a.set_xlabel("tip-speed ratio λ"); a.set_ylabel("Cp"); a.set_title("Cp vs TSR at fixed rpm (scale-up)"); a.grid(alpha=0.3)
-    a.legend(fontsize=8, loc="upper left")
-
-    # Panel 2 — raw free-running Cp(U), all branches, no filtering
-    a = ax[1]
-    if fr:
-        Us  = np.array([f['U'] for f in fr])
-        cps = np.array([f['cp'] for f in fr])
-        a.plot(Us, cps, "o-", color=col_passive, lw=1.6, label="branch-traced")
-        if free_high:
-            a.plot([f['U'] for f in free_high], [f['cp'] for f in free_high],
-                   "s--", color="C1", lw=1.2, ms=4, label="high seed (w0=1.20)")
-        if free_low:
-            a.plot([f['U'] for f in free_low], [f['cp'] for f in free_low],
-                   "v--", color="C4", lw=1.2, ms=4, label="low seed (w0=0.20)")
-        # Only label a genuine drop (max drawdown), not a monotonic rise.
-        drawdown = np.max(np.maximum.accumulate(cps) - cps)
-        if (np.max(cps) - np.min(cps)) > 0.03 and drawdown > 0.03:
-            a.text(0.98, 0.05, "Bifurcation / branch drop", transform=a.transAxes,
-                   bbox=dict(boxstyle="round", fc="wheat", ec="black", alpha=0.9),
-                   ha="right", va="bottom")
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("Cp at equilibrium"); a.set_title("Free-running Cp vs wind speed (raw branches)"); a.grid(alpha=0.3); a.legend(fontsize=8)
-
-    # Panel 3
-    a = ax[2]
-    a.plot(res_passive['U'], res_passive['P']/1000, "-", color=col_passive, lw=2.0, label="passive CPPC, k_load")
-    a.plot(res_fixed['U'], res_fixed['P']/1000, "--", color=col_fixed, lw=1.8, label="passive CPPC, fixed rpm")
-    a.set_xlabel("wind speed U [m/s]"); a.set_ylabel("electrical power [kW]"); a.set_title("Power curve (scale-up)"); a.grid(alpha=0.3); a.legend(fontsize=9); a.set_xlim(CUT_IN, CUT_OUT)
-
-    fig.suptitle(f"AEP — Scale-Up Sharp CPPC, R = {SCALEUP_BASE['R']:.2f} m, AR ≈ 10.5", fontsize=13, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
-    out_path = os.path.join(_ROOT, "docs", "aep_scaleup.png")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    fig.savefig(out_path, dpi=150)
-    print(f"\nWrote {out_path}")
-
-    # --- JSON ---
-    summary = {
-        "geometry": {"R": R, "c": SCALEUP_BASE['c'], "N": SCALEUP_BASE['N'],
-                     "sigma": sigma, "AR": H/SCALEUP_BASE['c']},
-        "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
-                 "cut_in": CUT_IN, "cut_out": CUT_OUT,
-                 "rated_wind_speed": U_RATED,
-                 "cp_at_rated": cp_at_rated,
-                 "p_rated_W": p_rated},
-        "results": {
-            "passive_k_load": {"aep_MWh": res_passive['aep']/1000,
-                               "cf": res_passive['cf'],
-                               "cp_tsr": [float(v) for v in cps_tsr],
-                               "tsr": [float(v) for v in tsrs],
-                               "free_results": free_passive},
-            "passive_fixed_rpm": {"aep_MWh": res_fixed['aep']/1000,
-                                  "cf": res_fixed['cf']},
-        },
-        "branches": {
-            "high_seed": {"initial_w0_frac": 1.20, "initial_psi0_deg": 0.0,
-                          "aep_MWh": res_high['aep']/1000,
-                          "cf": res_high['cf'],
-                          "free_results": free_high},
-            "low_seed": {"initial_w0_frac": 0.20, "initial_psi0_deg": 0.0,
-                         "aep_MWh": res_low['aep']/1000,
-                         "cf": res_low['cf'],
-                         "free_results": free_low},
-            "branch_traced": {"initial_w0_frac": 0.9,
-                              "initial_psi0_deg": 0.0,
-                              "aep_MWh": res_passive['aep']/1000,
-                              "cf": res_passive['cf'],
-                              "free_results": free_passive},
-            "aep_range_MWh": [aep_min/1000, aep_max/1000],
-        },
-        "gains_percent": {
-            "passive_vs_fixed_rpm": gain_fixed,
-        },
-    }
-    if rigid_ref and rigid_ref.get('aep_kWh') is not None:
-        summary["rigid_fair_ref"] = {
-            "aep_MWh": rigid_ref['aep_kWh']/1000,
-            "cf": rigid_ref['cf']
-        }
-        summary["gains_percent"]["passive_vs_rigid_fair"] = gain_vs_rigid
-
-    json_path = os.path.join(_HERE, "aep_scaleup.json")
-    with open(json_path, "w") as fh:
-        json.dump(summary, fh, indent=2)
-    print(f"JSON saved to {json_path}")
-
-    print("\n" + "=" * 70)
-    print(f"Scale-up AEP:  {res_passive['aep']/1000:.1f} MWh/yr (CF: {res_passive['cf']*100:.1f}%)")
-    print(f"Fixed-rpm AEP: {res_fixed['aep']/1000:.1f} MWh/yr (CF: {res_fixed['cf']*100:.1f}%)")
-    if rigid_ref and rigid_ref.get('aep_kWh') is not None:
-        print(f"Rigid AEP:     {rigid_ref['aep_kWh']/1000:.1f} MWh/yr")
-        print(f"Gain vs rigid: {gain_vs_rigid:.1f}%")
-    print("=" * 70)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
