@@ -1,9 +1,20 @@
 {
   "stamp": {
-    "code_hash": "369a46ddd4b49c33",
+    "code_hash": "3a49eeef0bf503b0",
     "script": "scripts/compute_aep_scaleup.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T05:37:51.227747Z",
+    "created_utc": "2026-10-23T12:25:31.390262Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0
+    },
     "n": 82,
     "seed": 0
   },

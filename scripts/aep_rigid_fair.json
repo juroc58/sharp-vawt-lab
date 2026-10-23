@@ -1,9 +1,20 @@
 {
   "stamp": {
-    "code_hash": "326f19e72472157b",
+    "code_hash": "211b347a31da10c8",
     "script": "scripts/compute_aep_rigid_fair.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T05:32:53.436902Z",
+    "created_utc": "2026-10-23T12:18:55.281992Z",
+    "extra_files": [
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0,
+      "U_DESIGN": 6.0
+    },
     "n": 100,
     "seed": 0
   },

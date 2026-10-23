@@ -1,9 +1,22 @@
 {
   "stamp": {
-    "code_hash": "bdbef968732dd288",
+    "code_hash": "395af8555cb575ae",
     "script": "scripts/compute_aep_turbulent.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T10:27:13.313328Z",
+    "created_utc": "2026-10-23T12:26:26.175131Z",
+    "extra_files": [
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0,
+      "TURB_I": 0.12,
+      "TURB_L": 30.0,
+      "N_SEEDS": 10
+    },
     "n": 460,
     "seed": 0
   },

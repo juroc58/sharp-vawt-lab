@@ -1,9 +1,20 @@
 {
   "stamp": {
-    "code_hash": "5d2886d73ada89e3",
+    "code_hash": "0ca74f667a9c52e3",
     "script": "scripts/compute_aep_counter_rotating.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T05:41:44.552463Z",
+    "created_utc": "2026-10-23T12:28:49.300092Z",
+    "extra_files": [
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0,
+      "ROTOR_SEPARATION": 2.0
+    },
     "n": 69,
     "seed": 0
   },
