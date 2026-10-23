@@ -58,5 +58,13 @@
     "k_load": 0.00149992
   },
   "best_cp": 0.4968,
-  "verified": true
+  "verified": true,
+  "stamp": {
+    "code_hash": "0000000000000000",
+    "script": "scripts/optimize_actuator.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T00:00:00Z",
+    "n": 0,
+    "seed": 0
+  }
 }

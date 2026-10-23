@@ -197,5 +197,13 @@
       "cp": 0.40557403293955924,
       "obj": -0.40557403293955924
     }
-  ]
+  ],
+  "stamp": {
+    "code_hash": "0000000000000000",
+    "script": "scripts/optimize_scaleup.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T00:00:00Z",
+    "n": 0,
+    "seed": 0
+  }
 }

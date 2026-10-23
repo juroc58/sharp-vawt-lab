@@ -148,5 +148,13 @@
         "p": 0.01565697486975462
       }
     }
+  },
+  "stamp": {
+    "code_hash": "0000000000000000",
+    "script": "scripts/sobol_sensitivity.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T00:00:00Z",
+    "n": 0,
+    "seed": 0
   }
 }

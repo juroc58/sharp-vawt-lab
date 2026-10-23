@@ -40,7 +40,7 @@ def _j(name):
         valid, msg = verify_stamp(os.path.join(SCRIPTS, name), script)
         if not valid:
             raise RuntimeError(f"Stale result JSON: {name} - {msg}. Re-run {script} to regenerate.")
-    return json.load(fh)
+    return data
 
 def _bound(x, d=2):
     # Keep small collapse-branch values visible instead of rounding to 0.00.

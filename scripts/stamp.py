@@ -119,13 +119,15 @@ def make_stamp(
     """
     import datetime
 
-    code_hash = compute_code_hash(script_path, extra_files, None, script_version)
+    code_hash = compute_code_hash(script_path, extra_files, extra_data, script_version)
 
     stamp = {
         "code_hash": code_hash,
         "script": script_path,
         "script_version": script_version,
         "created_utc": datetime.datetime.utcnow().isoformat() + "Z",
+        "extra_files": extra_files,
+        "extra_data": extra_data,
     }
     if n is not None:
         stamp["n"] = n
@@ -171,8 +173,8 @@ def verify_stamp(json_path: str, expected_script: str) -> tuple[bool, str]:
     try:
         current_hash = compute_code_hash(
             stamp["script"],
-            extra_files=None,  # We don't know extra_files from stamp alone
-            extra_data=None,
+            extra_files=stamp.get("extra_files"),
+            extra_data=stamp.get("extra_data"),
             version=stamp["script_version"],
         )
     except Exception as e:

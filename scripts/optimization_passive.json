@@ -731,5 +731,13 @@
       "cp": 0.26973763338151757,
       "obj": -0.26973763338151757
     }
-  ]
+  ],
+  "stamp": {
+    "code_hash": "0000000000000000",
+    "script": "scripts/optimize_passive.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T00:00:00Z",
+    "n": 0,
+    "seed": 0
+  }
 }
