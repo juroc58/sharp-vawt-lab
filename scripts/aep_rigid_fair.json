@@ -1,48 +1,30 @@
 {
-  "geometries": {
-    "sharp_inspired": {
-      "R": 0.6,
-      "c": 0.14,
-      "H": 0.4,
-      "AR": 2.857142857142857,
-      "best_rigid": {
-        "psi0_deg": null,
-        "k_load": null,
-        "cp_design": 0.0,
-        "tsr": 0.0,
-        "viable": false,
-        "aep_kWh": null,
-        "cf": null
-      },
-      "best_passive": {
-        "k_load": 0.0015,
-        "cp_design": 0.03474763599460162,
-        "aep_kWh": 63.10748399322533,
-        "cf": 0.16953845516271465
-      },
-      "gain_percent": null
-    },
-    "scaleup": {
-      "R": 2.7179,
-      "c": 0.3861,
-      "H": 4.0568,
-      "AR": 10.507122507122507,
-      "best_rigid": {
-        "psi0_deg": 5.0,
-        "k_load": 6.0,
-        "cp_design": 0.3812511695318824,
-        "tsr": 2.57971903831586,
-        "viable": true,
-        "aep_kWh": 14146.949089927612,
-        "cf": 0.18781424387167647
-      },
-      "best_passive": {
-        "k_load": 4.0,
-        "cp_design": 0.37259549456625873,
-        "aep_kWh": 15649.9320292421,
-        "cf": 0.2077677760788688
-      },
-      "gain_percent": 10.62407823595397
-    }
-  }
+  "stamp": {
+    "code_hash": "326f19e72472157b",
+    "script": "scripts/compute_aep_rigid_fair.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T05:32:53.436902Z",
+    "n": 100,
+    "seed": 0
+  },
+  "R": 2.7179,
+  "c": 0.3861,
+  "H": 4.0568,
+  "AR": 10.507122507122507,
+  "best_rigid": {
+    "psi0_deg": 5.0,
+    "k_load": 6.0,
+    "cp_design": 0.3792163939930443,
+    "tsr": 2.575457748422995,
+    "viable": true,
+    "aep_kWh": 13280.297765699232,
+    "cf": 0.20792524611521718
+  },
+  "best_passive": {
+    "k_load": 4.0,
+    "cp_design": 0.41305280903344305,
+    "aep_kWh": 16669.152252793145,
+    "cf": 0.21106426844316803
+  },
+  "gain_percent": 25.517910417993427
 }

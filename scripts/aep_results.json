@@ -1,4 +1,12 @@
 {
+  "stamp": {
+    "code_hash": "98d5f84f88396729",
+    "script": "scripts/compute_aep.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-23T05:35:53.688960Z",
+    "n": 38,
+    "seed": 0
+  },
   "geometry": {
     "R": 2.7179,
     "c": 0.3861,
@@ -258,17 +266,17 @@
   },
   "gains_percent": {
     "passive_vs_fixed_rpm": 48.26180461833229,
-    "passive_vs_rigid_fair": 10.62407823595397
+    "passive_vs_rigid_fair": 25.517910417993427
   },
   "rigid_fair_ref": {
     "source": "aep_rigid_fair.json",
     "geometry": "scaleup",
     "psi0_deg": 5.0,
     "k_load": 6.0,
-    "cp_design": 0.3812511695318824,
+    "cp_design": 0.3792163939930443,
     "viable": true,
-    "aep_kWh": 14146.949089927612,
-    "cf": 0.18781424387167647,
-    "gain_percent": 10.62407823595397
+    "aep_kWh": 13280.297765699232,
+    "cf": 0.20792524611521718,
+    "gain_percent": 25.517910417993427
   }
 }
