@@ -11,9 +11,36 @@ ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "scripts")
 README  = os.path.join(ROOT, "README.md")
 
+# Add scripts to path for stamp module
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+from stamp import verify_stamp
+
+STAMP_CHECK_MAP = {
+    "uncertainty_results.json": "scripts/uncertainty.py",
+    "aep_results.json": "scripts/compute_aep.py",
+    "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
+    "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
+    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+    "optimization_actuator.json": "scripts/optimize_actuator.py",
+    "cm_scale_scan.json": "scripts/scan_cm_scale.py",
+    "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
+    "branch_point_checks.json": "scripts/check_branch_points.py",
+    "robust_optimization.json": "scripts/robust_reopt.py",
+    "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
+    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+}
+
 def _j(name):
-    with open(os.path.join(SCRIPTS, name)) as fh:
-        return json.load(fh)
+    path = os.path.join(SCRIPTS, name)
+    with open(path) as fh:
+        data = json.load(fh)
+    # Verify stamp if this file has a known generating script
+    if name in STAMP_CHECK_MAP:
+        script = STAMP_CHECK_MAP[name]
+        valid, msg = verify_stamp(os.path.join(SCRIPTS, name), script)
+        if not valid:
+            raise RuntimeError(f"Stale result JSON: {name} - {msg}. Re-run {script} to regenerate.")
+    return json.load(fh)
 
 def _bound(x, d=2):
     # Keep small collapse-branch values visible instead of rounding to 0.00.

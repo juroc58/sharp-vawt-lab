@@ -64,6 +64,7 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from compute_aep import U_RATED, rated_power_from_cp
+from scripts.stamp import make_stamp
 
 
 # ============================================================================
@@ -630,8 +631,38 @@ def main():
     }
     
     out_json = os.path.join(_HERE, "aep_counter_rotating.json")
+
+    
+    stamp = make_stamp(
+
+    
+        "scripts/compute_aep_counter_rotating.py",
+
+    
+        script_version="v1.0",
+
+    
+        n=len(U_range) * 3,
+
+    
+        seed=0,
+
+    
+        extra_files=["scripts/compute_aep.py"],
+
+    
+        extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED, "ROTOR_SEPARATION": ROTOR_SEPARATION},
+
+    
+    )
+
+    
     with open(out_json, "w") as fh:
-        json.dump(results, fh, indent=2)
+
+    
+        json.dump({"stamp": stamp, **results}, fh, indent=2)
+
+    
     print(f"  Saved results to {out_json}")
     
     # === SUMMARY ===

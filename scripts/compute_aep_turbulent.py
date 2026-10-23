@@ -25,6 +25,7 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from compute_aep import U_RATED, rated_power_from_cp
+from scripts.stamp import make_stamp
 
 
 # ----------------------------------------------------------------------------
@@ -266,8 +267,27 @@ def main():
     steady_by_u = {row[0]: row for row in steady_rows}
     turb_by_u   = {row[0]: row for row in turb_rows}
     common_u = [u for u in U_REF if u in steady_by_u and u in turb_by_u]
+    
+    from scripts.stamp import make_stamp
+    stamp = make_stamp(
+        "scripts/compute_aep_turbulent.py",
+        script_version="v1.0",
+        n=len(U_REF) * N_SEEDS * 2,
+        seed=0,
+        extra_files=["scripts/compute_aep.py"],
+        extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED, "TURB_I": TURB_I, "TURB_L": TURB_L, "N_SEEDS": N_SEEDS},
+    )
+
     with open(out_json, "w") as fh:
         json.dump({
+            "stamp": make_stamp(
+                "scripts/compute_aep_turbulent.py",
+                script_version="v1.0",
+                n=len(U_REF) * N_SEEDS * 2,
+                seed=0,
+                extra_files=["scripts/compute_aep.py"],
+                extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED, "TURB_I": TURB_I, "TURB_L": TURB_L, "N_SEEDS": N_SEEDS},
+            ),
             "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
             "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                      "cut_in": CUT_IN, "cut_out": CUT_OUT,

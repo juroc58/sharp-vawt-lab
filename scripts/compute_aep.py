@@ -42,6 +42,7 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
+from scripts.stamp import make_stamp
 
 
 # ============================================================================
@@ -91,7 +92,17 @@ def load_fair_rigid_reference():
         return None
     with open(path) as fh:
         data = json.load(fh)
-    g = data.get("geometries", {}).get("scaleup")
+    # New structure: stamp at top level, geometry data at top level
+    # The scaleup data is at the top level (not under "geometries")
+    if "geometries" in data:
+        g = data.get("geometries", {}).get("scaleup")
+    else:
+        # New structure: stamp at top level, geometry data at top level
+        # Check if this is the scaleup geometry (AR ~ 10.5)
+        if data.get("AR", 0) > 5:  # scaleup has AR ~ 10.5
+            g = data
+        else:
+            g = {}
     if not g:
         return None
     br = g.get("best_rigid") or {}
@@ -438,8 +449,16 @@ def main():
                 rigid_ref["gain_percent"]
 
     json_path = os.path.join(_HERE, "aep_results.json")
+    stamp = make_stamp(
+        "scripts/compute_aep.py",
+        script_version="v1.0",
+        n=len(tsrs) + len(free_passive),
+        seed=0,
+        extra_files=["vawt_presets.py"],
+        extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED},
+    )
     with open(json_path, "w") as fh:
-        json.dump(summary, fh, indent=2)
+        json.dump({"stamp": stamp, **summary}, fh, indent=2)
     print(f"JSON saved to {json_path}")
 
 

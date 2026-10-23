@@ -36,6 +36,7 @@ from scripts.compute_aep import (
     U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
     ETA_DRIVETRAIN, RHO, HOURS_YEAR, rated_power_from_cp,
 )
+from scripts.stamp import make_stamp
 
 
 # ============================================================================
@@ -229,3 +230,72 @@ def main():
     gain_fixed = (res_passive['aep'] / max(res_fixed['aep'], 1e-9) - 1.0) * 100
     print(f"  Passive CPPC vs fixed-rpm, same physics : {gain_fixed:+.1f}%")
 
+    # --- JSON dump with stamp ---
+    summary = {
+        "geometry": {"R": R, "c": SCALEUP_BASE['c'], "N": SCALEUP_BASE['N'],
+                     "sigma": sigma, "AR": H/SCALEUP_BASE['c']},
+        "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
+                 "cut_in": CUT_IN, "cut_out": CUT_OUT,
+                 "rated_wind_speed": U_RATED,
+                 "cp_at_rated": cp_at_rated,
+                 "p_rated_W": p_rated},
+        "results": {
+            "passive_k_load": {"aep_MWh": res_passive['aep']/1000,
+                               "cf": res_passive['cf'],
+                               "cp_tsr": [float(v) for v in cps_tsr],
+                               "tsr": [float(v) for v in tsrs],
+                               "free_results": free_passive},
+            "passive_fixed_rpm": {"aep_MWh": res_fixed['aep']/1000,
+                                   "cf": res_fixed['cf']},
+        },
+        "branches": {
+            "high_seed": {"initial_w0_frac": 1.20, "initial_psi0_deg": 0.0,
+                          "aep_MWh": res_high['aep']/1000,
+                          "cf": res_high['cf'],
+                          "free_results": free_high},
+            "low_seed": {"initial_w0_frac": 0.20, "initial_psi0_deg": 0.0,
+                         "aep_MWh": res_low['aep']/1000,
+                         "cf": res_low['cf'],
+                         "free_results": free_low},
+            "branch_traced": {"initial_w0_frac": 0.9,
+                              "initial_psi0_deg": 0.0,
+                              "aep_MWh": res_passive['aep']/1000,
+                              "cf": res_passive['cf'],
+                              "free_results": free_passive},
+            "aep_range_MWh": [aep_min/1000, aep_max/1000],
+        },
+        "gains_percent": {
+            "passive_vs_fixed_rpm": gain_fixed,
+        },
+    }
+    if rigid_ref and rigid_ref.get('aep_kWh') is not None:
+        summary["rigid_fair_ref"] = {
+            "aep_MWh": rigid_ref['aep_kWh']/1000,
+            "cf": rigid_ref['cf']
+        }
+        summary["gains_percent"]["passive_vs_rigid_fair"] = gain_vs_rigid
+
+    stamp = make_stamp(
+        "scripts/compute_aep_scaleup.py",
+        script_version="v1.0",
+        n=len(tsrs) + len(free_passive) + len(free_high) + len(free_low),
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/compute_aep.py"],
+        extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED},
+    )
+
+    json_path = os.path.join(_HERE, "aep_scaleup.json")
+    with open(json_path, "w") as fh:
+        json.dump({"stamp": stamp, **summary}, fh, indent=2)
+    print(f"JSON saved to {json_path}")
+
+    print("\n" + "=" * 70)
+    print(f"Scale-up AEP:  {res_passive['aep']/1000:.1f} MWh/yr (CF: {res_passive['cf']*100:.1f}%)")
+    print(f"Fixed-rpm AEP: {res_fixed['aep']/1000:.1f} MWh/yr (CF: {res_fixed['cf']*100:.1f}%)")
+    if rigid_ref and rigid_ref.get('aep_kWh') is not None:
+        print(f"Rigid AEP:     {rigid_ref['aep_kWh']/1000:.1f} MWh/yr")
+        print(f"Gain vs rigid: {gain_vs_rigid:.1f}%")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

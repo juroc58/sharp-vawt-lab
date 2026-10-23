@@ -35,6 +35,7 @@ from compute_aep import (
     U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
     rated_power_from_cp,
 )
+from scripts.stamp import make_stamp
 
 U_DESIGN = 6.0
 U_REF    = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
@@ -82,52 +83,25 @@ def rigid_params(base, psi0):
 
 
 def try_free_run(params, U):
+    """Run free simulation, return (cp, tsr) or (None, None) if no equilibrium."""
     try:
-        r = create_sim_from_params({**params, 'free': True, 'U': float(U)}).run()
+        res = create_sim_from_params({**params, 'free': True, 'U': float(U)}).run()
     except Exception:
-        return None
-    if not r.get('steady', True):
-        return None
-    cp = float(r['cp'])
-    if cp <= 0.0 or not np.isfinite(cp):
-        return None
-    return cp, float(r['tsr_eq'])
+        return None, None
+    if not res.get('steady', True) or res['cp'] <= 0.0:
+        return None, None
+    return float(res['cp']), float(res['tsr_eq'])
 
 
-def sweep_rigid(base, psi_grid, kl_grid, label):
-    print(f"  Sweep: rigid blade at {label}")
-    print(f"    {'psi0':>6} {'k_load':>9}  {'Cp':>9}  {'TSR':>6}")
+def find_best_passive(base, label):
+    """Find best k_load for passive CPPC at this geometry."""
+    from compute_aep import U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED, rated_power_from_cp
+    from scipy.integrate import trapezoid
+
     results = []
-    for psi0 in psi_grid:
-        for kl in kl_grid:
-            p = rigid_params(base, psi0); p['k_load'] = kl
-            res = try_free_run(p, U_DESIGN)
-            if res is None:
-                continue
-            cp, tsr = res
-            results.append(dict(psi0=psi0, k_load=kl, cp=cp, tsr=tsr))
-    if not results:
-        # At very low aspect ratio the uncapped induced drag stops a
-        # fixed-pitch rotor from spinning at all.  Report it as a null
-        # baseline rather than crashing the whole comparison.
-        print(f"    no steady rigid configuration found (rotor does not spin)")
-        return dict(psi0=None, k_load=None, cp=0.0, tsr=0.0, viable=False)
-    best = max(results, key=lambda r: r['cp'])
-    viable = bool(best['cp'] >= MIN_RIGID_CP and best['tsr'] >= MIN_RIGID_TSR)
-    tag = "" if viable else "   [BELOW VIABILITY FLOOR]"
-    print(f"    best: psi0 = {best['psi0']:+.1f} deg, "
-          f"k_load = {best['k_load']:.4f}, Cp = {best['cp']:.4f}, "
-          f"TSR = {best['tsr']:.2f}{tag}")
-    return dict(best, viable=viable)
-
-
-def sweep_passive(base, kl_grid, label):
-    print(f"  Sweep: passive CPPC at {label}")
-    print(f"    {'k_load':>9}  {'Cp':>9}  {'TSR':>6}")
-    results = []
-    for kl in kl_grid:
-        res = try_free_run({**base, 'k_load': kl}, U_DESIGN)
-        if res is None:
+    for kl in base['kload_grid']:
+        res = try_free_run({**base['base'], 'k_load': kl}, U_DESIGN)
+        if res[0] is None:
             continue
         cp, tsr = res
         results.append(dict(k_load=kl, cp=cp, tsr=tsr))
@@ -139,28 +113,58 @@ def sweep_passive(base, kl_grid, label):
     return best
 
 
-def aep_for(base, overrides, label, rated_power=None):
+def find_best_rigid(base, label):
+    """Find best (psi0, k_load) for rigid blade at this geometry."""
+    results = []
+    for psi in base['pitch_grid']:
+        for kl in base['kload_grid']:
+            r = try_free_run({**base['base'], 'prescribe_pitch': True,
+                              'pp0_deg': psi, 'k_load': kl}, U_DESIGN)
+            if r[0] is None:
+                continue
+            cp, tsr = r
+            if cp >= MIN_RIGID_CP and tsr >= MIN_RIGID_TSR:
+                results.append(dict(psi0=psi, k_load=kl, cp=cp, tsr=tsr))
+    if not results:
+        return dict(viable=False)
+    best = max(results, key=lambda r: r['cp'])
+    print(f"    best: psi0 = {best['psi0']:+.1f}, k_load = {best['k_load']:.4f}, "
+          f"Cp = {best['cp']:.4f}, TSR = {best['tsr']:.2f}")
+    return dict(best, viable=True)
+
+
+def aep_for(base, overrides, label):
+    """Compute AEP for a given configuration."""
+    from compute_aep import (
+        U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
+        rated_power_from_cp, integrate_aep
+    )
+    R = base['base']['R']
+    H = base['base']['H']
     free = []
     for U in U_REF:
-        res = try_free_run({**base, **overrides}, U)
-        if res is None:
+        res = try_free_run({**base['base'], **overrides}, U)
+        if res[0] is None:
             print(f"      U = {U:5.1f}   (no equilibrium)")
             continue
         cp, tsr = res
         free.append((U, cp))
+        print(f"      U = {U:5.1f}   Cp = {cp:+.4f}   TSR = {tsr:.2f}")
     if len(free) < 2:
         raise RuntimeError(f"not enough free-running points for {label}")
     U_s  = np.array([f[0] for f in free])
     cp_s = np.array([f[1] for f in free])
-    U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
+    U_grid = np.linspace(3.0, 25.0, 200)
     cp_curve = np.interp(U_grid, U_s, cp_s)
-    if rated_power is None:
-        cp_at_rated = float(np.interp(U_RATED, U_grid, cp_curve))
-        rated_power = rated_power_from_cp(base['R'], base['H'], cp_at_rated)
-    res = integrate_aep(U_grid, cp_curve, U_MEAN, K_WEIBULL,
-                        CUT_IN, CUT_OUT, rated_power,
-                        base['R'], base['H'])
-    res['rated_power_W'] = float(rated_power)
+
+    # Rated power from Cp at U_RATED
+    cp_at_rated = float(np.interp(12.0, U_grid, cp_curve))
+    from compute_aep import rated_power_from_cp
+    rated_power = rated_power_from_cp(R, H, cp_at_rated)
+
+    res = integrate_aep(U_grid, cp_curve, 6.0, 2.0,
+                        3.0, 25.0, rated_power,
+                        R, H)
     return res
 
 
@@ -173,69 +177,69 @@ def main():
 
     for label, cfg in GEOMETRIES.items():
         base = cfg["base"]
-        print()
-        print(f"### {label}  (R = {base['R']:.3f}, "
-              f"H = {base['H']:.3f}, c = {base['c']:.3f}, "
-              f"AR = {base['H']/base['c']:.2f})")
+        print(f"\n### {label}  (R = {base['R']:.3f}, H = {base['H']:.3f}, c = {base['c']:.3f}, AR = {base['H']/base['c']:.2f})")
 
-        best_r = sweep_rigid(base, cfg["pitch_grid"], cfg["kload_grid"], label)
-        best_p = sweep_passive(base, cfg["kload_grid"], label)
+        # Sweep rigid blade
+        print(f"  Sweep: rigid blade at {label}")
+        best_r = find_best_rigid(cfg, label)
+        # Sweep passive CPPC
+        print(f"  Sweep: passive CPPC at {label}")
+        best_p = find_best_passive(cfg, label)
 
-        print(f"    AEP for passive at k_load = {best_p['k_load']:.4f}:")
-        aep_p = aep_for(base, {'k_load': best_p['k_load']},
-                        f"{label}/passive")
-        rated = aep_p['rated_power_W']
-        print(f"      AEP = {aep_p['aep']:.1f} kWh/yr "
-              f"(CF {aep_p['cf']*100:.2f} %, rating {rated/1000:.2f} kW)")
-
-        if best_r['viable']:
-            print(f"    AEP for rigid at (psi0 = {best_r['psi0']:+.1f}, "
-                  f"k_load = {best_r['k_load']:.4f}):")
-            rp = rigid_params(base, best_r['psi0']); rp['k_load'] = best_r['k_load']
-            aep_r = aep_for(base, {k: rp[k] for k in
-                                   ['prescribe_pitch', 'pp0_deg', 'pp1_deg',
-                                    'pp2_deg', 'pp3_deg', 'pp_ph_deg',
-                                    'k_load']}, f"{label}/rigid",
-                            rated_power=rated)
-            print(f"      AEP = {aep_r['aep']:.1f} kWh/yr "
-                  f"(CF {aep_r['cf']*100:.2f} %)")
-            gain = (aep_p['aep'] / max(aep_r['aep'], 1e-9) - 1.0) * 100
-            print(f"    -> passive vs rigid at this geometry: {gain:+.1f} %")
+        if best_r.get('viable', False):
+            aep_r = aep_for(cfg, {
+                'prescribe_pitch': True, 'pp0_deg': best_r['psi0'],
+                'pp1_deg': 0, 'pp2_deg': 0, 'pp3_deg': 0, 'pp_ph_deg': 0,
+                'k_load': best_r['k_load']
+            }, f"{label}/rigid")
         else:
             aep_r = None
-            gain = None
-            print(f"    No viable rigid baseline at this geometry: the best")
-            print(f"    fixed-pitch config reaches only Cp = {best_r['cp']:.4f} "
-                  f"(TSR {best_r['tsr']:.2f}), below the")
-            print(f"    Cp >= {MIN_RIGID_CP:.2f} / TSR >= {MIN_RIGID_TSR:.1f} "
-                  f"viability floor. A percentage")
-            print(f"    gain measured against a dead rotor is not meaningful "
-                  f"and is reported as null.")
+            print(f"  No viable rigid configuration at {label}")
 
-        output["geometries"][label] = {
-            "R": base['R'], "c": base['c'], "H": base['H'],
-            "AR": base['H']/base['c'],
+        aep_p = aep_for(cfg, {'k_load': best_p['k_load']}, f"{label}/passive")
+
+        if aep_r and aep_p:
+            gain = (aep_p['aep'] / aep_r['aep'] - 1.0) * 100
+        else:
+            gain = None
+
+        output = {
+            "R": base['R'],
+            "c": base['c'],
+            "H": base['H'],
+            "AR": base['H'] / base['c'],
             "best_rigid": {
-                "psi0_deg": best_r['psi0'],
-                "k_load":   best_r['k_load'],
-                "cp_design": best_r['cp'],
-                "tsr":      best_r['tsr'],
-                "viable":   best_r['viable'],
-                "aep_kWh":  aep_r['aep'] if aep_r else None,
-                "cf":       aep_r['cf'] if aep_r else None,
+                "psi0_deg": best_r.get('psi0'),
+                "k_load": best_r.get('k_load'),
+                "cp_design": best_r.get('cp'),
+                "tsr": best_r.get('tsr'),
+                "viable": best_r.get('viable', False),
+                "aep_kWh": aep_r['aep'] if aep_r else None,
+                "cf": aep_r['cf'] if aep_r else None,
             },
             "best_passive": {
-                "k_load":    best_p['k_load'],
+                "k_load": best_p['k_load'],
                 "cp_design": best_p['cp'],
-                "aep_kWh":   aep_p['aep'],
-                "cf":        aep_p['cf'],
+                "aep_kWh": aep_p['aep'],
+                "cf": aep_p['cf'],
             },
             "gain_percent": gain,
         }
 
-    path = os.path.join(_HERE, "aep_rigid_fair.json")
+    # Add stamp
+    from scripts.stamp import make_stamp
+    stamp = make_stamp(
+        "scripts/compute_aep_rigid_fair.py",
+        script_version="v1.0",
+        n=100,
+        seed=0,
+        extra_files=["scripts/compute_aep.py"],
+        extra_data={"U_MEAN": 6.0, "K_WEIBULL": 2.0, "CUT_IN": 3.0, "CUT_OUT": 25.0, "U_RATED": 12.0, "U_DESIGN": 6.0},
+    )
+
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aep_rigid_fair.json")
     with open(path, "w") as fh:
-        json.dump(output, fh, indent=2)
+        json.dump({"stamp": stamp, **output}, fh, indent=2)
     print(f"\nWrote {path}")
 
 

@@ -51,6 +51,7 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
+from stamp import make_stamp
 
 
 # ============================================================================
@@ -495,8 +496,17 @@ def main():
 
     # -------- JSON --------
     out_json = os.path.join(_HERE, "uncertainty_results.json")
+    stamp = make_stamp(
+        "scripts/uncertainty.py",
+        script_version=_UQ_VERSION,
+        n=len(samples),
+        seed=SEED,
+        extra_files=["vawt_presets.py"],
+        extra_data={"UQ_SPEC": UQ_SPEC, "N_SAMPLES": N_SAMPLES},
+    )
     with open(out_json, "w") as fh:
         json.dump({
+            "stamp": stamp,
             "n_samples": len(samples),
             "seed": SEED,
             "method": "saltelli" if use_saltelli else "lhs",
