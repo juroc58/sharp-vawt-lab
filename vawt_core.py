@@ -469,6 +469,7 @@ class AeroConfig:
     c_scale_override: float = 0.0       # 0 = geometry-derived; else use this
     tip_loss_floor_override: float = 0.0   # 0 = use Helmbold formula; >0 floors f_ar
     tip_loss_multiplier: float = 1.0    # residual multiplier on Helmbold f_ar; <1 = stronger tip loss
+    ind_drag_scale: float = 1.0         # multiplier on induced drag term (0 = no induced drag, 1 = baseline)
     cm_scale: float = 1.0               # scale on polar Cm; 1 = table value, 0 = no pitching moment
 
 
@@ -733,7 +734,7 @@ class CycloturbineSim:
         ind_k_raw = 1.0 / (PI * aero.e_osw * AR)
         f_ar_scaled = min(1.0, max(0.0, f_ar_raw * aero.tip_loss_multiplier))
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_scaled)
-        self.ind_k = ind_k_raw
+        self.ind_k = ind_k_raw * aero.ind_drag_scale
         if aero.c_scale_override > 0.0:
             self.c_scale = float(aero.c_scale_override)
         else:

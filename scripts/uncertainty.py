@@ -69,6 +69,7 @@ UQ_SPEC = [
     ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
     ("tip_loss_multiplier",       0.85,  1.15),    # residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)
+    ("ind_drag_scale",            0.0,   1.5),     # multiplier on induced drag term (0 = no induced drag, 1 = baseline)
     ("cm_scale",                  0.0,   1.0),     # scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
     ("polar_variant",            0.0,   1.0),     # model form: 0 = neuralfoil table, 1 = smoothed_lowRe variant

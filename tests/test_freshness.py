@@ -13,7 +13,7 @@ import json
 # Add scripts directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
-from stamp import list_stale_results, verify_stamp
+from scripts.stamp import list_stale_results, verify_stamp, STAMP_CHECK_MAP
 
 
 def test_all_result_jsons_have_valid_stamps():
@@ -35,7 +35,7 @@ def test_all_result_jsons_have_valid_stamps():
 
 def test_stamp_structure():
     """Test that stamp fields have the expected structure."""
-    from stamp import STAMP_CHECK_MAP
+    from scripts.stamp import STAMP_CHECK_MAP
     
     scripts_dir = os.path.join(os.path.dirname(__file__), "..", "scripts")
     

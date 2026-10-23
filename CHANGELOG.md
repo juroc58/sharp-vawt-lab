@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`scripts/stamp.py`**: shared module for computing code hashes and freshness stamps on result JSONs. Covers vawt_core.py, all polar CSVs, provenance.json, script source, and script version. Includes `make_stamp()`, `verify_stamp()`, `list_stale_results()` and CLI.
+- **`scripts/check_freshness.py`**: CLI entry point via `python -m scripts.stamp` listing stale result JSONs and regeneration commands.
+- **`scripts/check_polars.py --fail-on-warnings`**: CI gate that exits non-zero when the default polar variant has warnings.
+- **`tests/test_freshness.py`**: test that all result JSONs carry valid, current stamps; fails if any consumed JSON lacks a stamp or its code_hash differs from current.
+- **`scripts/build_readme.py`**: now verifies stamps when loading JSON; fails on stale data.
 - **`scripts/plot_style.py`**: shared plotting style module (figsize 15x4.6 for 3-panel, 15x8 for 4-panel, dpi 200, constrained layout, fixed colour map, consistent fonts/grid/units).
 - **`scripts/plot_aep.py`**: unified plotting module reading JSON from compute scripts; generates all four AEP figures (small-rotor, scale-up, turbulent, counter-rotating) with consistent style.
 - **`scripts/diag_aep_branches.py`**: diagnostic script that runs fixed-TSR and free-running points with multiple initial conditions (psi0 in {0,120,240}, w0_frac in {0.2,0.9,1.2}) to diagnose bistability. Outputs `scripts/diag_aep_branches.json`.

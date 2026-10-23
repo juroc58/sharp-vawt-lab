@@ -188,6 +188,34 @@ def verify_stamp(json_path: str, expected_script: str) -> tuple[bool, str]:
     return True, "OK"
 
 
+# Map of result JSON filename -> expected generating script
+STAMP_CHECK_MAP = {
+    "uncertainty_results.json": "scripts/uncertainty.py",
+    "robust_optimization.json": "scripts/robust_reopt.py",
+    "aep_results.json": "scripts/compute_aep.py",
+    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+    "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
+    "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
+    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+    "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
+    "cm_scale_scan.json": "scripts/scan_cm_scale.py",
+    "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
+    "branch_point_checks.json": "scripts/check_branch_points.py",
+    "diag_aep_branches.json": "scripts/diag_aep_branches.py",
+    "tip_loss_scan.json": "scripts/scan_tip_loss.py",
+    "cm_scale_scan.json": "scripts/scan_cm_scale.py",
+    "optimization_passive.json": "scripts/optimize_passive.py",
+    "optimization_scaleup.json": "scripts/optimize_scaleup.py",
+    "optimization_actuator.json": "scripts/optimize_actuator.py",
+    "sobol_results.json": "scripts/sobol_sensitivity.py",
+    "spearman_results.json": "scripts/spearman_sensitivity.py",
+    "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
+    "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
+    "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
+    "tip_loss_scan.json": "scripts/scan_tip_loss.py",
+}
+
+
 def list_stale_results(results_dir: str = "scripts") -> List[tuple[str, str]]:
     """
     Scan for result JSONs and check their freshness.
@@ -199,35 +227,8 @@ def list_stale_results(results_dir: str = "scripts") -> List[tuple[str, str]]:
     script_dir = Path(__file__).parent
     root = script_dir.parent
 
-    # Map of result JSON filename -> expected generating script
-    expected_scripts = {
-        "uncertainty_results.json": "scripts/uncertainty.py",
-        "robust_optimization.json": "scripts/robust_reopt.py",
-        "aep_results.json": "scripts/compute_aep.py",
-        "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
-        "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
-        "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
-        "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
-        "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
-        "cm_scale_scan.json": "scripts/scan_cm_scale.py",
-        "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
-        "branch_point_checks.json": "scripts/check_branch_points.py",
-        "diag_aep_branches.json": "scripts/diag_aep_branches.py",
-        "tip_loss_scan.json": "scripts/scan_tip_loss.py",
-        "cm_scale_scan.json": "scripts/scan_cm_scale.py",
-        "optimization_passive.json": "scripts/optimize_passive.py",
-        "optimization_scaleup.json": "scripts/optimize_scaleup.py",
-        "optimization_actuator.json": "scripts/optimize_actuator.py",
-        "sobol_results.json": "scripts/sobol_sensitivity.py",
-        "spearman_results.json": "scripts/spearman_sensitivity.py",
-        "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
-        "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
-        "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
-        "tip_loss_scan.json": "scripts/scan_tip_loss.py",
-    }
-
     scripts_dir = root / "scripts"
-    for fname, script in expected_scripts.items():
+    for fname, script in STAMP_CHECK_MAP.items():
         fpath = scripts_dir / fname
         if fpath.is_file():
             valid, msg = verify_stamp(fpath, script)
