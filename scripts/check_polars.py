@@ -22,14 +22,13 @@ from __future__ import annotations
 import argparse
 import glob
 import os
-import re
 import sys
 
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
-POLAR_GLOB = os.path.join(_ROOT, "airfoil_polars", "**", "*.csv")
+POLAR_GLOB = os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "**", "*.csv")
 SLOPE_LIMIT = 1.15 * 2.0 * np.pi
 ATTACHED_DEG = 20.0
 LOW_ALPHA_DEG = 4.0
@@ -48,7 +47,7 @@ def load_polar(path):
 
 def check_one(path):
     """Return a list of warning strings for one polar file."""
-    a, cl, cd, cm = load_polar(path)
+    a, cl, _cd, cm = load_polar(path)
     warnings = []
     low = np.abs(a) <= LOW_ALPHA_DEG
     if low.sum() >= 2:
@@ -90,7 +89,7 @@ def check_one(path):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--polar-glob", default=POLAR_GLOB,
-                    help="glob for polar CSVs (default: airfoil_polars/**/*.csv)")
+                    help="glob for polar CSVs (default: sharp_vawt/airfoil_polars/**/*.csv)")
     ap.add_argument("--fail-on-warnings", action="store_true",
                     help="exit non-zero if any warnings are found (for CI gate)")
     args = ap.parse_args(argv)
@@ -116,7 +115,7 @@ def main(argv=None):
             n_warn += 1
     print(f"  total warnings: {n_warn}")
     if n_warn > 0:
-        print("  See airfoil_polars/README.md for provenance.")
+        print("  See sharp_vawt/airfoil_polars/README.md for provenance.")
         if args.fail_on_warnings:
             return 1
     else:

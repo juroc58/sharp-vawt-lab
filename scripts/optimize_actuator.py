@@ -21,29 +21,30 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import sys
 import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
-import sys, os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from vawt_core import create_sim_from_params
 from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 # ----------------------------------------------------------------- design space
 # Four pitch coefficients, matching the core's prescribed-pitch law.
-PARAM_NAMES: Tuple[str, ...] = (
+PARAM_NAMES: tuple[str, ...] = (
     "c", "tsr", "k_load",
     "pp0_deg", "pp1_deg", "pp2_deg", "pp3_deg",
 )
 
-PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
+PARAM_BOUNDS: tuple[tuple[float, float], ...] = (
     (0.060, 0.130),     # chord c [m]          → σ = 0.048–0.104 for N=3, R=0.6
     (2.000, 3.500),     # TSR
     (0.0003, 0.0015),   # k_load [N·m·s²]
@@ -57,7 +58,7 @@ PENALTY: float = 1000.0
 BETZ_LIMIT: float = 0.593     # physical ceiling — reject anything above this
 
 
-DEFAULT_BASE: Dict[str, Any] = {
+DEFAULT_BASE: dict[str, Any] = {
     # --- geometry ---------------------------------------------------------
     "R": 0.60, "c": 0.10, "H": 0.40, "N": 3,
     "ar": 0.50, "sp": 0.25, "arm_d": 0.0, "n_arm": 2, "arm_cd": 1.0,
@@ -97,7 +98,7 @@ class CpObjective:
     either dead code or physically wrong.
     """
 
-    def __init__(self, base_params: Dict[str, Any], R: float, ar: float) -> None:
+    def __init__(self, base_params: dict[str, Any], R: float, ar: float) -> None:
         self.base = dict(base_params)
         self.R = float(R)
         self.ar = float(ar)
@@ -138,20 +139,20 @@ class CpObjective:
 
 @dataclass
 class OptimizationReport:
-    best_params: Dict[str, Any]
+    best_params: dict[str, Any]
     best_cp: float
     de_time_s: float
     local_time_s: float
     de_result: Any = None
     local_result: Any = None
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
 
 
 class VAWTOptimizer:
     """Two-stage optimiser: DE (global) → Nelder-Mead (local)."""
 
     def __init__(self,
-                 base_params: Optional[Dict[str, Any]] = None,
+                 base_params: dict[str, Any] | None = None,
                  de_popsize: int = 15,
                  de_maxiter: int = 30,
                  local_maxiter: int = 40,
@@ -163,9 +164,9 @@ class VAWTOptimizer:
         self.local_maxiter = local_maxiter
         self.workers = workers
         self.seed = seed
-        self.history: List[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
         self._best_cp: float = -math.inf
-        self._best_x: Optional[np.ndarray] = None
+        self._best_x: np.ndarray | None = None
         self._objective = CpObjective(self.base,
                                       R=float(self.base["R"]),
                                       ar=float(self.base["ar"]))
@@ -280,9 +281,9 @@ class VAWTOptimizer:
         print("#" * 78)
         self._warmup()
 
-        x_de, cp_de, de_res, t_de = self.run_global()
+        x_de, _cp_de, de_res, t_de = self.run_global()
 
-        x_loc, cp_loc, loc_res, t_loc = self.run_local(x_de)
+        x_loc, _cp_loc, loc_res, t_loc = self.run_local(x_de)
 
         x_star = self._best_x if self._best_x is not None else x_loc
         best_dict = dict(self.base)
@@ -332,7 +333,7 @@ class VAWTOptimizer:
             path=filepath,
             data=payload,
             script="scripts/optimize_actuator.py",
-            version="v1.0",
+            version="2.0.0",
             n=1,
             seed=42,
             extra_files=["vawt_presets.py"],
@@ -342,7 +343,7 @@ class VAWTOptimizer:
 
     # ------------------------------------------------------------------
     def evaluate_best(self, report: OptimizationReport,
-                      T_long: float = 30.0) -> Dict[str, Any]:
+                      T_long: float = 30.0) -> dict[str, Any]:
         print(f"\n[Opt] Validation run (T_max = {T_long} s) ...")
         params = dict(report.best_params)
         params["T_max"] = T_long

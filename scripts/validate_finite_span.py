@@ -12,12 +12,11 @@ References:
 """
 from __future__ import annotations
 
-import math
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 
 # Experimental data from Du & Selig (1998) and NASA TM 4075
 EXPERIMENTAL_CL_ALPHA = {
@@ -59,7 +58,7 @@ def main():
     print("Finite-Span Correction Validation")
     print("=" * 70)
 
-    ARs_exp = np.array(sorted(k for k in EXPERIMENTAL_CL_ALPHA.keys() if k != float('inf')))
+    ARs_exp = np.array(sorted(k for k in EXPERIMENTAL_CL_ALPHA if k != float('inf')))
     cla_exp = np.array([EXPERIMENTAL_CL_ALPHA[ar] for ar in ARs_exp])
 
     ARs_fine = np.linspace(1.0, 20.0, 200)
@@ -77,8 +76,8 @@ def main():
     cla_gen_prandtl = CLA_2D * gen_prandtl
     cla_helmbold = CLA_2D * helmbold
     cla_k15 = CLA_2D * k15
-    cla_k18 = CLA_2D * k18
-    cla_k20 = CLA_2D * k20
+    CLA_2D * k18
+    CLA_2D * k20
     cla_k22 = CLA_2D * k22
 
     # Evaluate at experimental ARs
@@ -93,8 +92,8 @@ def main():
     cla_prandtl_exp = CLA_2D * prandtl_exp
     cla_gen_prandtl_exp = CLA_2D * gen_prandtl_exp
     cla_helmbold_exp = CLA_2D * helmbold_exp
-    cla_k15_exp = CLA_2D * k15_exp
-    cla_k18_exp = CLA_2D * k18_exp
+    CLA_2D * k15_exp
+    CLA_2D * k18_exp
     cla_k20_exp = CLA_2D * k20_exp
     cla_k22_exp = CLA_2D * k22_exp
 
@@ -111,7 +110,7 @@ def main():
     print(f"  Modified k=2.2:         {rmse(cla_k22_exp, cla_exp):.3f}")
     print(f"  Helmbold (default):     {rmse(cla_helmbold_exp, cla_exp):.3f}")
 
-    print(f"\nPredicted vs Experimental Cl_alpha (per rad):")
+    print("\nPredicted vs Experimental Cl_alpha (per rad):")
     print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} "
           f"{'Helmbold':>9} {'k=1.5':>8} {'k=2.2':>8}")
     for ar, exp in zip(ARs_exp, cla_exp):
@@ -124,7 +123,7 @@ def main():
               f"{hm:>9.2f} {k15_val:>8.2f} {k22_val:>8.2f}")
 
     # Plot
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+    _fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
     ax1.plot(ARs_fine, cla_prandtl, 'k--', lw=1.5, label='Prandtl (k=2.0)')
     ax1.plot(ARs_fine, cla_gen_prandtl, 'b-', lw=2, label='Gen. Prandtl (k=1.8)')

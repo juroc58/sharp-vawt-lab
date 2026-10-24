@@ -27,7 +27,6 @@ Usage:
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -36,9 +35,8 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params  # noqa: E402
 from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 R_HAM, C_HAM, H_HAM, N_HAM = 1.83, 0.305, 1.37, 3
 AR_GEOMETRIC = H_HAM / C_HAM
@@ -47,26 +45,26 @@ HAM_MID = 0.5 * (HAM_BAND_LO + HAM_BAND_HI)
 TSRS = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5)
 AR_SCAN = (3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0)
 
-BASE = dict(
-    R=R_HAM, c=C_HAM, H=H_HAM, N=N_HAM,
-    ar=0.0, sp=0.25,
-    mb=0.010, xbcg=0.20, mc=0.002, dcw=0.30,
-    balance=0, bias_deg=0.0,
-    prescribe_pitch=True, pp0_deg=0.0, pp1_deg=-10.0,
-    pp2_deg=0.0, pp3_deg=0.0, pp_ph_deg=0.0,
-    free=False, tsr=2.5, T_max=20.0, stride=5,
-    use_dmst=True, win_deg=89.0, cb=2e-5, mu_c=0.0,
-    k_load=0.0004,
-)
+BASE = {
+    "R": R_HAM, "c": C_HAM, "H": H_HAM, "N": N_HAM,
+    "ar": 0.0, "sp": 0.25,
+    "mb": 0.010, "xbcg": 0.20, "mc": 0.002, "dcw": 0.30,
+    "balance": 0, "bias_deg": 0.0,
+    "prescribe_pitch": True, "pp0_deg": 0.0, "pp1_deg": -10.0,
+    "pp2_deg": 0.0, "pp3_deg": 0.0, "pp_ph_deg": 0.0,
+    "free": False, "tsr": 2.5, "T_max": 20.0, "stride": 5,
+    "use_dmst": True, "win_deg": 89.0, "cb": 2e-5, "mu_c": 0.0,
+    "k_load": 0.0004,
+}
 
 
 def sweep(**overrides):
     rows = []
     for tsr in TSRS:
         r = create_sim_from_params({**BASE, **overrides, "tsr": tsr}).run()
-        rows.append(dict(tsr=tsr, cp=float(r["cp"]),
-                         tsr_eq=float(r["tsr_eq"]),
-                         steady=bool(r.get("steady", True))))
+        rows.append({"tsr": tsr, "cp": float(r["cp"]),
+                         "tsr_eq": float(r["tsr_eq"]),
+                         "steady": bool(r.get("steady", True))})
     return rows
 
 
@@ -95,33 +93,33 @@ def main():
           "(paper not in repo; AR scan 3..6 also reported)")
 
     cases = {
-        "static_cd005": dict(cd_add=0.005, use_dynamic_stall=False,
-                             use_flow_curvature=False, use_tip_loss=False),
-        "static_cd002": dict(cd_add=0.002, use_dynamic_stall=False,
-                             use_flow_curvature=False, use_tip_loss=False),
-        "ds_on_cd002": dict(cd_add=0.002, use_dynamic_stall=True,
-                            use_flow_curvature=False, use_tip_loss=False),
-        "ds_curv_cd002": dict(cd_add=0.002, use_dynamic_stall=True,
-                              use_flow_curvature=True, use_tip_loss=False),
-        "tip_loss_helmbold": dict(cd_add=0.005, use_dynamic_stall=False,
-                                  use_flow_curvature=False, use_tip_loss=True),
+        "static_cd005": {"cd_add": 0.005, "use_dynamic_stall": False,
+                             "use_flow_curvature": False, "use_tip_loss": False},
+        "static_cd002": {"cd_add": 0.002, "use_dynamic_stall": False,
+                             "use_flow_curvature": False, "use_tip_loss": False},
+        "ds_on_cd002": {"cd_add": 0.002, "use_dynamic_stall": True,
+                            "use_flow_curvature": False, "use_tip_loss": False},
+        "ds_curv_cd002": {"cd_add": 0.002, "use_dynamic_stall": True,
+                              "use_flow_curvature": True, "use_tip_loss": False},
+        "tip_loss_helmbold": {"cd_add": 0.005, "use_dynamic_stall": False,
+                                  "use_flow_curvature": False, "use_tip_loss": True},
     }
     results = {}
     for name, flags in cases.items():
         rows = sweep(**flags)
         cp, tsr = peak(rows)
         sim = create_sim_from_params({**BASE, **flags})
-        results[name] = dict(
-            cd_add=flags["cd_add"],
-            use_dynamic_stall=flags["use_dynamic_stall"],
-            use_flow_curvature=flags["use_flow_curvature"],
-            use_tip_loss=flags["use_tip_loss"],
-            peak_cp=cp,
-            peak_tsr=tsr,
-            bias_vs_ham_mid=(cp - HAM_MID) / HAM_MID,
-            f_ar=float(sim.f_ar),
-            sweep=rows,
-        )
+        results[name] = {
+            "cd_add": flags["cd_add"],
+            "use_dynamic_stall": flags["use_dynamic_stall"],
+            "use_flow_curvature": flags["use_flow_curvature"],
+            "use_tip_loss": flags["use_tip_loss"],
+            "peak_cp": cp,
+            "peak_tsr": tsr,
+            "bias_vs_ham_mid": (cp - HAM_MID) / HAM_MID,
+            "f_ar": float(sim.f_ar),
+            "sweep": rows,
+        }
         print(f"  {name:20s} peak Cp = {cp:.4f} at TSR {tsr:.1f} "
               f"(f_ar={sim.f_ar:.3f})")
 
@@ -135,16 +133,16 @@ def main():
                                       "use_dynamic_stall": False,
                                       "use_flow_curvature": False,
                                       "use_tip_loss": True})
-        ar_rows.append(dict(AR=ar, H=h, peak_cp=cp, peak_tsr=tsr,
-                            f_ar=float(sim.f_ar)))
+        ar_rows.append({"AR": ar, "H": h, "peak_cp": cp, "peak_tsr": tsr,
+                            "f_ar": float(sim.f_ar)})
         print(f"  AR = {ar:4.2f}  peak Cp = {cp:.4f}  f_ar = {sim.f_ar:.3f}")
 
     no_tip = results["static_cd005"]
     tip = results["tip_loss_helmbold"]
     bias_lo, bias_hi = derived_bias_window(no_tip["peak_cp"], tip["peak_cp"])
     out = {
-        "ham_geometry": dict(R=R_HAM, c=C_HAM, H=H_HAM, N=N_HAM,
-                             AR=AR_GEOMETRIC),
+        "ham_geometry": {"R": R_HAM, "c": C_HAM, "H": H_HAM, "N": N_HAM,
+                             "AR": AR_GEOMETRIC},
         "band": [HAM_BAND_LO, HAM_BAND_HI],
         "band_mid": HAM_MID,
         "note": (
@@ -166,10 +164,10 @@ def main():
         path=path,
         data=out,
         script="scripts/ham_finite_span_check.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
-        extra_files=["vawt_presets.py", "vawt_core.py"],
+        extra_files=["vawt_presets.py"],
         extra_data={},
     )
     print(f"\n  no-tip peak          = {no_tip['peak_cp']:.4f}")

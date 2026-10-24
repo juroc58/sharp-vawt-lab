@@ -1,4 +1,7 @@
-import os, subprocess, sys
+import os
+import subprocess
+import sys
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def test_readme_in_sync():

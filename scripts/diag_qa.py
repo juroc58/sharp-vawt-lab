@@ -31,24 +31,24 @@ sys.path.insert(0, _ROOT)
 
 import numpy as np
 
-from vawt_core import create_sim_from_params
+from sharp_vawt import create_sim_from_params
 
-BASE = dict(
-    R=2.7179, H=4.0568, N=3, c=0.3861,
-    ar=0.3121, sp=0.2181,
-    mb=0.92954, xbcg=0.20,
-    mc=2.69306, dcw=-0.1935,
-    balance=0, bias_deg=0.0,
-    prescribe_pitch=False,
-    cd_add=0.002,
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,
-    win_deg=45.0, cb=2e-5, mu_c=3e-4,
-    free=True, T_max=20.0, stride=1,  # stride=1 for smooth Qa reconstruction
-    w0_frac=0.9, k_load=4.164352, tsr=2.5,
-)
+BASE = {
+    "R": 2.7179, "H": 4.0568, "N": 3, "c": 0.3861,
+    "ar": 0.3121, "sp": 0.2181,
+    "mb": 0.92954, "xbcg": 0.20,
+    "mc": 2.69306, "dcw": -0.1935,
+    "balance": 0, "bias_deg": 0.0,
+    "prescribe_pitch": False,
+    "cd_add": 0.002,
+    "use_dynamic_stall": True,
+    "use_flow_curvature": True,
+    "use_dmst": True,
+    "use_tip_loss": True,
+    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+    "free": True, "T_max": 20.0, "stride": 1,  # stride=1 for smooth Qa reconstruction
+    "w0_frac": 0.9, "k_load": 4.164352, "tsr": 2.5,
+}
 
 # Pass criteria (see README "does differently" #3).
 EXTREME_MARGIN = 0.8    # fraction of the stall angle for the extreme check
@@ -114,15 +114,15 @@ def evaluate_restoring(alpha_deg, qa, stall_deg, steady=True):
     frac_ok = np.isfinite(frac) and frac >= FRACTION_MIN
     passed = bool(extreme_ok and frac_ok and steady)
 
-    return dict(
-        alpha_max=a_max, alpha_min=a_min,
-        qa_max=qa_max, qa_min=qa_min,
-        stall_deg=float(stall_deg),
-        checks=checks,
-        fraction=frac, n_band=n_band,
-        extreme_ok=extreme_ok, frac_ok=frac_ok,
-        passed=passed,
-    )
+    return {
+        "alpha_max": a_max, "alpha_min": a_min,
+        "qa_max": qa_max, "qa_min": qa_min,
+        "stall_deg": float(stall_deg),
+        "checks": checks,
+        "fraction": frac, "n_band": n_band,
+        "extreme_ok": extreme_ok, "frac_ok": frac_ok,
+        "passed": passed,
+    }
 
 
 def restoring_report(params):

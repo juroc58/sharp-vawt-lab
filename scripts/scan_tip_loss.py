@@ -16,7 +16,6 @@ Writes ``scripts/tip_loss_scan.json``.
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -25,9 +24,10 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params  # noqa: E402
-import uncertainty as U  # noqa: E402
+import uncertainty as U
+
 from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 MULTIPLIERS = [0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30]
 ANCHORS = ["sharp_cppc", "optimised_passive", "scaleup"]
@@ -68,7 +68,7 @@ def main():
         path=path,
         data=out,
         script="scripts/scan_tip_loss.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
         extra_files=["vawt_presets.py", "scripts/uncertainty.py"],

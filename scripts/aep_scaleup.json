@@ -1,9 +1,15 @@
 {
   "stamp": {
-    "code_hash": "3a49eeef0bf503b0",
+    "schema_version": "2",
+    "code_hash": "f2c6eeb7ea650baabe0302fa93dc7da7f65960b86415575308e989014a621847",
     "script": "scripts/compute_aep_scaleup.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T09:13:40.726217Z",
+    "script_version": "2.0.0",
+    "created_utc": "2026-10-24T17:53:58.232308+00:00",
+    "python_version": "3.14.4",
+    "git_commit": "46fd455d87614b9281be0b1a5ab6c513b8ac4cfb",
+    "seed": 0,
+    "n": 82,
+    "script_args": [],
     "extra_files": [
       "vawt_presets.py",
       "scripts/compute_aep.py"
@@ -15,8 +21,26 @@
       "CUT_OUT": 25.0,
       "U_RATED": 12.0
     },
-    "n": 82,
-    "seed": 0
+    "uq_spec_hash": null,
+    "config_hash": "545c036b14dc2e541612bd3c7fd057284fd3475e0e601c1b4ef6ec9ba5c40c43",
+    "source_hashes": {
+      "sharp_vawt/__init__.py": "4f418eeb28f703d3fedf56bd6e993edcd182600b0cf63ccc1c82d13951e40475",
+      "sharp_vawt/config.py": "e6b935fc543d8eb5bf1cc2c4ab7cb07ca20a448efae7401d5b25366c1f5da79f",
+      "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
+      "sharp_vawt/engine.py": "aca47b3ab93e17a6791eaa76f78a595c0a42efdfcf0f5c46b05418c1c0035503",
+      "vawt_core.py": "07671e2ff1384dcde04af3fd33e54e0e12109b2e0e0cbd23d63a5bd3679f1929",
+      "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
+      "scripts/compute_aep_scaleup.py": "5b592085251c7474c360f9608f6c5c73227e519adc8bb3387245bbb9e1f32ece",
+      "scripts/compute_aep.py": "acc2ad2692045518207f5ca4fe53d08a342355efeca36d92cc7dd3074214f400"
+    },
+    "data_hashes": {
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_1000000.csv": "8e039410c5697a6eeed77f56ce34333a3afd8bdcfb353d0c9d5b8b5ee1d3a456",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_200000.csv": "ba9bdec33f7c4559315ee15147779da6eab27bab0fb7c9c68b83d6131ffded91",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_400000.csv": "7054ea511217f7ed44df48d1dfa5d6ac0758367cdc2a87e32f5f44fd072bc29b",
+      "sharp_vawt/airfoil_polars/provenance.json": "2a251dd01bcc6146ce9d890700ba76ca2e5c9e60dc124f2452ae6cc12bb30561",
+      "sharp_vawt/airfoil_polars/README.md": "0e99fb03dee3e94f051fa5bdad5a5e99c290a58b4a6bef0274d439337947626f"
+    }
   },
   "geometry": {
     "R": 2.7179,

@@ -22,7 +22,6 @@ initial popsize=6/maxiter=8, which did not converge).
 """
 from __future__ import annotations
 
-import json
 import math
 import os
 import sys
@@ -30,7 +29,7 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -38,9 +37,8 @@ from scipy.optimize import differential_evolution, minimize
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-from vawt_core import create_sim_from_params
 from scripts.stamp import write_json_with_stamp
-
+from sharp_vawt import create_sim_from_params
 
 # ---------------------------------------------------------------------------
 # Reference design point (current machine at R = 0.6 m)
@@ -65,11 +63,11 @@ FLAT_DE_TOL = 1e-4      # relative Cp movement below which DE is "flat"
 # ---------------------------------------------------------------------------
 # Design space
 # ---------------------------------------------------------------------------
-PARAM_NAMES: Tuple[str, ...] = (
+PARAM_NAMES: tuple[str, ...] = (
     "R", "c_over_R", "H_over_R", "k_load_ref", "mc_ref", "ar", "sp", "dcw",
 )
 
-PARAM_BOUNDS: Tuple[Tuple[float, float], ...] = (
+PARAM_BOUNDS: tuple[tuple[float, float], ...] = (
     (0.60, 3.00),       # R            [m]
     (0.10, 0.30),       # c/R          [-]
     (0.50, 1.50),       # H/R          [-]
@@ -131,26 +129,26 @@ class ScaledObjective:
         mc = mc_ref * scale ** 3
         k_load = kl_ref * scale ** 5
 
-        params = dict(
-            R=R, c=c, H=H, N=3,
-            ar=ar, sp=sp,
-            mb=mb, xbcg=0.20,
-            mc=mc, dcw=dcw,
-            balance=0, bias_deg=0.0,
-            prescribe_pitch=False,
-            cd_add=0.002,
-            use_dynamic_stall=True,
-            use_flow_curvature=True,
-            use_dmst=True,
-            use_tip_loss=True,
-            win_deg=45.0,
-            cb=2e-5, mu_c=3e-4,
-            free=True,
-            T_max=30.0, stride=8,
-            w0_frac=0.9,
-            k_load=k_load,
-            tsr=2.5,
-        )
+        params = {
+            "R": R, "c": c, "H": H, "N": 3,
+            "ar": ar, "sp": sp,
+            "mb": mb, "xbcg": 0.20,
+            "mc": mc, "dcw": dcw,
+            "balance": 0, "bias_deg": 0.0,
+            "prescribe_pitch": False,
+            "cd_add": 0.002,
+            "use_dynamic_stall": True,
+            "use_flow_curvature": True,
+            "use_dmst": True,
+            "use_tip_loss": True,
+            "win_deg": 45.0,
+            "cb": 2e-5, "mu_c": 3e-4,
+            "free": True,
+            "T_max": 30.0, "stride": 8,
+            "w0_frac": 0.9,
+            "k_load": k_load,
+            "tsr": 2.5,
+        }
 
         try:
             sim = create_sim_from_params(params)
@@ -182,7 +180,7 @@ class Report:
     best_x: np.ndarray
     best_cp: float
     best_Re: float
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +202,7 @@ def _warmup() -> None:
 
 def optimise() -> Report:
     obj = ScaledObjective()
-    history: List[Dict[str, Any]] = []
+    history: list[dict[str, Any]] = []
     state = {"best_cp": -math.inf, "best_x": None, "gen": 0}
 
     def _cb(xk: np.ndarray, conv: float) -> None:
@@ -376,7 +374,7 @@ def main() -> None:
         path=str(out_path),
         data=payload,
         script="scripts/optimize_scaleup.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=1,
         extra_files=["vawt_presets.py"],
@@ -386,21 +384,21 @@ def main() -> None:
 
     # ---- verification run with a longer window ----
     print()
-    print(f"[Opt] Verification run (T_max = 60 s) ...")
-    params = dict(
-        R=R, c=c, H=H, N=3,
-        ar=ar, sp=sp,
-        mb=mb, xbcg=0.20,
-        mc=mc, dcw=dcw,
-        balance=0, bias_deg=0.0,
-        prescribe_pitch=False,
-        cd_add=0.002,
-        use_dynamic_stall=True, use_flow_curvature=True, use_dmst=True,
-        use_tip_loss=True,
-        win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        free=True, T_max=60.0, stride=8,
-        w0_frac=0.9, k_load=k_load, tsr=2.5,
-    )
+    print("[Opt] Verification run (T_max = 60 s) ...")
+    params = {
+        "R": R, "c": c, "H": H, "N": 3,
+        "ar": ar, "sp": sp,
+        "mb": mb, "xbcg": 0.20,
+        "mc": mc, "dcw": dcw,
+        "balance": 0, "bias_deg": 0.0,
+        "prescribe_pitch": False,
+        "cd_add": 0.002,
+        "use_dynamic_stall": True, "use_flow_curvature": True, "use_dmst": True,
+        "use_tip_loss": True,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+        "free": True, "T_max": 60.0, "stride": 8,
+        "w0_frac": 0.9, "k_load": k_load, "tsr": 2.5,
+    }
     r = create_sim_from_params(params).run()
     print(f"  Cp        = {r['cp']:+.4f}")
     print(f"  TSR_eq    = {r['tsr_eq']:.3f}")

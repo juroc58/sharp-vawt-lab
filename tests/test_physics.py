@@ -1,9 +1,10 @@
 """Tests for the physics overrides added for the UQ study."""
-import pytest
 import math
 
-from vawt_core import create_sim_from_params
+import pytest
+
 from tests.conftest import BASE_QUICK
+from vawt_core import create_sim_from_params
 
 
 class TestTipLossBounds:
@@ -119,7 +120,8 @@ class TestCmDimensions:
         import json
         from pathlib import Path
         prov = json.loads(
-            Path("airfoil_polars/provenance.json").read_text()
+            (Path(__file__).resolve().parents[1]
+             / "sharp_vawt" / "airfoil_polars" / "provenance.json").read_text()
         )
         assert "NeuralFoil" in prov["cm_method"]
         assert "Cm=0" in prov["cm_method"] or "|alpha|<=20" in prov["cm_method"]
@@ -135,7 +137,8 @@ class TestCmDimensions:
         aggressive clamping (1.1 * 2pi slope cap) as a sensitivity bound.
         """
         import numpy as np
-        from vawt_core import PolarDatabase, _SMOOTH_LOW_RE_CAP
+
+        from vawt_core import _SMOOTH_LOW_RE_CAP, PolarDatabase
         default = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
         smooth = PolarDatabase("airfoil_polars/naca0012",
                                variant="smoothed_lowRe")
@@ -192,12 +195,13 @@ class TestCmDimensions:
 
     def test_cm_odd_symmetry(self):
         """Cm should be an odd function of alpha (sign flip)."""
-        from vawt_core import PolarDatabase
         import math
+
+        from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
         for a in [5.0, 15.0, 30.0, 60.0]:
             Cl_pos, Cd_pos, Cm_pos, cla = pdb.lookup(1e6, math.radians(a))
-            Cl_neg, Cd_neg, Cm_neg, cla = pdb.lookup(1e6, math.radians(-a))
+            Cl_neg, Cd_neg, Cm_neg, _cla = pdb.lookup(1e6, math.radians(-a))
             # Cl should be odd: Cl(-a) = -Cl(a)
             assert Cl_neg == pytest.approx(-Cl_pos, rel=0.01)
             # Cm should be odd: Cm(-a) = -Cm(a)
@@ -211,8 +215,9 @@ class TestVonKarmanTurbulence:
 
     def test_vonkarman_variance(self):
         """von Kármán turbulence variance = 0.47 * Dryden variance for same sigma, L."""
-        from vawt_core import create_sim_from_params
         import numpy as np
+
+        from vawt_core import create_sim_from_params
         
         base = {
             'R': 1.0, 'c': 0.2, 'H': 2.0, 'N': 3,
@@ -222,15 +227,15 @@ class TestVonKarmanTurbulence:
             'prescribe_pitch': False,
             'cd_add': 0.0, 'use_dynamic_stall': False,
             'use_flow_curvature': False, 'use_dmst': False,
-            'use_tip_loss': True, 'use_dmst': False,
+            'use_tip_loss': True,
             'win_deg': 45.0, 'cb': 0.0, 'mu_c': 0.0,
             'free': False, 'tsr': 2.5, 'T_max': 10.0, 'stride': 5,
-            'w0_frac': 0.9, 'k_load': 0.001, 'tsr': 2.5,
+            'w0_frac': 0.9, 'k_load': 0.001,
             'turb_I': 0.1, 'turb_L': 10.0,
         }
         
         sim = create_sim_from_params({**base, 'turb_model': 'vonkarman', 'seed': 42})
-        t, U = sim._make_wind(50000)
+        _t, U = sim._make_wind(50000)
 
         # Measured turbulence intensity should match target I
         measured_ti = np.std(U - np.mean(U)) / np.mean(U)
@@ -253,7 +258,7 @@ class TestVonKarmanTurbulence:
             'use_tip_loss': True, 'turb_model': 'vonkarman',
             'win_deg': 45.0, 'cb': 0.0, 'mu_c': 0.0,
             'free': True, 'tsr': 2.5, 'T_max': 5.0, 'stride': 5,
-            'w0_frac': 0.9, 'k_load': 0.001, 'tsr': 2.5,
+            'w0_frac': 0.9, 'k_load': 0.001,
             'turb_I': 0.1, 'turb_L': 10.0, 'seed': 123,
         }).run()
         assert r['cp'] > 0
@@ -264,10 +269,10 @@ class TestWorkingDirectoryIndependence:
 
     def test_run_from_temp_dir(self):
         """Simulation runs correctly when cwd is different from repo root."""
-        import tempfile
         import os
         import subprocess
         import sys
+        import tempfile
         
         # Get the repo root directory dynamically
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -278,9 +283,9 @@ class TestWorkingDirectoryIndependence:
             script_path = os.path.join(tmpdir, 'test_run.py')
             script_content = (
                 'import sys\n'
-                'sys.path.insert(0, {0!r})\n'
+                f'sys.path.insert(0, {repo_root!r})\n'
                 'from vawt_core import create_sim_from_params\n'
-                'r = create_sim_from_params({{\n'
+                'r = create_sim_from_params({\n'
                 '    "R": 0.6, "c": 0.14, "H": 0.4, "N": 3,\n'
                 '    "ar": 0.5, "sp": 0.25, "mb": 0.01, "xbcg": 0.2,\n'
                 '    "mc": 0.002, "dcw": 0.3, "balance": 0, "bias_deg": 0.0,\n'
@@ -292,9 +297,9 @@ class TestWorkingDirectoryIndependence:
                 '    "use_tip_loss": True, "use_dmst": True,\n'
                 '    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,\n'
                 '    "k_load": 0.0025\n'
-                '}}).run()\n'
-                'print("Cp={{\" + str(r[\"cp\"])[:6] + \"}}")\n'
-            ).format(repo_root)
+                '}).run()\n'
+                'print("Cp={\" + str(r[\"cp\"])[:6] + \"}")\n'
+            )
             
             script_path = os.path.join(tmpdir, 'test_run.py')
             with open(script_path, 'w') as f:
@@ -339,8 +344,6 @@ class TestChangelogReproduction:
     def test_changelog_cp_values_reproduce(self):
         """Key Cp values mentioned in CHANGELOG.md should reproduce from scripts."""
         import os
-        import subprocess
-        import sys
         import re
         
         changelog_path = os.path.join(os.path.dirname(__file__), '..', 'CHANGELOG.md')
@@ -351,7 +354,7 @@ class TestChangelogReproduction:
             changelog = f.read()
         
         # Extract Cp values from changelog (pattern: X.XX or 0.XX)
-        cp_matches = re.findall(r'Cp\s*[=≈]\s*(\d+\.\d+)', changelog, re.IGNORECASE)
+        re.findall(r'Cp\s*[=≈]\s*(\d+\.\d+)', changelog, re.IGNORECASE)
         # This is a basic check - full reproduction would require parsing context
         # For now, just verify the file is readable and has expected format
         assert '## [3.2.0]' in open(changelog_path).read() or '## [3.1.0]' in open(changelog_path).read()
@@ -395,19 +398,19 @@ class TestFnRatio:
     def test_scaleup_fn_ratio_meets_sharp_rule(self):
         """Scale-up design should meet Sharp's fn_ratio >= 1.5 rule."""
         # Scale-up geometry from optimization_scaleup.json
-        scaleup = dict(
-            R=2.7179, H=4.0568, N=3, c=0.3861,
-            ar=0.3121, sp=0.2181,
-            mb=0.92954, xbcg=0.20, mc=2.69306, dcw=-0.1935,
-            balance=0, bias_deg=0.0,
-            prescribe_pitch=False,
-            cd_add=0.002,
-            use_dynamic_stall=True, use_flow_curvature=True,
-            use_dmst=True, use_tip_loss=True,
-            win_deg=45.0, cb=2e-5, mu_c=3e-4,
-            free=True, T_max=40.0, stride=8,
-            w0_frac=0.9, k_load=4.164352, tsr=2.5,
-        )
+        scaleup = {
+            'R': 2.7179, 'H': 4.0568, 'N': 3, 'c': 0.3861,
+            'ar': 0.3121, 'sp': 0.2181,
+            'mb': 0.92954, 'xbcg': 0.20, 'mc': 2.69306, 'dcw': -0.1935,
+            'balance': 0, 'bias_deg': 0.0,
+            'prescribe_pitch': False,
+            'cd_add': 0.002,
+            'use_dynamic_stall': True, 'use_flow_curvature': True,
+            'use_dmst': True, 'use_tip_loss': True,
+            'win_deg': 45.0, 'cb': 2e-5, 'mu_c': 3e-4,
+            'free': True, 'T_max': 40.0, 'stride': 8,
+            'w0_frac': 0.9, 'k_load': 4.164352, 'tsr': 2.5,
+        }
         s = create_sim_from_params(scaleup)
         # fn_ratio = sqrt(M * Rp * ar / Ip)
         # Sharp's design rule: fn_ratio >= 1.5
@@ -424,16 +427,18 @@ class TestCmHubMoment:
 
     def test_cm_neuralfoil_variant_nonzero_in_polar(self):
         """The neuralfoil_cm variant has non-zero Cm at 15° (raw NeuralFoil)."""
-        from vawt_core import PolarDatabase
         import math
+
+        from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil_cm")
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) > 0.001, f"Cm at 15° should be non-zero, got {Cm:.6f}"
 
     def test_cm_default_variant_zero_in_attached(self):
         """Default variant has Cm=0 in attached flow (physical symmetric section)."""
-        from vawt_core import PolarDatabase
         import math
+
+        from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012", variant="neuralfoil")
         _, _, Cm, _ = pdb.lookup(1e6, math.radians(15.0))
         assert abs(Cm) < 1e-6, f"Default Cm at 15° should be zero, got {Cm:.6f}"
@@ -514,7 +519,7 @@ class TestPolarExtremeAngles:
         """CL should be zero at 90° angle of attack (blade edge-on)."""
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
-        Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(90.0))
+        Cl, _Cd, _Cm, _cla = pdb.lookup(1e6, math.radians(90.0))
         assert abs(Cl) < 0.05, f"CL at 90° should be ~0, got {Cl:.4f}"
 
     def test_cl_negative_at_150_deg(self):
@@ -526,7 +531,7 @@ class TestPolarExtremeAngles:
         """
         from vawt_core import PolarDatabase
         pdb = PolarDatabase("airfoil_polars/naca0012")
-        Cl, Cd, Cm, cla = pdb.lookup(1e6, math.radians(150.0))
+        Cl, _Cd, _Cm, _cla = pdb.lookup(1e6, math.radians(150.0))
         assert Cl < -0.02, f"CL at 150° should be clearly negative, got {Cl:.4f}"
 
     def test_cl_max_at_re1e6(self):
@@ -555,7 +560,9 @@ class TestActiveLiftDiagnostic:
 
     def test_active_lift_runs(self):
         """diag_active_lift.py should run and produce a small ΔCp."""
-        import subprocess, sys, os
+        import os
+        import subprocess
+        import sys
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         result = subprocess.run(
             [sys.executable, "scripts/diag_active_lift.py"],
@@ -565,7 +572,10 @@ class TestActiveLiftDiagnostic:
 
     def test_active_lift_delta_cp_small(self):
         """Active lift should produce a small ΔCp (< 0.01) at scale-up."""
-        import subprocess, sys, os, re
+        import os
+        import re
+        import subprocess
+        import sys
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         result = subprocess.run(
             [sys.executable, "scripts/diag_active_lift.py"],

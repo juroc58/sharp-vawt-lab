@@ -14,8 +14,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
 from tests.test_regression import GOLDEN
+from vawt_core import create_sim_from_params
 
 
 def main():

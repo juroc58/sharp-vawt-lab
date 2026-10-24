@@ -11,33 +11,37 @@ bias for a 2D solver without tip loss — and the shape of the curve also
 differs. The peak-only comparison in validate_ham.py quantifies the
 bias; this figure shows both.
 """
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from vawt_core import create_sim_from_params
+
+from sharp_vawt import create_sim_from_params
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Ham's Pinson C2E rig
 R_HAM, C_HAM, H_HAM, N_HAM = 1.83, 0.305, 1.37, 3
 
-COMMON = dict(
-    R=R_HAM, c=C_HAM, H=H_HAM, N=N_HAM,
-    ar=0.0, sp=0.25,
-    free=False, T_max=20.0, stride=5,
-    prescribe_pitch=True,
-    pp0_deg=0.0, pp1_deg=-10.0, pp2_deg=0.0, pp3_deg=0.0,
-    use_dmst=True, cd_add=0.005,
-    use_tip_loss=False,  # Ham's model class has no finite-span correction
-)
+COMMON = {
+    "R": R_HAM, "c": C_HAM, "H": H_HAM, "N": N_HAM,
+    "ar": 0.0, "sp": 0.25,
+    "free": False, "T_max": 20.0, "stride": 5,
+    "prescribe_pitch": True,
+    "pp0_deg": 0.0, "pp1_deg": -10.0, "pp2_deg": 0.0, "pp3_deg": 0.0,
+    "use_dmst": True, "cd_add": 0.005,
+    "use_tip_loss": False,  # Ham's model class has no finite-span correction
+}
 
 CONFIGS = [
-    ("static polars only",     dict(use_dynamic_stall=False, use_flow_curvature=False), "C0", "--"),
-    ("+ dynamic stall",        dict(use_dynamic_stall=True,  use_flow_curvature=False), "C1", "-"),
-    ("+ DS + curvature",       dict(use_dynamic_stall=True,  use_flow_curvature=True),  "C2", "-"),
+    ("static polars only",     {"use_dynamic_stall": False, "use_flow_curvature": False}, "C0", "--"),
+    ("+ dynamic stall",        {"use_dynamic_stall": True,  "use_flow_curvature": False}, "C1", "-"),
+    ("+ DS + curvature",       {"use_dynamic_stall": True,  "use_flow_curvature": True},  "C2", "-"),
 ]
 
 TSRS = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5)

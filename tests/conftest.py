@@ -13,22 +13,22 @@ sys.path.insert(0, _ROOT)
 
 
 # Small, fast reference design used throughout the tests.
-BASE_QUICK = dict(
-    R=2.7179, H=4.0568, N=3, c=0.3861,
-    ar=0.3121, sp=0.2181,
-    mb=0.92954, xbcg=0.20,
-    mc=2.69306, dcw=-0.1935,
-    balance=0, bias_deg=0.0,
-    prescribe_pitch=False,
-    cd_add=0.002,
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,
-    win_deg=45.0, cb=2e-5, mu_c=3e-4,
-    free=True, T_max=10.0, stride=10,
-    w0_frac=0.9, k_load=4.164352, tsr=2.5,
-)
+BASE_QUICK = {
+    "R": 2.7179, "H": 4.0568, "N": 3, "c": 0.3861,
+    "ar": 0.3121, "sp": 0.2181,
+    "mb": 0.92954, "xbcg": 0.20,
+    "mc": 2.69306, "dcw": -0.1935,
+    "balance": 0, "bias_deg": 0.0,
+    "prescribe_pitch": False,
+    "cd_add": 0.002,
+    "use_dynamic_stall": True,
+    "use_flow_curvature": True,
+    "use_dmst": True,
+    "use_tip_loss": True,
+    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+    "free": True, "T_max": 10.0, "stride": 10,
+    "w0_frac": 0.9, "k_load": 4.164352, "tsr": 2.5,
+}
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -49,19 +49,19 @@ def quick_design():
 @pytest.fixture
 def sharp_conforming():
     """Sharp's own design rules: light cw, dcw = 0.30, ar = 0.50, sp = 0.25."""
-    return dict(
-        R=2.7179, H=4.0568, N=3, c=0.3861,
-        ar=0.3121, sp=0.2181,
-        mb=0.92954, xbcg=0.20,
-        mc=2.69306, dcw=-0.1935,
-        balance=0, bias_deg=0.0,
-        prescribe_pitch=False,
-        cd_add=0.002,
-        use_dynamic_stall=True,
-        use_flow_curvature=True,
-        use_dmst=True,
-        use_tip_loss=True,
-        win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        free=True, T_max=20.0, stride=5,
-        w0_frac=0.9, k_load=4.164352, tsr=2.5,
-    )
+    return {
+        "R": 2.7179, "H": 4.0568, "N": 3, "c": 0.3861,
+        "ar": 0.3121, "sp": 0.2181,
+        "mb": 0.92954, "xbcg": 0.20,
+        "mc": 2.69306, "dcw": -0.1935,
+        "balance": 0, "bias_deg": 0.0,
+        "prescribe_pitch": False,
+        "cd_add": 0.002,
+        "use_dynamic_stall": True,
+        "use_flow_curvature": True,
+        "use_dmst": True,
+        "use_tip_loss": True,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+        "free": True, "T_max": 20.0, "stride": 5,
+        "w0_frac": 0.9, "k_load": 4.164352, "tsr": 2.5,
+    }

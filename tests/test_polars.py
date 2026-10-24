@@ -1,7 +1,6 @@
 """Polar generation, provenance and the aerosandbox shim."""
 import os
 import sys
-import types
 
 import numpy as np
 import pytest
@@ -10,7 +9,6 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from scripts import check_polars
 from scripts import gen_real_polars
 
 
@@ -21,14 +19,13 @@ def test_check_polars_flags_neuralfoil_cm_variant_artefacts():
     has Cm=0 in attached flow and passes all checks.
     """
     import numpy as np
-    from scripts import check_polars
 
     # The neuralfoil_cm variant uses column 5 (Cm_neuralfoil) which has
     # the raw NeuralFoil CM with sign changes.
     # We can't easily test this through check_polars.check_one since it
     # reads column 4 (Cm_default). Instead, verify the raw CM is present
     # in the CSV by loading it directly.
-    path = os.path.join(_ROOT, "airfoil_polars", "naca0012",
+    path = os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "naca0012",
                         "polars_naca0012_Re_100000.csv")
     d = np.genfromtxt(path, delimiter=",", comments="#")
     d = d[~np.isnan(d).any(axis=1)]
@@ -81,7 +78,7 @@ def test_deep_stall_constants_are_named():
     assert gen_real_polars.DEEP_STALL_CL_AMP == pytest.approx(0.65)
     assert gen_real_polars.DEEP_STALL_CD_AMP == pytest.approx(1.66)
     assert gen_real_polars.DEEP_STALL_CD_OFFSET == pytest.approx(0.02)
-    cl, cd, cm = gen_real_polars._deep_stall(90.0)
+    cl, cd, _cm = gen_real_polars._deep_stall(90.0)
     assert cl == pytest.approx(0.0, abs=1e-9)
     assert cd == pytest.approx(gen_real_polars.DEEP_STALL_CD_AMP
                                + gen_real_polars.DEEP_STALL_CD_OFFSET)

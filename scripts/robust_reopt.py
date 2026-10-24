@@ -24,10 +24,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.optimize import minimize
@@ -37,10 +36,9 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params  # noqa: E402
-from vawt_presets import PRESETS  # noqa: E402
 from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
+from vawt_presets import PRESETS
 
 BETZ = 16.0 / 27.0
 PENALTY = 1000.0
@@ -48,7 +46,7 @@ PENALTY = 1000.0
 # Scenario set: a small, explicitly enumerated subset of the UQ ranges.
 # Grabbing the full 13-D Saltelli design inside an optimiser is prohibitive;
 # these four directions are the ones that have caused collapse.
-SCENARIOS: List[Dict[str, Any]] = [
+SCENARIOS: list[dict[str, Any]] = [
     {},
     {"cm_scale": 0.0},
     {"tip_loss_multiplier": 0.96},
@@ -61,7 +59,7 @@ SCALEUP_NAMES = ("R", "c_over_R", "H_over_R", "k_load_ref", "mc_ref",
                  "ar", "sp", "dcw")
 
 
-def _cp(params: Dict[str, Any], extra: Dict[str, Any]) -> float | None:
+def _cp(params: dict[str, Any], extra: dict[str, Any]) -> float | None:
     try:
         r = create_sim_from_params({**params, **extra}).run()
     except Exception:
@@ -205,7 +203,7 @@ def main(argv=None):
         path=path,
         data=out,
         script="scripts/robust_reopt.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
         extra_files=["vawt_presets.py", "scripts/compute_aep.py"],

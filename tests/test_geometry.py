@@ -1,8 +1,8 @@
 """Tests for geometry validation and the mass-balance solver."""
 import pytest
 
-from vawt_core import create_sim_from_params
 from tests.conftest import BASE_QUICK
+from vawt_core import create_sim_from_params
 
 
 class TestGeometryValidation:

@@ -10,7 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 VALIDATION_SCRIPTS = [
     "validate_ham.py",
     "validate_finite_span.py",

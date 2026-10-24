@@ -3,38 +3,43 @@ Render an MP4 animation of the Sharp cycloturbine at the optimiser's design poin
 
 Requires ffmpeg on PATH for MP4 output.  Falls back to GIF otherwise.
 """
-import argparse, os, sys
+import argparse
+import os
+import sys
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-import numpy as np
 import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.animation as manim
-from matplotlib.patches import Circle
-from matplotlib.gridspec import GridSpec
-from vawt_core import create_sim_from_params
+import numpy as np
 
-DESIGN = dict(
-    R=0.60, H=0.40, N=3, ar=0.50, sp=0.25,
-    c=0.117607, tsr=2.14487, k_load=0.0015,
+matplotlib.use("Agg")
+import matplotlib.animation as manim
+import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Circle
+
+from sharp_vawt import create_sim_from_params
+
+DESIGN = {
+    "R": 0.60, "H": 0.40, "N": 3, "ar": 0.50, "sp": 0.25,
+    "c": 0.117607, "tsr": 2.14487, "k_load": 0.0015,
     # Blade-unit material properties — must match the reference design
     # point (scripts/optimization_actuator.json, mc=0.008, dcw=0.50).
     # Omitting these silently fell back to the dataclass defaults.
-    mb=0.010, xbcg=0.20, mc=0.008, dcw=0.50,
-    balance=0, bias_deg=0.0,
-    pp0_deg=+5.156, pp1_deg=-6.329, pp2_deg=+2.758, pp3_deg=-0.085,
-    pp_ph_deg=0.0,
-    cd_add=0.002,
-    use_dynamic_stall=True, use_flow_curvature=True, use_dmst=True,
-    use_tip_loss=False,
-    win_deg=45.0, cb=2e-5, mu_c=0.0,
-    prescribe_pitch=True, free=True,
-    T_max=40.0, stride=1,
-    w0_frac=0.9,
-)
+    "mb": 0.010, "xbcg": 0.20, "mc": 0.008, "dcw": 0.50,
+    "balance": 0, "bias_deg": 0.0,
+    "pp0_deg": +5.156, "pp1_deg": -6.329, "pp2_deg": +2.758, "pp3_deg": -0.085,
+    "pp_ph_deg": 0.0,
+    "cd_add": 0.002,
+    "use_dynamic_stall": True, "use_flow_curvature": True, "use_dmst": True,
+    "use_tip_loss": False,
+    "win_deg": 45.0, "cb": 2e-5, "mu_c": 0.0,
+    "prescribe_pitch": True, "free": True,
+    "T_max": 40.0, "stride": 1,
+    "w0_frac": 0.9,
+}
 
 
 def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
@@ -95,7 +100,7 @@ def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
     ax_rotor.plot([0], [0], "o", color="0.3", ms=5)
     ax_rotor.annotate("", xy=(-pad * R, pad * R * 0.95),
                       xytext=(-pad * R * 0.85, pad * R * 0.95),
-                      arrowprops=dict(arrowstyle="->", color="tab:blue", lw=1.8))
+                      arrowprops={"arrowstyle": "->", "color": "tab:blue", "lw": 1.8})
     ax_rotor.text(-pad * R * 0.98, pad * R * 0.98, "wind",
                   color="tab:blue", fontsize=9)
 

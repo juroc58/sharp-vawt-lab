@@ -23,21 +23,24 @@ import os
 import sys
 
 import numpy as np
-from scipy.integrate import trapezoid
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
-from vawt_presets import PRESETS
 from scripts.compute_aep import (
-    integrate_aep, load_fair_rigid_reference,
-    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
-    ETA_DRIVETRAIN, RHO, HOURS_YEAR, rated_power_from_cp,
+    CUT_IN,
+    CUT_OUT,
+    K_WEIBULL,
+    U_MEAN,
+    U_RATED,
+    integrate_aep,
+    load_fair_rigid_reference,
+    rated_power_from_cp,
 )
 from scripts.stamp import make_stamp
-
+from sharp_vawt import create_sim_from_params
+from vawt_presets import PRESETS
 
 # ============================================================================
 # SCALE-UP CONFIGURATION (from optimization_scaleup.json)
@@ -83,15 +86,15 @@ def free_run(base, U, w0_frac=None, psi0_deg=None):
     cp = float(r['cp'])
     if not r.get('steady', True) or cp <= 0.0 or not np.isfinite(cp):
         return None, None
-    result = dict(U=float(U), cp=cp,
-                  tsr_eq=float(r['tsr_eq']),
-                  rpm=float(r['rpm']),
-                  aoa_max=float(r['aoa_max']))
+    result = {"U": float(U), "cp": cp,
+                  "tsr_eq": float(r['tsr_eq']),
+                  "rpm": float(r['rpm']),
+                  "aoa_max": float(r['aoa_max'])}
     # Final state for branch tracing
     w_final = r['tsr_eq'] * U / base['R'] if base['R'] > 0 else 0
     pitch_final = 0.5 * (r['pitch_min'] + r['pitch_max']) if r.get('pitch_min') is not None else 0.0
-    final_state = dict(w0_frac=w_final * base['R'] / (U + 1.0) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
-                       psi0_deg=pitch_final)
+    final_state = {"w0_frac": w_final * base['R'] / (U + 1.0) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
+                       "psi0_deg": pitch_final}
     return result, final_state
 
 
@@ -110,7 +113,7 @@ def main():
 
     # --- fixed-rpm Cp(TSR) ---
     tsrs = np.linspace(1.0, 4.0, 13)
-    cps_tsr, cps_phase_lo, cps_phase_hi = compute_cp_curve(
+    cps_tsr, _cps_phase_lo, _cps_phase_hi = compute_cp_curve(
         SCALEUP_BASE, tsrs, "scale-up CPPC")
 
     # --- free-running with branch tracing ---
@@ -277,7 +280,7 @@ def main():
 
     stamp = make_stamp(
         "scripts/compute_aep_scaleup.py",
-        script_version="v1.0",
+        script_version="2.0.0",
         n=len(tsrs) + len(free_passive) + len(free_high) + len(free_low),
         seed=0,
         extra_files=["vawt_presets.py", "scripts/compute_aep.py"],

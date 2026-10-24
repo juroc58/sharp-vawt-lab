@@ -18,6 +18,7 @@ threshold is geometry-dependent.  At AR 2.86, induced drag kills
 fixed-pitch operation; at AR 10.5, a rigid blade works fine.
 """
 from __future__ import annotations
+
 import json
 import os
 import sys
@@ -29,13 +30,14 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params
 from compute_aep import (
-    BASE, integrate_aep,
-    U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
+    BASE,
+    integrate_aep,
     rated_power_from_cp,
 )
+
 from scripts.stamp import make_stamp
+from sharp_vawt import create_sim_from_params
 
 U_DESIGN = 6.0
 U_REF    = [3.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0]
@@ -95,8 +97,6 @@ def try_free_run(params, U):
 
 def find_best_passive(base, label):
     """Find best k_load for passive CPPC at this geometry."""
-    from compute_aep import U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED, rated_power_from_cp
-    from scipy.integrate import trapezoid
 
     results = []
     for kl in base['kload_grid']:
@@ -104,7 +104,7 @@ def find_best_passive(base, label):
         if res[0] is None:
             continue
         cp, tsr = res
-        results.append(dict(k_load=kl, cp=cp, tsr=tsr))
+        results.append({"k_load": kl, "cp": cp, "tsr": tsr})
     if not results:
         raise RuntimeError(f"no steady passive configs at {label}")
     best = max(results, key=lambda r: r['cp'])
@@ -124,9 +124,9 @@ def find_best_rigid(base, label):
                 continue
             cp, tsr = r
             if cp >= MIN_RIGID_CP and tsr >= MIN_RIGID_TSR:
-                results.append(dict(psi0=psi, k_load=kl, cp=cp, tsr=tsr))
+                results.append({"psi0": psi, "k_load": kl, "cp": cp, "tsr": tsr})
     if not results:
-        return dict(viable=False)
+        return {"viable": False}
     best = max(results, key=lambda r: r['cp'])
     print(f"    best: psi0 = {best['psi0']:+.1f}, k_load = {best['k_load']:.4f}, "
           f"Cp = {best['cp']:.4f}, TSR = {best['tsr']:.2f}")
@@ -135,10 +135,6 @@ def find_best_rigid(base, label):
 
 def aep_for(base, overrides, label):
     """Compute AEP for a given configuration."""
-    from compute_aep import (
-        U_MEAN, K_WEIBULL, CUT_IN, CUT_OUT, U_RATED,
-        rated_power_from_cp, integrate_aep
-    )
     R = base['base']['R']
     H = base['base']['H']
     free = []
@@ -159,7 +155,6 @@ def aep_for(base, overrides, label):
 
     # Rated power from Cp at U_RATED
     cp_at_rated = float(np.interp(12.0, U_grid, cp_curve))
-    from compute_aep import rated_power_from_cp
     rated_power = rated_power_from_cp(R, H, cp_at_rated)
 
     res = integrate_aep(U_grid, cp_curve, 6.0, 2.0,
@@ -203,7 +198,7 @@ def main():
         else:
             gain = None
 
-        output = {
+        output["geometries"][label] = {
             "R": base['R'],
             "c": base['c'],
             "H": base['H'],
@@ -227,10 +222,9 @@ def main():
         }
 
     # Add stamp
-    from scripts.stamp import make_stamp
     stamp = make_stamp(
         "scripts/compute_aep_rigid_fair.py",
-        script_version="v1.0",
+        script_version="2.0.0",
         n=100,
         seed=0,
         extra_files=["scripts/compute_aep.py"],
@@ -239,7 +233,7 @@ def main():
 
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aep_rigid_fair.json")
     with open(path, "w") as fh:
-        json.dump({"stamp": stamp, **output}, fh, indent=2)
+        json.dump({"stamp": stamp, "geometries": output["geometries"]}, fh, indent=2)
     print(f"\nWrote {path}")
 
 

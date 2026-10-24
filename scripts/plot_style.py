@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import os
 
+import matplotlib.pyplot as plt
 
 # Colour map (consistent across all figures)
 COL_PASSIVE_KLOAD = "C0"      # blue - passive CPPC, variable speed
@@ -102,11 +102,11 @@ def set_legend_outside(ax, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol
 
 def annotate_with_arrow(ax, x, y, text, xytext=(10, 10), **kwargs):
     """Add annotation with arrow, avoiding data overlap."""
-    default = dict(
-        arrowprops=dict(arrowstyle="->", color='k', lw=1),
-        bbox=dict(boxstyle="round,pad=0.3", fc="wheat", ec="k", alpha=0.9),
-        ha='left', va='bottom', fontsize=FONT_SIZE - 1
-    )
+    default = {
+        "arrowprops": {"arrowstyle": "->", "color": 'k', "lw": 1},
+        "bbox": {"boxstyle": "round,pad=0.3", "fc": "wheat", "ec": "k", "alpha": 0.9},
+        "ha": 'left', "va": 'bottom', "fontsize": FONT_SIZE - 1
+    }
     default.update(kwargs)
     ax.annotate(text, xy=(x, y), xytext=xytext, textcoords='offset points', **default)
 
@@ -131,4 +131,3 @@ def save_figure(fig, path):
     print(f"  Wrote {path}")
 
 
-import os

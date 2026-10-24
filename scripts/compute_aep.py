@@ -40,10 +40,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
-from vawt_presets import PRESETS
 from scripts.stamp import make_stamp
-
+from sharp_vawt import create_sim_from_params
+from vawt_presets import PRESETS
 
 # ============================================================================
 # CONFIGURATION
@@ -174,19 +173,19 @@ def free_run(base, U, w0_frac=None, psi0_deg=None):
     if not r.get('steady', True) or cp <= 0.0 or not np.isfinite(cp):
         return None, None
     # Return result dict + final state for branch tracing
-    result = dict(U=float(U), cp=cp,
-                  tsr_eq=float(r['tsr_eq']),
-                  rpm=float(r['rpm']),
-                  aoa_max=float(r['aoa_max']))
+    result = {"U": float(U), "cp": cp,
+                  "tsr_eq": float(r['tsr_eq']),
+                  "rpm": float(r['rpm']),
+                  "aoa_max": float(r['aoa_max'])}
     # Final state: use equilibrium omega and mean pitch as initial guess for next U
     # w0_frac for next U is computed so that:
     #   w0_frac * base['tsr'] * (U+1) / base['R'] = w_final = r['tsr_eq'] * U / base['R']
     #   => w0_frac = r['tsr_eq'] * U / (base['tsr'] * (U + 1))
-    w_final = r['tsr_eq'] * U / base['R'] if base['R'] > 0 else 0
+    r['tsr_eq'] * U / base['R'] if base['R'] > 0 else 0
     pitch_final = 0.5 * (r['pitch_min'] + r['pitch_max']) if r.get('pitch_min') is not None else 0.0
     tsr_design = base.get('tsr', 2.5)
-    final_state = dict(w0_frac=r['tsr_eq'] * U / (tsr_design * (U + 1.0)) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
-                       psi0_deg=pitch_final)
+    final_state = {"w0_frac": r['tsr_eq'] * U / (tsr_design * (U + 1.0)) if (U + 1.0) > 0 else base.get('w0_frac', 0.9),
+                       "psi0_deg": pitch_final}
     return result, final_state
 
 
@@ -259,7 +258,7 @@ def integrate_aep(U_grid, cp_curve, U_mean, k_weibull,
     pdf = weibull_pdf(U_grid, U_mean, k_weibull)
     aep = float(trapezoid(P * pdf, U_grid) * HOURS_YEAR / 1000.0)
     cf = aep * 1000.0 / (p_rated * HOURS_YEAR) if p_rated else float('nan')
-    return dict(U=U_grid, cp=cp_curve, P=P, pdf=pdf, aep=aep, cf=cf)
+    return {"U": U_grid, "cp": cp_curve, "P": P, "pdf": pdf, "aep": aep, "cf": cf}
 
 
 # Plotting is now done by scripts/plot_aep.py from the JSON output.
@@ -284,7 +283,7 @@ def main():
 
     # --- fixed-rpm Cp(TSR) ---
     tsrs = np.linspace(1.0, 4.5, 15)
-    cps_passive_tsr, cps_phase_lo, cps_phase_hi = compute_cp_curve(
+    cps_passive_tsr, _cps_phase_lo, _cps_phase_hi = compute_cp_curve(
         BASE, tsrs, "passive CPPC")
 
     # --- free-running reference speeds (with branch tracing) ---
@@ -365,14 +364,6 @@ def main():
     res_fixed   = integrate_aep(U_grid, cp_fixed, U_MEAN, K_WEIBULL,
                                 CUT_IN, CUT_OUT, p_rated, R, H)
 
-    results = {
-        'passive': {**res_passive,
-                    'cp_tsr': cps_passive_tsr,
-                    'free_results': free_passive},
-        'fixed':   {**res_fixed,
-                    'cp_tsr': cps_passive_tsr,
-                    'free_results': []},
-    }
 
     # --- fair rigid reference ---
     rigid_ref = load_fair_rigid_reference()
@@ -413,8 +404,8 @@ def main():
         print(f"  Passive CPPC vs fair rigid baseline    : "
               f"{rigid_ref['gain_percent']:+6.1f} %")
     elif rigid_ref is not None:
-        print(f"  Passive CPPC vs fair rigid baseline    : "
-              f"n/a (no viable rigid configuration)")
+        print("  Passive CPPC vs fair rigid baseline    : "
+              "n/a (no viable rigid configuration)")
 
     # --- plot ---
     # --- json dump ---
@@ -451,7 +442,7 @@ def main():
     json_path = os.path.join(_HERE, "aep_results.json")
     stamp = make_stamp(
         "scripts/compute_aep.py",
-        script_version="v1.0",
+        script_version="2.0.0",
         n=len(tsrs) + len(free_passive),
         seed=0,
         extra_files=["vawt_presets.py"],

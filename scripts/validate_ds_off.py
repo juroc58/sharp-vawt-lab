@@ -14,29 +14,29 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from vawt_core import create_sim_from_params
+from sharp_vawt import create_sim_from_params
 
-DESIGN = dict(
-    R=0.60, H=0.40, N=3, c=0.117607,
-    ar=0.31, sp=0.18,
-    mb=0.010, xbcg=0.20, mc=0.040, dcw=-0.132,
-    balance=0, bias_deg=-1.1,
-    tsr=2.14487, k_load=0.00149992,
-    pp0_deg=+5.15612, pp1_deg=-6.32883,
-    pp2_deg=+2.75837, pp3_deg=-0.0845207,
-    cd_add=0.002,
-    use_flow_curvature=True,
-    use_dmst=True, use_tip_loss=False,
-    win_deg=45.0, cb=2e-5, mu_c=3e-4,
-    free=True, T_max=30.0, stride=5,
-    prescribe_pitch=True, w0_frac=0.9,
-)
+DESIGN = {
+    "R": 0.60, "H": 0.40, "N": 3, "c": 0.117607,
+    "ar": 0.31, "sp": 0.18,
+    "mb": 0.010, "xbcg": 0.20, "mc": 0.040, "dcw": -0.132,
+    "balance": 0, "bias_deg": -1.1,
+    "tsr": 2.14487, "k_load": 0.00149992,
+    "pp0_deg": +5.15612, "pp1_deg": -6.32883,
+    "pp2_deg": +2.75837, "pp3_deg": -0.0845207,
+    "cd_add": 0.002,
+    "use_flow_curvature": True,
+    "use_dmst": True, "use_tip_loss": False,
+    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+    "free": True, "T_max": 30.0, "stride": 5,
+    "prescribe_pitch": True, "w0_frac": 0.9,
+}
 
 CASES = [
-    ("full model",           dict()),
-    ("no dynamic stall",     dict(use_dynamic_stall=False)),
-    ("no DS, no curvature",  dict(use_dynamic_stall=False,
-                                  use_flow_curvature=False)),
+    ("full model",           {}),
+    ("no dynamic stall",     {"use_dynamic_stall": False}),
+    ("no DS, no curvature",  {"use_dynamic_stall": False,
+                                  "use_flow_curvature": False}),
 ]
 
 TOL = 0.03   # README claim: ΔCp < 3 %

@@ -20,7 +20,6 @@ Runtime on 4 cores: ~15-25 minutes.
 """
 from __future__ import annotations
 
-import json
 import math
 import os
 import sys
@@ -28,7 +27,7 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -36,14 +35,13 @@ from scipy.optimize import differential_evolution, minimize
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-from vawt_core import create_sim_from_params
 from scripts.stamp import write_json_with_stamp
-
+from sharp_vawt import create_sim_from_params
 
 # ---------------------------------------------------------------------------
 # Design space
 # ---------------------------------------------------------------------------
-PARAM_NAMES: Tuple[str, ...] = (
+PARAM_NAMES: tuple[str, ...] = (
     "c", "k_load", "mc", "dcw", "ar", "sp", "bias_deg",
 )
 
@@ -63,25 +61,25 @@ BETZ_CEILING = 0.593
 R_ROTOR = 0.60
 
 
-DEFAULT_BASE: Dict[str, Any] = dict(
-    R=R_ROTOR, H=0.40, N=3,
-    mb=0.010, xbcg=0.20,
-    balance=0,                 # use mc, dcw as given
-    prescribe_pitch=False,     # KEY: passive mode
-    cd_add=0.002,
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,
-    win_deg=45.0,              # Sharp's physical stop limit
-    cb=2e-5,
-    mu_c=3e-4,
-    free=True,
-    T_max=25.0,
-    stride=5,
-    w0_frac=0.9,
-    tsr=2.14,
-)
+DEFAULT_BASE: dict[str, Any] = {
+    "R": R_ROTOR, "H": 0.40, "N": 3,
+    "mb": 0.010, "xbcg": 0.20,
+    "balance": 0,                 # use mc, dcw as given
+    "prescribe_pitch": False,     # KEY: passive mode
+    "cd_add": 0.002,
+    "use_dynamic_stall": True,
+    "use_flow_curvature": True,
+    "use_dmst": True,
+    "use_tip_loss": True,
+    "win_deg": 45.0,              # Sharp's physical stop limit
+    "cb": 2e-5,
+    "mu_c": 3e-4,
+    "free": True,
+    "T_max": 25.0,
+    "stride": 5,
+    "w0_frac": 0.9,
+    "tsr": 2.14,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +88,7 @@ DEFAULT_BASE: Dict[str, Any] = dict(
 class PassiveObjective:
     """-Cp with feasibility penalties.  Runs one passive simulation per call."""
 
-    def __init__(self, base_params: Dict[str, Any], R: float) -> None:
+    def __init__(self, base_params: dict[str, Any], R: float) -> None:
         self.base = dict(base_params)
         self.R = float(R)
 
@@ -149,16 +147,16 @@ class PassiveObjective:
 # ---------------------------------------------------------------------------
 @dataclass
 class OptReport:
-    best_params: Dict[str, Any]
+    best_params: dict[str, Any]
     best_cp: float
     de_time_s: float
     local_time_s: float
-    history: List[Dict[str, Any]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
 
 
 class PassiveOptimizer:
     def __init__(self,
-                 base_params: Optional[Dict[str, Any]] = None,
+                 base_params: dict[str, Any] | None = None,
                  de_popsize: int = 10,
                  de_maxiter: int = 15,
                  local_maxiter: int = 30,
@@ -170,9 +168,9 @@ class PassiveOptimizer:
         self.local_maxiter = local_maxiter
         self.workers = workers
         self.seed = seed
-        self.history: List[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
         self._best_cp: float = -math.inf
-        self._best_x: Optional[np.ndarray] = None
+        self._best_x: np.ndarray | None = None
         self._obj = PassiveObjective(self.base, self.base["R"])
 
     # ------------------------------------------------------------------
@@ -188,7 +186,7 @@ class PassiveOptimizer:
             warnings.warn(f"Warm-up failed: {exc!r}")
 
     # ------------------------------------------------------------------
-    def run_global(self) -> Tuple[np.ndarray, float]:
+    def run_global(self) -> tuple[np.ndarray, float]:
         print()
         print("=" * 78)
         print("[Opt] STAGE 1 — Differential evolution (global search)")
@@ -249,7 +247,7 @@ class PassiveOptimizer:
         return x_de, elapsed
 
     # ------------------------------------------------------------------
-    def run_local(self, x0: np.ndarray) -> Tuple[np.ndarray, float]:
+    def run_local(self, x0: np.ndarray) -> tuple[np.ndarray, float]:
         print()
         print("=" * 78)
         print("[Opt] STAGE 2 — Nelder-Mead (local refinement)")
@@ -313,7 +311,7 @@ class PassiveOptimizer:
         print("#" * 78)
         print("# Passive Sharp cycloturbine — peak Cp search")
         print("#" * 78)
-        print(f"# baseline reference Cp = 0.3606 (from manual sweeps)")
+        print("# baseline reference Cp = 0.3606 (from manual sweeps)")
         print(f"# Betz ceiling = {BETZ_CEILING}")
 
         self._warmup()
@@ -365,10 +363,10 @@ class PassiveOptimizer:
             "history": report.history,
         }
         write_json_with_stamp(
-            path=str(out_path),
+            path=str(path),
             data=payload,
             script="scripts/optimize_passive.py",
-            version="v1.0",
+            version="2.0.0",
             n=1,
             seed=42,
             extra_files=["vawt_presets.py"],
@@ -377,7 +375,7 @@ class PassiveOptimizer:
         print(f"[Opt] report saved -> {Path(path).resolve()}")
 
     # ------------------------------------------------------------------
-    def verify(self, report: OptReport, T_long: float = 40.0) -> Dict[str, Any]:
+    def verify(self, report: OptReport, T_long: float = 40.0) -> dict[str, Any]:
         print()
         print(f"[Opt] Verification run with T_max = {T_long:.0f} s ...")
         params = dict(report.best_params)

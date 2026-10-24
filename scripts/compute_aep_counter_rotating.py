@@ -50,11 +50,11 @@ import json
 import math
 import os
 import sys
-from typing import Tuple
 
+import matplotlib
 import numpy as np
 from scipy.integrate import trapezoid
-import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -62,44 +62,44 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
 from compute_aep import U_RATED, rated_power_from_cp
-from scripts.stamp import make_stamp
 
+from scripts.stamp import make_stamp
+from sharp_vawt import create_sim_from_params
 
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
 # Base geometry for Sharp cycloturbine (from README headline results)
-BASE = dict(
-    R=2.7179,          # m, rotor radius
-    H=4.0568,          # m, rotor height
-    N=3,               # number of blades
-    c=0.3861,          # m, chord length
-    ar=0.3121,         # rocking arm / chord ratio
-    sp=0.2181,         # spar position from LE / chord
-    mb=0.92954,        # kg, blade mass
-    xbcg=0.20,         # blade CG position (fraction of chord)
-    mc=2.69306,        # kg, counterweight mass
-    dcw=-0.1935,       # counterweight position (fraction of chord ahead of LE)
-    balance=0,         # use mc,dcw as given
-    bias_deg=0.0,      # degrees, fixed pitch bias
-    prescribe_pitch=False,  # passive CPPC mode
-    cd_add=0.002,      # strut/interference drag
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,     # Helmbold finite-span correction
-    win_deg=45.0,        # degrees, pitch stop limit
-    cb=2e-5,             # viscous pitch damping coefficient
-    mu_c=3e-4,           # Coulomb pitch friction coefficient
-    free=True,           # free-running (variable speed)
-    T_max=25.0,          # s, simulation duration
-    stride=5,            # output sampling interval
-    w0_frac=0.9,         # initial omega fraction of design omega
-    k_load=4.164352,     # load coefficient
-    tsr=2.5,             # tip-speed ratio for design point
-)
+BASE = {
+    "R": 2.7179,          # m, rotor radius
+    "H": 4.0568,          # m, rotor height
+    "N": 3,               # number of blades
+    "c": 0.3861,          # m, chord length
+    "ar": 0.3121,         # rocking arm / chord ratio
+    "sp": 0.2181,         # spar position from LE / chord
+    "mb": 0.92954,        # kg, blade mass
+    "xbcg": 0.20,         # blade CG position (fraction of chord)
+    "mc": 2.69306,        # kg, counterweight mass
+    "dcw": -0.1935,       # counterweight position (fraction of chord ahead of LE)
+    "balance": 0,         # use mc,dcw as given
+    "bias_deg": 0.0,      # degrees, fixed pitch bias
+    "prescribe_pitch": False,  # passive CPPC mode
+    "cd_add": 0.002,      # strut/interference drag
+    "use_dynamic_stall": True,
+    "use_flow_curvature": True,
+    "use_dmst": True,
+    "use_tip_loss": True,     # Helmbold finite-span correction
+    "win_deg": 45.0,        # degrees, pitch stop limit
+    "cb": 2e-5,             # viscous pitch damping coefficient
+    "mu_c": 3e-4,           # Coulomb pitch friction coefficient
+    "free": True,           # free-running (variable speed)
+    "T_max": 25.0,          # s, simulation duration
+    "stride": 5,            # output sampling interval
+    "w0_frac": 0.9,         # initial omega fraction of design omega
+    "k_load": 4.164352,     # load coefficient
+    "tsr": 2.5,             # tip-speed ratio for design point
+}
 
 # Wind resource parameters (Weibull distribution)
 U_MEAN = 6.0         # m/s, mean wind speed
@@ -166,7 +166,7 @@ def run_single_rotor(params: dict, U: float) -> dict:
 
 def compute_power_curve(params: dict, U_vals: np.ndarray,
                        interaction_factor: float = 0.0,
-                       is_upstream: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+                       is_upstream: bool = True) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute power curve for a rotor, optionally with wind speed interaction.
     
@@ -236,8 +236,7 @@ def compute_interaction_factor(U_inf: float, tsr: float, spacing_m: float, R: fl
     """
     spacing_d = spacing_m / (2 * R)  # spacing in rotor diameters
     
-    if spacing_d <= 0.3:
-        spacing_d = 0.3  # physical minimum
+    spacing_d = max(0.3, spacing_d)  # physical minimum
     
     # --- Step 1: Upstream induction factor from momentum theory ---
     a = 0.5 * (1.0 - math.sqrt(max(0.0, 1.0 - ct_upstream)))
@@ -269,7 +268,7 @@ def compute_interaction_factor(U_inf: float, tsr: float, spacing_m: float, R: fl
 
 
 def interaction_factor_sweep(U_inf: float, tsr: float, spacing_m: float, R: float,
-                             ct_values: list = None) -> list:
+                             ct_values: list | None = None) -> list:
     """
     Compute interaction factor for a range of upstream Ct values.
     Useful for sensitivity analysis.
@@ -290,7 +289,7 @@ def interaction_factor_sweep(U_inf: float, tsr: float, spacing_m: float, R: floa
 def integrate_aep(U_grid: np.ndarray, P_grid: np.ndarray, 
                   U_mean: float, k_weibull: float,
                   cut_in: float, cut_out: float, 
-                  p_rated: float) -> Tuple[float, float]:
+                  p_rated: float) -> tuple[float, float]:
     """
     Integrate power curve against Weibull distribution to get AEP.
     
@@ -370,7 +369,7 @@ def main():
     print("\nComputing counter-rotating rotors...")
 
     # Upstream rotor (sees normal wind)
-    U_up, P_up = compute_power_curve(BASE, U_range,
+    _U_up, P_up = compute_power_curve(BASE, U_range,
                                     interaction_factor=0.0,
                                     is_upstream=True)
 
@@ -445,12 +444,12 @@ def main():
                                     U_MEAN, K_WEIBULL,
                                     CUT_IN, CUT_OUT, p_rated)
         gain_f = ((aep_f / aep_single) - 1.0) * 100.0 if aep_single > 0 else 0.0
-        sensitivity.append(dict(
-            interaction_factor=float(f),
-            aep_kWh=float(aep_f),
-            cf=float(cf_f),
-            gain_vs_single_percent=float(gain_f),
-        ))
+        sensitivity.append({
+            "interaction_factor": float(f),
+            "aep_kWh": float(aep_f),
+            "cf": float(cf_f),
+            "gain_vs_single_percent": float(gain_f),
+        })
         print(f"    f = {f:.2f}  AEP = {aep_f:.1f} kWh/yr  "
               f"gain vs single = {gain_f:+.1f}%")
 
@@ -460,7 +459,7 @@ def main():
         print(f"\n  Improvement over single rotor: {improvement_over_single:+.1f}%")
     else:
         improvement_over_single = 0.0
-        print(f"\n  Improvement over single rotor: N/A")
+        print("\n  Improvement over single rotor: N/A")
 
     # Calculate improvement over two independent rotors
     aep_two_independent = 2.0 * aep_single
@@ -485,7 +484,7 @@ def main():
                         for P, U in zip(P_total, U_range)])
     
     # Create figure with subplots
-    fig, ax = plt.subplots(2, 2, figsize=(12, 10))
+    _fig, ax = plt.subplots(2, 2, figsize=(12, 10))
     
     # Plot 1: Power curves
     ax[0, 0].plot(U_range, P_single/1000, 'b-', linewidth=2, label='Single rotor')
@@ -518,17 +517,17 @@ def main():
     
     # Plot 3: Wind speed enhancement diagram
     ax[1, 0].annotate('', xy=(ROTOR_SEPARATION/2, 0.5), xytext=(-ROTOR_SEPARATION/2, 0.5),
-                     arrowprops=dict(arrowstyle='<->', color='blue', lw=2))
+                     arrowprops={"arrowstyle": '<->', "color": 'blue', "lw": 2})
     ax[1, 0].text(0, 0.55, f'Separation: {ROTOR_SEPARATION} m', 
                   ha='center', va='bottom', fontweight='bold')
     
     ax[1, 0].annotate('', xy=(-ROTOR_SEPARATION/2, 0.3), xytext=(-ROTOR_SEPARATION/2-1, 0.3),
-                     arrowprops=dict(arrowstyle='->', color='green', lw=2))
+                     arrowprops={"arrowstyle": '->', "color": 'green', "lw": 2})
     ax[1, 0].text(-ROTOR_SEPARATION/2-1.5, 0.3, 'Upstream rotor\n(normal wind)', 
                   ha='right', va='center')
     
     ax[1, 0].annotate('', xy=(ROTOR_SEPARATION/2, 0.3), xytext=(ROTOR_SEPARATION/2+1, 0.3),
-                     arrowprops=dict(arrowstyle='->', color='red', lw=2))
+                     arrowprops={"arrowstyle": '->', "color": 'red', "lw": 2})
     ax[1, 0].text(ROTOR_SEPARATION/2+1.5, 0.3, 'Downstream rotor\n(enhanced wind)', 
                   ha='left', va='center')
     
@@ -559,7 +558,7 @@ def main():
     if aep_single > 0:
         ax[1, 1].text(0.5, 0.95, f'+{improvement_over_single:.1f}% vs single rotor\n+{improvement_over_two:.1f}% vs two independent',
                      transform=ax[1, 1].transAxes, ha='center', va='top',
-                     bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+                     bbox={"boxstyle": 'round', "facecolor": 'wheat', "alpha": 0.8})
     
     plt.suptitle('Counter-Rotating Sharp Cycloturbine Analysis\n' +
                  'heuristic scenario model momentum theory interaction model\n' +
@@ -639,7 +638,7 @@ def main():
         "scripts/compute_aep_counter_rotating.py",
 
     
-        script_version="v1.0",
+        script_version="2.0.0",
 
     
         n=len(U_range) * 3,

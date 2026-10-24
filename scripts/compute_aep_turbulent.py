@@ -8,14 +8,14 @@ without divergence and average the last 40 % of the time series.
 """
 from __future__ import annotations
 
-import json
 import math
 import os
 import sys
 
+import matplotlib
 import numpy as np
 from scipy.integrate import trapezoid
-import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -23,30 +23,30 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
 from compute_aep import U_RATED, rated_power_from_cp
-from scripts.stamp import make_stamp
 
+from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 # ----------------------------------------------------------------------------
 # CONFIG
 # ----------------------------------------------------------------------------
-BASE = dict(
-    R=2.7179, H=4.0568, N=3, c=0.3861,
-    ar=0.3121, sp=0.2181,
-    mb=0.92954, xbcg=0.20,
-    mc=2.69306, dcw=-0.1935,
-    balance=0, bias_deg=0.0,
-    prescribe_pitch=False,
-    cd_add=0.002,
-    use_dynamic_stall=True,
-    use_flow_curvature=True,
-    use_dmst=True,
-    use_tip_loss=True,
-    win_deg=45.0, cb=2e-5, mu_c=3e-4,
-    free=True, T_max=60.0, stride=8,
-    w0_frac=1.0, k_load=4.164352, tsr=2.5,
-)
+BASE = {
+    "R": 2.7179, "H": 4.0568, "N": 3, "c": 0.3861,
+    "ar": 0.3121, "sp": 0.2181,
+    "mb": 0.92954, "xbcg": 0.20,
+    "mc": 2.69306, "dcw": -0.1935,
+    "balance": 0, "bias_deg": 0.0,
+    "prescribe_pitch": False,
+    "cd_add": 0.002,
+    "use_dynamic_stall": True,
+    "use_flow_curvature": True,
+    "use_dmst": True,
+    "use_tip_loss": True,
+    "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+    "free": True, "T_max": 60.0, "stride": 8,
+    "w0_frac": 1.0, "k_load": 4.164352, "tsr": 2.5,
+}
 
 U_MEAN         = 6.0
 K_WEIBULL      = 2.0
@@ -117,10 +117,10 @@ def run_one(U, seed, turbulent):
     # Cp is derived from the *same* last-40 % window as P, so the mean and
     # the standard deviation reported together describe one quantity.
     cp = cp_from_power(P, U, BASE['R'], BASE['H'])
-    return dict(P=P, w=w, cp=cp,
-                tsr=float(r['tsr_eq']),
-                rpm=float(r['rpm']),
-                aoa_max=float(r['aoa_max']))
+    return {"P": P, "w": w, "cp": cp,
+                "tsr": float(r['tsr_eq']),
+                "rpm": float(r['rpm']),
+                "aoa_max": float(r['aoa_max'])}
 
 
 # ----------------------------------------------------------------------------
@@ -267,46 +267,37 @@ def main():
     steady_by_u = {row[0]: row for row in steady_rows}
     turb_by_u   = {row[0]: row for row in turb_rows}
     common_u = [u for u in U_REF if u in steady_by_u and u in turb_by_u]
-    
-    from scripts.stamp import make_stamp
-    stamp = make_stamp(
-        "scripts/compute_aep_turbulent.py",
-        script_version="v1.0",
+
+    data = {
+        "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
+        "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
+                 "cut_in": CUT_IN, "cut_out": CUT_OUT,
+                 "p_rated_W": float(p_rated),
+                 "rated_wind_speed": U_RATED,
+                 "eta_drivetrain": ETA_DRIVETRAIN},
+        "steady":    {"aep_kWh": aep_s, "cf": cf_s},
+        "turbulent": {"aep_kWh": aep_t, "cf": cf_t},
+        "turbulence_effect_pct": effect,
+        "per_wind_speed": [
+            {
+                "U":              float(u),
+                "P_steady_W":     float(steady_by_u[u][1]),
+                "P_turb_mean_W":  float(turb_by_u[u][1]),
+                "P_turb_std_W":   float(turb_by_u[u][2]),
+            }
+            for u in common_u
+        ],
+    }
+    write_json_with_stamp(
+        path=out_json,
+        data=data,
+        script="scripts/compute_aep_turbulent.py",
+        version="2.0.0",
         n=len(U_REF) * N_SEEDS * 2,
         seed=0,
         extra_files=["scripts/compute_aep.py"],
         extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED, "TURB_I": TURB_I, "TURB_L": TURB_L, "N_SEEDS": N_SEEDS},
     )
-
-    with open(out_json, "w") as fh:
-        json.dump({
-            "stamp": make_stamp(
-                "scripts/compute_aep_turbulent.py",
-                script_version="v1.0",
-                n=len(U_REF) * N_SEEDS * 2,
-                seed=0,
-                extra_files=["scripts/compute_aep.py"],
-                extra_data={"U_MEAN": U_MEAN, "K_WEIBULL": K_WEIBULL, "CUT_IN": CUT_IN, "CUT_OUT": CUT_OUT, "U_RATED": U_RATED, "TURB_I": TURB_I, "TURB_L": TURB_L, "N_SEEDS": N_SEEDS},
-            ),
-            "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
-            "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
-                     "cut_in": CUT_IN, "cut_out": CUT_OUT,
-                     "p_rated_W": float(p_rated),
-                     "rated_wind_speed": U_RATED,
-                     "eta_drivetrain": ETA_DRIVETRAIN},
-            "steady":    {"aep_kWh": aep_s, "cf": cf_s},
-            "turbulent": {"aep_kWh": aep_t, "cf": cf_t},
-            "turbulence_effect_pct": effect,
-            "per_wind_speed": [
-                {
-                    "U":              float(u),
-                    "P_steady_W":     float(steady_by_u[u][1]),
-                    "P_turb_mean_W":  float(turb_by_u[u][1]),
-                    "P_turb_std_W":   float(turb_by_u[u][2]),
-                }
-                for u in common_u
-            ],
-        }, fh, indent=2)
     print(f"  Wrote {out_json}")
 
 

@@ -19,7 +19,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 
@@ -28,9 +27,10 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params  # noqa: E402
-import uncertainty as U  # noqa: E402
+import uncertainty as U
+
 from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 CM_VALUES = [0.0, 0.25, 0.5, 0.75, 1.0]
 TIP_VALUES = [0.90, 0.94, 0.95, 0.955, 0.96, 0.98, 1.00]
@@ -96,7 +96,7 @@ def main(argv=None):
         path=path,
         data=out,
         script="scripts/scan_cm_scale.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
         extra_files=["vawt_presets.py", "scripts/uncertainty.py"],

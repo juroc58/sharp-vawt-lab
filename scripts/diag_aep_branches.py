@@ -14,8 +14,6 @@ Usage:
 """
 from __future__ import annotations
 
-import json
-import math
 import os
 import sys
 
@@ -25,10 +23,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
+from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 from vawt_presets import PRESETS
-from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
 
 SCALEUP_BASE = dict(PRESETS["scaleup"])
 
@@ -140,7 +137,7 @@ def main():
                 if 'error' in res:
                     status += f"ERROR: {res['error']}"
                 elif res['cp'] is None:
-                    status += f"no equilibrium"
+                    status += "no equilibrium"
                 else:
                     status += f"Cp={res['cp']:.4f}, TSR={res['tsr_eq']:.3f}, branch={branch}"
                 print(status)
@@ -210,10 +207,10 @@ def main():
         path=out_path,
         data=results,
         script="scripts/diag_aep_branches.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
-        extra_files=["vawt_presets.py", "scripts/vawt_core.py"],
+        extra_files=["vawt_presets.py"],
         extra_data={},
     )
     print(f"\nSaved detailed results to {out_path}")

@@ -27,26 +27,26 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from vawt_core import create_sim_from_params
+from sharp_vawt import create_sim_from_params
 
 R_HAM, C_HAM, H_HAM, N_HAM = 1.83, 0.305, 1.37, 3
 SIGMA_HAM = N_HAM * C_HAM / (2.0 * R_HAM)
 SIGMA_STD = N_HAM * C_HAM / (2.0 * 3.14159265 * R_HAM)
 
-COMMON = dict(
-    R=R_HAM, c=C_HAM, H=H_HAM, N=N_HAM,
-    ar=0.0, sp=0.25,
-    free=False, T_max=20.0, stride=5,
-    prescribe_pitch=True,
-    pp0_deg=0.0, pp2_deg=0.0, pp3_deg=0.0,
-    use_dmst=True, cd_add=0.005,
-    use_tip_loss=False,  # Ham's model class has no finite-span correction
-)
+COMMON = {
+    "R": R_HAM, "c": C_HAM, "H": H_HAM, "N": N_HAM,
+    "ar": 0.0, "sp": 0.25,
+    "free": False, "T_max": 20.0, "stride": 5,
+    "prescribe_pitch": True,
+    "pp0_deg": 0.0, "pp2_deg": 0.0, "pp3_deg": 0.0,
+    "use_dmst": True, "cd_add": 0.005,
+    "use_tip_loss": False,  # Ham's model class has no finite-span correction
+}
 
 CONFIGS = [
-    ("static only   ", dict(use_dynamic_stall=False, use_flow_curvature=False)),
-    ("+ DS          ", dict(use_dynamic_stall=True,  use_flow_curvature=False)),
-    ("+ DS + curv   ", dict(use_dynamic_stall=True,  use_flow_curvature=True)),
+    ("static only   ", {"use_dynamic_stall": False, "use_flow_curvature": False}),
+    ("+ DS          ", {"use_dynamic_stall": True,  "use_flow_curvature": False}),
+    ("+ DS + curv   ", {"use_dynamic_stall": True,  "use_flow_curvature": True}),
 ]
 
 TSRS = (1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5)
@@ -150,7 +150,7 @@ def main(argv=None):
 
     static_only = [(tsr, cp0) for tsr, cp0, _ in results["static only   "]]
     static_peak = max(cp for _, cp in static_only)
-    peak_tsr = [tsr for tsr, cp in static_only if cp == static_peak][0]
+    peak_tsr = next(tsr for tsr, cp in static_only if cp == static_peak)
     status, bias, expected_lo, expected_hi = verdict(static_peak)
 
     print("=" * 60)

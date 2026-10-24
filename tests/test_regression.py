@@ -15,50 +15,49 @@ flaky across platforms.
 """
 import pytest
 
-from vawt_core import create_sim_from_params
 from tests.conftest import BASE_QUICK
-
+from vawt_core import create_sim_from_params
 
 # name -> (params, expected_cp)
 GOLDEN = {
     "ham_static_tsr2_5": (
-        dict(
-            R=1.83, c=0.305, H=1.37, N=3, ar=0.0, sp=0.25,
-            mb=0.010, xbcg=0.20, mc=0.002, dcw=0.30,
-            balance=0, bias_deg=0.0,
-            prescribe_pitch=True, pp0_deg=0.0, pp1_deg=-10.0,
-            pp2_deg=0.0, pp3_deg=0.0, pp_ph_deg=0.0,
-            free=False, tsr=2.5, T_max=12.0, stride=5,
-            use_dynamic_stall=False, use_flow_curvature=False,
-            use_tip_loss=False, use_dmst=True,
-            win_deg=89.0, cb=2e-5, mu_c=0.0, k_load=0.0004,
-        ),
+        {
+            "R": 1.83, "c": 0.305, "H": 1.37, "N": 3, "ar": 0.0, "sp": 0.25,
+            "mb": 0.010, "xbcg": 0.20, "mc": 0.002, "dcw": 0.30,
+            "balance": 0, "bias_deg": 0.0,
+            "prescribe_pitch": True, "pp0_deg": 0.0, "pp1_deg": -10.0,
+            "pp2_deg": 0.0, "pp3_deg": 0.0, "pp_ph_deg": 0.0,
+            "free": False, "tsr": 2.5, "T_max": 12.0, "stride": 5,
+            "use_dynamic_stall": False, "use_flow_curvature": False,
+            "use_tip_loss": False, "use_dmst": True,
+            "win_deg": 89.0, "cb": 2e-5, "mu_c": 0.0, "k_load": 0.0004,
+        },
         0.4893349383,
     ),
     "passive_short_free": (
-        dict(
-            R=2.7179, H=4.0568, N=3, c=0.3861, ar=0.3121, sp=0.2181,
-            mb=0.92954, xbcg=0.20, mc=2.69306, dcw=-0.1935,
-            balance=0, bias_deg=0.0, prescribe_pitch=False,
-            cd_add=0.002, use_dynamic_stall=True, use_flow_curvature=True,
-            use_dmst=True, use_tip_loss=True, win_deg=45.0, cb=2e-5,
-            mu_c=3e-4, free=True, T_max=10.0, stride=10,
-            w0_frac=0.9, k_load=4.164352, tsr=2.5,
-        ),
+        {
+            "R": 2.7179, "H": 4.0568, "N": 3, "c": 0.3861, "ar": 0.3121, "sp": 0.2181,
+            "mb": 0.92954, "xbcg": 0.20, "mc": 2.69306, "dcw": -0.1935,
+            "balance": 0, "bias_deg": 0.0, "prescribe_pitch": False,
+            "cd_add": 0.002, "use_dynamic_stall": True, "use_flow_curvature": True,
+            "use_dmst": True, "use_tip_loss": True, "win_deg": 45.0, "cb": 2e-5,
+            "mu_c": 3e-4, "free": True, "T_max": 10.0, "stride": 10,
+            "w0_frac": 0.9, "k_load": 4.164352, "tsr": 2.5,
+        },
         0.4220443898,
     ),
     "prescribed_fixed_rpm": (
-        dict(
-            R=0.60, H=0.40, N=3, c=0.117607, ar=0.50, sp=0.25,
-            mb=0.010, xbcg=0.20, mc=0.008, dcw=0.50,
-            balance=0, bias_deg=0.0,
-            prescribe_pitch=True, pp0_deg=5.15612, pp1_deg=-6.32883,
-            pp2_deg=2.75837, pp3_deg=-0.0845207, pp_ph_deg=0.0,
-            cd_add=0.002, use_flow_curvature=True,
-            free=False, tsr=2.14487, T_max=10.0, stride=5,
-            use_dynamic_stall=True, use_dmst=True, use_tip_loss=False,
-            cb=2e-5, mu_c=3e-4, k_load=0.00149992,
-        ),
+        {
+            "R": 0.60, "H": 0.40, "N": 3, "c": 0.117607, "ar": 0.50, "sp": 0.25,
+            "mb": 0.010, "xbcg": 0.20, "mc": 0.008, "dcw": 0.50,
+            "balance": 0, "bias_deg": 0.0,
+            "prescribe_pitch": True, "pp0_deg": 5.15612, "pp1_deg": -6.32883,
+            "pp2_deg": 2.75837, "pp3_deg": -0.0845207, "pp_ph_deg": 0.0,
+            "cd_add": 0.002, "use_flow_curvature": True,
+            "free": False, "tsr": 2.14487, "T_max": 10.0, "stride": 5,
+            "use_dynamic_stall": True, "use_dmst": True, "use_tip_loss": False,
+            "cb": 2e-5, "mu_c": 3e-4, "k_load": 0.00149992,
+        },
         0.4627034552,
     ),
 }

@@ -16,13 +16,12 @@ Usage:
 """
 from __future__ import annotations
 
-import json
-import math
 import os
 import sys
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -30,11 +29,9 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
+from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 from vawt_presets import PRESETS
-from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
-
 
 # Ham 1979 measured band (from validation scripts)
 HAM_MEASURED_CP = {
@@ -155,16 +152,16 @@ def main():
         path=out_json,
         data=results,
         script="scripts/finite_span_ablation.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
-        extra_files=["vawt_presets.py", "vawt_core.py"],
+        extra_files=["vawt_presets.py"],
         extra_data={},
     )
     print(f"\nWrote {out_json}")
 
     # Plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    _fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot each case
     for case_name, label, color, style in [
@@ -180,8 +177,8 @@ def main():
             ax.plot(tsrs, cps, style, color=color, lw=2, label=label)
 
     # Ham measured band
-    ham_tsr_min, ham_tsr_max = HAM_TSR_RANGE
-    cp_min, cp_max = HAM_MEASURED_CP[min(HAM_MEASURED_CP.keys())], HAM_MEASURED_CP[max(HAM_MEASURED_CP.keys())]
+    _ham_tsr_min, _ham_tsr_max = HAM_TSR_RANGE
+    _cp_min, _cp_max = HAM_MEASURED_CP[min(HAM_MEASURED_CP.keys())], HAM_MEASURED_CP[max(HAM_MEASURED_CP.keys())]
     # Actually use the actual measured values
     for tsr in [2.0, 2.5, 3.0, 3.5, 4.0]:
         if tsr in HAM_MEASURED_CP:

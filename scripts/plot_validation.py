@@ -22,13 +22,17 @@ equilibrium point set by k_load.
 Unlike the headline results this model curve runs WITHOUT tip loss (the
 prescribed-pitch upper bound is defined that way; see optimize_actuator.py).
 """
-import sys, os
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from vawt_core import create_sim_from_params
+
+from sharp_vawt import create_sim_from_params
 
 # --- this model's curve, scaled to Ham's radius for a fair comparison ---
 R_MODEL = 1.83
@@ -77,7 +81,7 @@ ax.text(0.02, 0.98,
         'See plot_ham_curve.py for exact-geometry comparison.',
         transform=ax.transAxes, va='top', ha='left',
         fontsize=9, color='red',
-        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        bbox={"boxstyle": 'round', "facecolor": 'wheat', "alpha": 0.8})
 
 fig.tight_layout()
 

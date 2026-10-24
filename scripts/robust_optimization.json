@@ -1,16 +1,40 @@
 {
   "stamp": {
-    "code_hash": "8316eaa31f19c663",
+    "schema_version": "2",
+    "code_hash": "6092268ce98d7cb19549945f664e0057b778c9feaeaf312e274bde11afe475af",
     "script": "scripts/robust_reopt.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T10:21:43.121347Z",
+    "script_version": "2.0.0",
+    "created_utc": "2026-10-24T18:17:04.983417+00:00",
+    "python_version": "3.14.4",
+    "git_commit": "46fd455d87614b9281be0b1a5ab6c513b8ac4cfb",
+    "seed": 0,
+    "n": 1,
+    "script_args": [],
     "extra_files": [
       "vawt_presets.py",
       "scripts/compute_aep.py"
     ],
     "extra_data": {},
-    "n": 1,
-    "seed": 0
+    "uq_spec_hash": null,
+    "config_hash": "545c036b14dc2e541612bd3c7fd057284fd3475e0e601c1b4ef6ec9ba5c40c43",
+    "source_hashes": {
+      "sharp_vawt/__init__.py": "4f418eeb28f703d3fedf56bd6e993edcd182600b0cf63ccc1c82d13951e40475",
+      "sharp_vawt/config.py": "e6b935fc543d8eb5bf1cc2c4ab7cb07ca20a448efae7401d5b25366c1f5da79f",
+      "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
+      "sharp_vawt/engine.py": "aca47b3ab93e17a6791eaa76f78a595c0a42efdfcf0f5c46b05418c1c0035503",
+      "vawt_core.py": "07671e2ff1384dcde04af3fd33e54e0e12109b2e0e0cbd23d63a5bd3679f1929",
+      "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
+      "scripts/robust_reopt.py": "3879f56da4fcb140f83b5d128ac43ae0cb132cd6b1325fd872c1a14bb8f46617",
+      "scripts/compute_aep.py": "acc2ad2692045518207f5ca4fe53d08a342355efeca36d92cc7dd3074214f400"
+    },
+    "data_hashes": {
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_1000000.csv": "8e039410c5697a6eeed77f56ce34333a3afd8bdcfb353d0c9d5b8b5ee1d3a456",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_200000.csv": "ba9bdec33f7c4559315ee15147779da6eab27bab0fb7c9c68b83d6131ffded91",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_400000.csv": "7054ea511217f7ed44df48d1dfa5d6ac0758367cdc2a87e32f5f44fd072bc29b",
+      "sharp_vawt/airfoil_polars/provenance.json": "2a251dd01bcc6146ce9d890700ba76ca2e5c9e60dc124f2452ae6cc12bb30561",
+      "sharp_vawt/airfoil_polars/README.md": "0e99fb03dee3e94f051fa5bdad5a5e99c290a58b4a6bef0274d439337947626f"
+    }
   },
   "note": "Robust local refinement from the stored optimiser solutions. The scenario set is a small explicit subset of the UQ input ranges, not the full Saltelli design. These are model results.",
   "objective": "maximise scenario mean Cp",
@@ -36,13 +60,13 @@
         0.13047506246294055
       ],
       "x": [
-        0.06416595410154186,
-        0.0005032121618245512,
-        0.016703978088074434,
-        -0.09802319991140429,
-        0.42280828693211125,
-        0.16050845562115068,
-        0.13047506246294055
+        0.0636098509987846,
+        0.0005051280557461714,
+        0.017122735213712773,
+        -0.09786290146853949,
+        0.4059697676413322,
+        0.1597939324936004,
+        0.1337459816317984
       ],
       "bounds": [
         [
@@ -76,17 +100,17 @@
       ],
       "best_params": {
         "R": 0.6,
-        "c": 0.06416595410154186,
+        "c": 0.0636098509987846,
         "H": 0.4,
         "N": 3,
-        "ar": 0.42280828693211125,
-        "sp": 0.16050845562115068,
+        "ar": 0.4059697676413322,
+        "sp": 0.1597939324936004,
         "mb": 0.01,
         "xbcg": 0.2,
-        "mc": 0.016703978088074434,
-        "dcw": -0.09802319991140429,
+        "mc": 0.017122735213712773,
+        "dcw": -0.09786290146853949,
         "balance": 0,
-        "bias_deg": 0.13047506246294055,
+        "bias_deg": 0.1337459816317984,
         "prescribe_pitch": false,
         "free": true,
         "tsr": 2.0,
@@ -99,7 +123,7 @@
         "win_deg": 45.0,
         "cb": 2e-05,
         "mu_c": 0.0003,
-        "k_load": 0.0005032121618245512,
+        "k_load": 0.0005051280557461714,
         "arm_cd": 1.0
       },
       "objective_mode": "mean",
@@ -121,30 +145,174 @@
       ],
       "metrics": {
         "valid": true,
-        "nominal_cp": 0.2696325308811217,
-        "mean_cp": 0.2625894390653542,
-        "p10_cp": 0.2550170254382906,
-        "min_cp": 0.2511912777391522,
-        "max_cp": 0.27010895092183196,
+        "nominal_cp": 0.2698960659538832,
+        "mean_cp": 0.2627392298996667,
+        "p10_cp": 0.25518045278311363,
+        "min_cp": 0.25146368771626193,
+        "max_cp": 0.270291678610216,
         "scenario_cps": [
-          0.2696325308811217,
-          0.27010895092183196,
-          0.26075564698699816,
-          0.26125878879766706,
-          0.2511912777391522
+          0.2698960659538832,
+          0.270291678610216,
+          0.2607556003833912,
+          0.26128911683458117,
+          0.25146368771626193
         ]
       },
       "bound_active": [
         {
           "name": "k_load",
-          "value": 0.0005032121618245512,
+          "value": 0.0005051280557461714,
           "bound": "lower",
           "limit": 0.0005
         }
       ],
       "success": false,
       "message": "Maximum number of iterations has been exceeded.",
-      "objective_calls": 8
+      "objective_calls": 26
+    },
+    "scaleup": {
+      "design": "scaleup R=2.72 m",
+      "param_names": [
+        "R",
+        "c_over_R",
+        "H_over_R",
+        "k_load_ref",
+        "mc_ref",
+        "ar",
+        "sp",
+        "dcw"
+      ],
+      "x0": [
+        2.956962078872979,
+        0.11088029981698869,
+        1.3980369790796532,
+        0.0013638830179092142,
+        0.0023391334140712957,
+        0.6619078548141677,
+        0.22197156226212217,
+        0.015940511439010475
+      ],
+      "x": [
+        2.9717768434030853,
+        0.11252962231183117,
+        1.4905356662158962,
+        0.0014071469195241788,
+        0.002109156230951369,
+        0.7057018377285413,
+        0.21647849856528179,
+        0.015927182409290058
+      ],
+      "bounds": [
+        [
+          0.6,
+          3.0
+        ],
+        [
+          0.1,
+          0.3
+        ],
+        [
+          0.5,
+          1.5
+        ],
+        [
+          0.0005,
+          0.005
+        ],
+        [
+          0.002,
+          0.03
+        ],
+        [
+          0.2,
+          1.5
+        ],
+        [
+          0.15,
+          0.3
+        ],
+        [
+          -0.3,
+          0.6
+        ]
+      ],
+      "best_params": {
+        "R": 2.9717768434030853,
+        "c": 0.33441292578319504,
+        "H": 4.42953937712679,
+        "N": 3,
+        "ar": 0.7057018377285413,
+        "sp": 0.21647849856528179,
+        "mb": 1.2150519078675657,
+        "xbcg": 0.2,
+        "mc": 0.2562734302408225,
+        "dcw": 0.015927182409290058,
+        "balance": 0,
+        "bias_deg": 0.0,
+        "prescribe_pitch": false,
+        "free": true,
+        "tsr": 2.5,
+        "T_max": 40.0,
+        "stride": 8,
+        "use_dynamic_stall": true,
+        "use_flow_curvature": true,
+        "use_tip_loss": true,
+        "use_dmst": true,
+        "win_deg": 45.0,
+        "cb": 2e-05,
+        "mu_c": 0.0003,
+        "k_load": 4.194345134079234,
+        "arm_cd": 1.0
+      },
+      "objective_mode": "mean",
+      "scenarios": [
+        {},
+        {
+          "cm_scale": 0.0
+        },
+        {
+          "tip_loss_multiplier": 0.96
+        },
+        {
+          "cm_scale": 0.0,
+          "tip_loss_multiplier": 0.96
+        },
+        {
+          "cd_add": 0.005
+        }
+      ],
+      "metrics": {
+        "valid": true,
+        "nominal_cp": 0.40631759458072136,
+        "mean_cp": 0.3998828923250657,
+        "p10_cp": 0.39049268904082257,
+        "min_cp": 0.38366589614740537,
+        "max_cp": 0.40743144157527095,
+        "scenario_cps": [
+          0.40631759458072136,
+          0.40743144157527095,
+          0.4007328783809484,
+          0.40126665094098257,
+          0.38366589614740537
+        ]
+      },
+      "bound_active": [
+        {
+          "name": "H_over_R",
+          "value": 1.4905356662158962,
+          "bound": "upper",
+          "limit": 1.5
+        },
+        {
+          "name": "mc_ref",
+          "value": 0.002109156230951369,
+          "bound": "lower",
+          "limit": 0.002
+        }
+      ],
+      "success": false,
+      "message": "Maximum number of iterations has been exceeded.",
+      "objective_calls": 30
     }
   }
 }

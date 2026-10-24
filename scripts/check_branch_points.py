@@ -16,7 +16,6 @@ Usage:
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -25,19 +24,19 @@ _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
-from vawt_core import create_sim_from_params  # noqa: E402
-from compute_aep import BASE  # noqa: E402
+from compute_aep import BASE
+
 from scripts.stamp import write_json_with_stamp
-from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 OUT = os.path.join(_HERE, "branch_point_checks.json")
 
 
 def summarize(r):
-    return dict(cp=float(r["cp"]), tsr_eq=float(r["tsr_eq"]),
-                aoa_max=float(r["aoa_max"]),
-                steady=bool(r.get("steady", True)),
-                stop_pct=float(r.get("stop_pct", 0.0)))
+    return {"cp": float(r["cp"]), "tsr_eq": float(r["tsr_eq"]),
+                "aoa_max": float(r["aoa_max"]),
+                "steady": bool(r.get("steady", True)),
+                "stop_pct": float(r.get("stop_pct", 0.0))}
 
 
 def main():
@@ -82,7 +81,7 @@ def main():
         path=OUT,
         data=out,
         script="scripts/check_branch_points.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=0,
         extra_files=["vawt_presets.py", "scripts/compute_aep.py"],

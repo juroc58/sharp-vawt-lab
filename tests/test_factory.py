@@ -1,8 +1,8 @@
 """Tests for create_sim_from_params — validation, aliases, forwarding."""
 import pytest
 
-from vawt_core import create_sim_from_params, CycloturbineSim
 from tests.conftest import BASE_QUICK
+from vawt_core import CycloturbineSim, create_sim_from_params
 
 
 class TestFactoryKeyChecking:

@@ -53,7 +53,7 @@ import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
-_OUT_DIR = os.path.join(_ROOT, "airfoil_polars", "naca0012")
+_OUT_DIR = os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "naca0012")
 
 RE_LIST = [100_000, 200_000, 400_000, 1_000_000]
 ALPHA_DEEP_STALL = 45.0
@@ -119,7 +119,7 @@ def _install_aerosandbox_shim() -> bool:
 
 def _load_neuralfoil():
     try:
-        import neuralfoil  # noqa: F401
+        import neuralfoil
     except ImportError as exc:  # pragma: no cover - environment issue
         raise RuntimeError(
             "NeuralFoil is required to regenerate the polars.\n"
@@ -160,12 +160,12 @@ def kulfan_parameters():
     basis = np.sqrt(x)[:, None] * (1.0 - x)[:, None] * _bernstein(x, 8)
     weights, *_ = np.linalg.lstsq(basis, naca0012_half_thickness(x), rcond=None)
     fit_err = float(np.max(np.abs(basis @ weights - naca0012_half_thickness(x))))
-    return dict(
-        upper_weights=weights,
-        lower_weights=-weights,
-        leading_edge_weight=0.0,
-        TE_thickness=0.0,
-    ), fit_err
+    return {
+        "upper_weights": weights,
+        "lower_weights": -weights,
+        "leading_edge_weight": 0.0,
+        "TE_thickness": 0.0,
+    }, fit_err
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +221,7 @@ def _neuralfoil_attached(nf, kulfan, re):
     Returns: dict mapping angle -> (Cl, Cd, Cm_neuralfoil), and stall_angle
     """
     cl_values = {}
-    for a in range(0, 21):
+    for a in range(21):
         r = nf.get_aero_from_kulfan_parameters(
             kulfan,
             alpha=float(a),
@@ -247,7 +247,7 @@ def _neuralfoil_attached(nf, kulfan, re):
 
 def make_polar(Re, nf, kulfan):
     """Return a list of (alpha_deg, Cl, Cd, Cm_default, Cm_neuralfoil) on a 1-degree grid."""
-    nf_attached, stall_angle = _neuralfoil_attached(nf, kulfan, Re)
+    nf_attached, _stall_angle = _neuralfoil_attached(nf, kulfan, Re)
 
     # Build clean attached-flow Cl/Cd for the DEFAULT variant:
     # - Clamp lift slope at 1.15 * 2*pi for |alpha| <= 4 deg (enforce linear Cl)
@@ -270,8 +270,7 @@ def make_polar(Re, nf, kulfan):
     # Enforce monotone Cl magnitude up to 20 deg (removes bubble kink)
     # For positive alpha: Cl should be non-decreasing
     for a in range(1, 21):
-        if nf_cl[a] < nf_cl[a - 1]:
-            nf_cl[a] = nf_cl[a - 1]
+        nf_cl[a] = max(nf_cl[a], nf_cl[a - 1])
 
     # Get values at 20 deg for blending
     cl_20 = nf_cl[20]
@@ -338,8 +337,7 @@ def write_csv(Re, rows):
             f"# Cm (col 5): neuralfoil_cm variant, raw NeuralFoil CM for sensitivity\n"
             f"# alpha_deg, Cl, Cd, Cm_default, Cm_neuralfoil\n"
         )
-        for alpha, cl, cd, cm_default, cm_nf in rows:
-            fh.write(f"{alpha:.1f}, {cl:.6f}, {cd:.6f}, {cm_default:.6f}, {cm_nf:.6f}\n")
+        fh.writelines(f"{alpha:.1f}, {cl:.6f}, {cd:.6f}, {cm_default:.6f}, {cm_nf:.6f}\n" for alpha, cl, cd, cm_default, cm_nf in rows)
     print(f"  wrote {path} ({len(rows)} points)")
 
 
@@ -362,9 +360,9 @@ def main():
         rows = make_polar(Re, nf, kulfan)
         write_csv(Re, rows)
 
-    provenance = dict(
-        generator="scripts/gen_real_polars.py",
-        method=(
+    provenance = {
+        "generator": "scripts/gen_real_polars.py",
+        "method": (
             "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg (attached); "
             "clamped slope at 1.15*2pi, monotone Cl enforced. "
             "Smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; "
@@ -372,41 +370,41 @@ def main():
             "CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981). "
             "Deep-stall amplitudes are provisional/unverified."
         ),
-        cm_method=(
+        "cm_method": (
             "Default variant: Cm=0 for |alpha|<=20 deg (physical symmetric "
             "section); post-stall Cm from centre-of-pressure shift x_cp: 0.25c "
             "-> 0.5c, Cm = -CN*(x_cp - 0.25). Variant 'neuralfoil_cm': raw "
             "NeuralFoil CM for |alpha|<=20 deg (not the default, sensitivity "
             "only), blended to synthetic deep-stall trend. Not measured."
         ),
-        cm_convention=(
+        "cm_convention": (
             "Positive Cm is nose-up about the quarter chord, matching the "
             "solver's Qa_cm = q*Cm*c term. Negative alpha uses odd symmetry."
         ),
-        neuralfoil_version=nf_version,
-        n_crit=N_CRIT,
-        n_crit_note=(
+        "neuralfoil_version": nf_version,
+        "n_crit": N_CRIT,
+        "n_crit_note": (
             "n_crit=9 is a clean-tunnel e^9 transition value. Rotor blades "
             "in atmospheric turbulence usually have a lower effective n_crit, "
             "so these attached-flow polars are optimistic for field operation."
         ),
-        model_size=MODEL_SIZE,
-        aerosandbox_shim=shimmed,
-        cst_fit_max_error_chord=fit_err,
-        reynolds=RE_LIST,
-        attached_limit_deg=20.0,
-        note=(
+        "model_size": MODEL_SIZE,
+        "aerosandbox_shim": shimmed,
+        "cst_fit_max_error_chord": fit_err,
+        "reynolds": RE_LIST,
+        "attached_limit_deg": 20.0,
+        "note": (
             "These tables are not raw experimental data. The attached-flow "
             "Cl, Cd come from an XFOIL-trained surrogate with clamped slope "
             "and enforced monotonicity; deep-stall Cl/Cd and Cm are analytic "
             "trends. Default Cm is physically derived for a symmetric section; "
             "NeuralFoil CM is available as a variant."
         ),
-    )
-    with open(os.path.join(_ROOT, "airfoil_polars", "provenance.json"), "w") as fh:
+    }
+    with open(os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "provenance.json"), "w") as fh:
         json.dump(provenance, fh, indent=2)
         fh.write("\n")
-    print("  wrote airfoil_polars/provenance.json")
+    print("  wrote sharp_vawt/airfoil_polars/provenance.json")
 
 
 if __name__ == "__main__":

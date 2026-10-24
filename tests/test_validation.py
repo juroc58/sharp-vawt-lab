@@ -6,10 +6,15 @@ iteration: `pytest -m "not slow"`.
 """
 import pytest
 
-from vawt_core import create_sim_from_params
 from scripts.validate_ham import (
-    verdict, HAM_MID, HAM_BAND_LO, HAM_BAND_HI, HAM_BIAS_LO, HAM_BIAS_HI,
+    HAM_BAND_HI,
+    HAM_BAND_LO,
+    HAM_BIAS_HI,
+    HAM_BIAS_LO,
+    HAM_MID,
+    verdict,
 )
+from vawt_core import create_sim_from_params
 
 
 class TestHamVerdictContract:
@@ -70,22 +75,22 @@ class TestHamPeakComparison:
     validate the model against Ham's experiment.
     """
 
-    BASE_HAM = dict(
-        R=1.83, c=0.305, H=1.37, N=3,
-        ar=0.0, sp=0.25,
-        mb=0.010, xbcg=0.20, mc=0.002, dcw=0.30,
-        balance=0, bias_deg=0.0,
-        prescribe_pitch=True, pp0_deg=0.0, pp1_deg=-10.0,
-        pp2_deg=0.0, pp3_deg=0.0, pp_ph_deg=0.0,
-        free=False, tsr=2.5, T_max=20.0, stride=5,
-        use_dynamic_stall=False,
-        use_flow_curvature=False,
-        use_tip_loss=False,
-        use_dmst=True,
-        win_deg=89.0, cb=2e-5, mu_c=0.0,
-        k_load=0.0004,
-        cd_add=0.005,
-    )
+    BASE_HAM = {
+        "R": 1.83, "c": 0.305, "H": 1.37, "N": 3,
+        "ar": 0.0, "sp": 0.25,
+        "mb": 0.010, "xbcg": 0.20, "mc": 0.002, "dcw": 0.30,
+        "balance": 0, "bias_deg": 0.0,
+        "prescribe_pitch": True, "pp0_deg": 0.0, "pp1_deg": -10.0,
+        "pp2_deg": 0.0, "pp3_deg": 0.0, "pp_ph_deg": 0.0,
+        "free": False, "tsr": 2.5, "T_max": 20.0, "stride": 5,
+        "use_dynamic_stall": False,
+        "use_flow_curvature": False,
+        "use_tip_loss": False,
+        "use_dmst": True,
+        "win_deg": 89.0, "cb": 2e-5, "mu_c": 0.0,
+        "k_load": 0.0004,
+        "cd_add": 0.005,
+    }
 
     def test_ham_peak_bias_in_expected_window(self):
         r = create_sim_from_params(self.BASE_HAM).run()
@@ -121,21 +126,21 @@ class TestDynamicStallSensitivity:
     # The passive optimiser's optimum is different; see
     # scripts/optimization_passive.json.  This test isolates DS
     # sensitivity at a below-stall, prescribed-pitch point.
-    DESIGN = dict(
-        R=0.60, H=0.40, N=3, c=0.117607,
-        ar=0.31, sp=0.18,
-        mb=0.010, xbcg=0.20, mc=0.040, dcw=-0.132,
-        balance=0, bias_deg=-1.1,
-        prescribe_pitch=True,
-        pp0_deg=+5.156, pp1_deg=-6.329,
-        pp2_deg=+2.758, pp3_deg=-0.085, pp_ph_deg=0.0,
-        cd_add=0.002,
-        use_flow_curvature=True,
-        use_dmst=True, use_tip_loss=False,
-        win_deg=45.0, cb=2e-5, mu_c=3e-4,
-        free=True, T_max=30.0, stride=5,
-        w0_frac=0.9, k_load=0.0015, tsr=2.14,
-    )
+    DESIGN = {
+        "R": 0.60, "H": 0.40, "N": 3, "c": 0.117607,
+        "ar": 0.31, "sp": 0.18,
+        "mb": 0.010, "xbcg": 0.20, "mc": 0.040, "dcw": -0.132,
+        "balance": 0, "bias_deg": -1.1,
+        "prescribe_pitch": True,
+        "pp0_deg": +5.156, "pp1_deg": -6.329,
+        "pp2_deg": +2.758, "pp3_deg": -0.085, "pp_ph_deg": 0.0,
+        "cd_add": 0.002,
+        "use_flow_curvature": True,
+        "use_dmst": True, "use_tip_loss": False,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+        "free": True, "T_max": 30.0, "stride": 5,
+        "w0_frac": 0.9, "k_load": 0.0015, "tsr": 2.14,
+    }
 
     def test_ds_sensitivity_prescribed_design(self):
         """At the prescribed-pitch design point, DS changes Cp by < 4 %.
@@ -166,8 +171,8 @@ class TestDynamicStallSensitivity:
         The old bound (0.001 < delta < 0.95) was effectively vacuous and is
         replaced here.
         """
-        import sys
         import os
+        import sys
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
         from scripts.uncertainty import ANCHORS
 
