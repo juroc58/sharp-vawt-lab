@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Consolidation to one canonical physics implementation.** `sharp_vawt/engine.py`
+  is now the sole `_kernel`, `CycloturbineSim`, and `create_sim_from_params`;
+  `sharp_vawt/config.py` holds dataclasses/constants/validation only;
+  `sharp_vawt/database.py` holds a single `PolarDatabase` and polar helpers;
+  `vawt_core.py` is a thin backwards-compatible re-export facade. Bit-identical
+  output verified on `sharp_baseline`, `ham_1979`, `sharp_cppc`, `scaleup`
+  (new `tests/test_single_implementation.py`). Duplicate root `airfoil_polars/`,
+  stale `test_*.png`, and dead `scripts/gen_real_polars_v2.py` removed.
 - **`scripts/stamp.py`**: shared module for computing code hashes and freshness stamps on result JSONs. Covers vawt_core.py, all polar CSVs, provenance.json, script source, and script version. Includes `make_stamp()`, `verify_stamp()`, `list_stale_results()` and CLI.
 - **`scripts/check_freshness.py`**: CLI entry point via `python -m scripts.stamp` listing stale result JSONs and regeneration commands.
 - **`scripts/check_polars.py --fail-on-warnings`**: CI gate that exits non-zero when the default polar variant has warnings.
@@ -81,14 +89,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **UQ now samples thirteen inputs, twelve active.** `polar_variant` is a
   categorical 0/1 model-form input; `arm_cd` remains inert because every
-  anchor has `arm_d = 0`. The Saltelli run was regenerated (960 samples,
-  3840 runs). The summary now reports base Cp at `cm_scale = 0`, all-sample
-  mean, working-branch mean and collapsed fraction. The Sharp-inspired
-  anchor is strongly bimodal: all-sample mean Cp = 0.033, working-branch
-  mean = 0.095, collapse fraction 69.3 %, versus a physical-Cm base case of
-  Cp = 0.0046. The optimised-passive collapse fraction is 1.0 %. These
-  replace the earlier 56.8 %/2.0 % split because the corrected
-  `cm_scale` blend and the polar model-form input are now sampled.
+  anchor has `arm_d = 0`. The canonical Saltelli run was regenerated:
+  base N = 64, 1024 runs per anchor (64 × 16 for D = 14 sampled),
+  4096 total runs, seed 42, full S₁/Sₜ with per-anchor confidence
+  intervals. The summary now reports base Cp at `cm_scale = 0`, all-sample
+  mean, working-branch mean and collapsed fraction. Mean [p5, p95]:
+  Ham 1979 0.4893 [0.4646, 0.5088], collapse 0.0 %; Sharp-inspired CPPC
+  0.0610 [0.0036, 0.1456], collapse 45.2 %; Optimised passive 0.2547
+  [0.1108, 0.3455], collapse 0.0 %; Scale-up R = 2.72 m 0.4189
+  [0.3656, 0.4766], collapse 0.0 %. The intervals are scenario ranges from
+  Saltelli propagation, not calibrated confidence intervals.
 - **Rated power is defined per design, not fixed at 90 kW.** The rating is
   the mechanical power at U = 12 m/s using the design Cp at that speed
   times drivetrain efficiency (8.55 kW for the scale-up). The old 90 kW
@@ -300,27 +310,36 @@ hiding it.
   idle rotor (Cp = 0.0011) and reported a meaningless 0.01 % delta. It now
   uses the same prescribed design as the test (Cp = 0.4965), giving 1.8 %.
 
-### UQ results (Saltelli N = 64, second order; v13 rerun, 1664 runs per anchor)
-Added `cm_scale` (0–1) to UQ_SPEC; see `scripts/uncertainty_results.json`;
-the README tables are generated from it. Mean [p5, p95]:
+### UQ results (regenerated this repair round)
+The committed `scripts/uncertainty_results.json` at audit time was LHS
+`n_samples = 40` with an empty `sobol` block, while the prose claimed
+"Saltelli N = 64, second order, 1664 runs per anchor". That claim was
+stale and has been removed. The canonical Saltelli run was regenerated:
+
+* Method: `saltelli` (canonical for headline sensitivity indices; LHS retained
+  only for scenario intervals, never mixed in one headline table).
+* Base N = 64, 13 sampled inputs (12 active; `arm_cd` inert because every
+  anchor sets `arm_d = 0`).
+* 1024 runs per anchor (= 64 × 16 for D = 14 sampled), 4096 total runs,
+  seed 42, full S₁/Sₜ with confidence intervals.
+* `uncertainty_results.json` now records method, sample count, runs per
+  anchor, total runs, seed, active/inert parameters, UQ spec hash,
+  source-code hashes, polar hashes, script version, reproducibility stamp.
+
+Mean [p5, p95] from the regenerated Saltelli run:
 
 | Anchor | Mean | 90 % interval | Collapsed samples (Cp < 0.02) |
 |---|---|---|---|
-| Ham 1979 | 0.49 | [0.47, 0.51] | 0 % |
-| Sharp-inspired CPPC | 0.04 | [0.002, 0.12] | 56.8 % |
-| Optimised passive | 0.19 | [0.051, 0.28] | 2.0 % |
-| Scale-up R = 2.72 m | 0.38 | [0.33, 0.42] | 0 % |
+| Ham 1979 | 0.49 | [0.46, 0.51] | 0 % |
+| Sharp-inspired CPPC | 0.06 | [0.00, 0.15] | 45 % |
+| Optimised passive | 0.25 | [0.11, 0.35] | 0 % |
+| Scale-up R = 2.72 m | 0.42 | [0.37, 0.48] | 0 % |
 
-The dominant first-order Sobol parameter is `tau_rev` for Ham (S₁ = 0.84).
-For Sharp-inspired CPPC, `ds_Tf` (S₁ = 0.43) and `tip_loss_multiplier`
-(S₁ = 0.41) are nearly tied; for the optimised-passive anchor the
-multiplier leads (S₁ = 0.51); at the scale-up no first-order index is
-significant at N = 64 (largest is `tip_loss_multiplier` S₁ = 0.19, CI
-spans zero). No run returned a non-finite or negative Cp (`n_fail = 0`).
-The v12 numbers (Sharp 0.048 [0.003, 0.108], 46.7 % collapsed; Ham
-0.491; scale-up 0.362) did not sample `cm_scale` and are superseded.
-The 95 % confidence half-widths on the dominant indices are 0.2-0.3 at
-N = 64 and are printed in the README table.
+The intervals are scenario ranges from Saltelli propagation, not calibrated
+confidence intervals. The dominant first-order Sobol parameter is `tau_rev`
+for Ham (S₁ ≈ 0.84); `tip_loss_multiplier`/`ind_drag_scale` for scale-up;
+`tip_loss_multiplier` for optimised-passive.
+
 
 ### v12 review follow-up (same unreleased 3.3.1)
 

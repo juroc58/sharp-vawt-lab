@@ -1,158 +1,227 @@
-# REVIEW_FIX_REPORT.md
+# REVIEW_FIX_REPORT — sharp-vawt-lab repair round
 
-## Summary of Changes
+Date: 2026-10-24. Commit baseline: `46fd455` (working tree had uncommitted refactor
+changes, including an untracked `sharp_vawt/` package). Local Python: 3.14.4.
 
-This report documents all changes made during the review-fix cycle, with before/after values for every headline number.
+This report is regenerated for this repair round. It records exactly what was
+fixed, what remains uncertain, and what evidence is still missing. It does not
+declare the project "fixed" or "bulletproof."
 
-## Phase 1: Core Fixes & Cm Table
+## Headline before/after values
 
-### Cm Table Fix
-**Before:** NeuralFoil CM column used directly (noisy, sign-changing in attached flow, up to ±0.04 at 2°)
-**After:** Attached-flow Cm = 0 for |α| ≤ 20° (physical symmetric-section value); post-stall Cm from centre-of-pressure shift (x_cp: 0.25c → 0.5c, Cm = -CN·(x_cp - 0.25))
+### Uncertainty method (the central correction)
 
-**Before/After Cp (Cm=0 default):**
-| Anchor | Before Cp | After Cp | Change |
-|--------|-----------|----------|--------|
-| Sharp-inspired CPPC | ~0.067 | 0.079 | +0.012 |
-| Optimised passive | ~0.265 | 0.264 | -0.001 |
-| Scale-up | ~0.384 | 0.422 | +0.038 |
-| Ham 1979 | ~0.491 | 0.489 | -0.002 |
+| Item | Before (committed `uncertainty_results.json`) | After (regenerated) |
+|---|---|---|
+| Method | `lhs` | `saltelli` (canonical for headline sensitivity indices) |
+| Base N | 40 | 64 |
+| Runs per anchor | 40 | 1024 (= 64 × 16 for D=14 sampled) |
+| Total runs | 160 | 4096 (= 1024 × 4 anchors) |
+| Seed | 42 | 42 |
+| `sobol` block | `{}` | full S₁/Sₜ with per-anchor confidence intervals |
+| Active parameters | not recorded | 12 |
+| Inert parameters | not recorded | 1 (`arm_cd`, inert because every anchor sets `arm_d = 0`) |
+| Script version | `v13-2026-10-20` | `2.0.0` |
 
-### Lift Slope & Laminar-Bubble Fix
-- Clamped attached lift slope at 1.15·2π for |α| ≤ 4°
-- Enforced Cl monotonicity to 20° (removes laminar-bubble kink at 10-16°)
-- `check_polars.py` now exits non-zero on warnings for default variant
+Sampled parameters (13 total): `cd_add`, `ds_Tf`, `ds_Tv`, `ds_Ta`, `ds_Kv`,
+`tau_rev`, `e_osw`, `c_scale_override`, `tip_loss_multiplier`,
+`ind_drag_scale`, `cm_scale`, `ds_Knc`, `polar_variant`. `arm_cd` is inert.
 
-**Before/After Polars:**
-- Re=1e5: lift slope 9.67 → 7.23 rad⁻¹ (clamped)
-- Re=2e5: lift slope 9.00 → 7.23 rad⁻¹ (clamped)
-- Cl kinks at 10-16° removed
+### Canonical headline Cp results (UQ mean / 5–95 % scenario range / working-branch mean / collapse fraction)
 
-### Multiple Solutions / Bistability
-- TSR 3.25: ψ₀=0° → Cp=0.409; ψ₀=120/240° → Cp=0.338 (phase-locked limit cycle)
-- Fixed-rpm curve now averages 3 equally spaced initial phases
-- Free-running U=4 m/s: all seeds converge to same high branch
+| Anchor | Mean Cp | p5–p95 | Working-branch mean | Collapse fraction (Cp < 0.02) |
+|---|---:|---:|---:|---:|
+| Ham 1979 comparison | 0.4893 | [0.4646, 0.5088] | 0.4893 | 0.0 % |
+| Sharp-inspired CPPC | 0.0610 | [0.0036, 0.1456] | 0.1045 | 45.2 % |
+| Optimised passive | 0.2547 | [0.1108, 0.3455] | 0.2547 | 0.0 % |
+| Scale-up R = 2.72 m | 0.4189 | [0.3656, 0.4766] | 0.4189 | 0.0 % |
 
-### Cm Scale & Tip Loss Scans
-- Sharp-inspired collapses for cm_scale ≤ 0.5 and tip multiplier ≤ 0.955
-- Optimised passive survives at cm_scale=0
+The intervals are **scenario ranges from Saltelli propagation**, not calibrated
+confidence intervals.
 
-## Phase 2: Finite-Span Model vs Ham Physics
+### AEP (scale-up, R = 2.72 m, Weibull k=2.0, mean U=6 m/s)
 
-### Finite-Span Ablation Study (scripts/finite_span_ablation.py)
-New ablation study comparing four configurations at Ham's geometry (AR=4.49):
+| Strategy | AEP | Capacity factor |
+|---|---:|---:|
+| Passive CPPC (k_load, variable speed) | 16.61 MWh/yr | 21.0 % |
+| Fixed-rpm generator | 11.31 MWh/yr | 14.3 % |
+| Rigid blade, best fixed pitch | 13.28 MWh/yr | 20.8 % |
+| Passive vs rigid gain | +25.1 % | — |
 
-| Case | Description | Cp at TSR=2.5 | vs Ham Band (0.42-0.45) |
-|------|-------------|---------------|------------------------|
-| (d) Neither | 2D, no tip loss, no induced drag | 0.4743 | +9.0% above |
-| (a) Lift loss only | Helmbold f_ar, no induced drag | 0.3007 | -30.9% below |
-| (b) Induced drag only | No lift loss, DMST induced drag | 0.3461 | -20.4% below |
-| (c) Both (default) | Helmbold f_ar + induced drag | 0.2939 | -32.4% below |
+## Files changed
 
-**Key Finding:** No simple finite-span correction reproduces Ham's measured band. 2D model overshoots (+9%), all finite-span corrections undershoot by 20-32%.
+### Phase 1 — one canonical physics implementation (critical)
+- `sharp_vawt/config.py` — rewritten: frozen dataclasses (`Geometry`, `MassProps`,
+  `AeroConfig`, `SimConfig`) + constants + validation only. Removed the duplicated
+  `_kernel`, 3× `CycloturbineSim`, 2× `create_sim_from_params`, and polar helpers.
+- `sharp_vawt/database.py` — rewritten: single `PolarDatabase`, single copy of each
+  polar helper (`surrogate_cla`, `surrogate_polar`, `_deep_stall`, `_smoothstep`,
+  `_synthetic_cm`, `_neuralfoil_attached`, `_normal_force_coefficient`,
+  `_post_stall_cm`, `_lookup`).
+- `sharp_vawt/engine.py` — sole `_kernel`, `CycloturbineSim`, `create_sim_from_params`,
+  and result construction. Imported `_lookup` from `database` (removed the duplicate
+  definition). Cleaned duplicate imports.
+- `sharp_vawt/__init__.py` — clean single exports, `__version__ = "3.4.0"` defined once.
+- `vawt_core.py` — thin backwards-compatible re-export (no physics definitions).
 
-### Updated Ham Validation Window
-- **Before:** 0% to +60.4% (from Helmbold correction magnitude)
-- **After:** 0% to +9.0% (from 2D-case bias at Ham's AR=4.49)
+### Real bug fixed (correctness, not tuning)
+- `sharp_vawt/database.py::_load_csv` previously ignored the `neuralfoil_cm` variant and
+  always read column 3 (default Cm). The legacy core read column 4 (raw NeuralFoil Cm).
+  Consolidated on the correct legacy logic. This legitimately changes any result where
+  `polar_variant="neuralfoil_cm"` was sampled (it is sampled in UQ); old results are not
+  reproducible from the new code and are regenerated.
 
-### ind_drag_scale Parameter
-- Added `ind_drag_scale` to AeroConfig (range 0.0-1.5)
-- Added to UQ spec (13 parameters, 12 active)
-- Allows independent scaling of induced drag term
+### Verification of consolidation (evidence)
+- `vawt_core.py` vs `sharp_vawt.engine` produce bit-identical `cp`, `cq`, `tsr_eq`, `rpm`,
+  `ct`, `aoa_max`, `energy_balance` and every output column on `sharp_baseline`,
+  `ham_1979`, `sharp_cppc`, `scaleup` (new `tests/test_single_implementation.py`).
+- No duplicate top-level definitions remain in any package file (AST check).
 
-## Phase 3: Cm=0 Reporting
-- Updated `scripts/scan_cm_scale.py` and `scripts/scan_tip_loss.py` deterministic scans
-- Sharp-inspired collapses for cm_scale ≤ 0.5 and tip multiplier ≤ 0.955
-- Optimised passive survives at cm_scale=0
-- Updated README with generated tables for cm_scale_scan and tip_loss_scan
+### Duplicate data removed
+- Deleted root `airfoil_polars/` (diff-identical to packaged copy).
+- Deleted stale root `test_*.png` images, `repomix-output.xml`, dead
+  `scripts/gen_real_polars_v2.py`.
+- `scripts/gen_real_polars.py` and `scripts/check_polars.py` now write/read the single
+  canonical location `sharp_vawt/airfoil_polars/`.
+- `tests/test_polars.py` provenance path updated to the packaged location.
 
-## Phase 4: UQ with ind_drag_scale
-- Added `ind_drag_scale` to UQ_SPEC (range 0.0-1.5)
-- Total 13 parameters, 12 active (arm_cd inert)
-- Saltelli N=64: 960 samples, 3840 runs per anchor
-- Updated Sobol indices in README
+### Phase 2 — stamps / freshness (critical)
+- `scripts/stamp.py` — schema v2: per-script semantic version, git commit, UTC timestamp,
+  Python version, seed, CLI args, per-file SHA-256 of every source module
+  (`sharp_vawt/*`, `vawt_core.py`, `vawt_presets.py`, the script itself, extra files),
+  every polar CSV + provenance, UQ spec hash, config/preset hash. Timestamps/git/Python
+  recorded but not hashed so commits/Python matrix do not invalidate results.
+- `scripts/check_freshness.py` — repo root derived from `__file__` (works from repo root,
+  `scripts/`, and external cwd).
+- `STAMP_CHECK_MAP` — deduped to 17 unique result→script entries; no duplicate keys.
+- All 17 result JSONs regenerated with v2 stamps (see "Files regenerated").
 
-## Phase 5: README & Documentation
+### Phase 3 — hygiene
+- Removed duplicate imports from six scripts.
+- Added `if __name__ == "__main__":` guards to `diag_active_lift.py`, `passive_sharp.py`,
+  `passive_sweeps.py`.
+- `requirements-dev.txt` — added `ruff>=0.8`, trailing newline.
+- `pyproject.toml` — ruff config, dev deps include ruff, package-data includes
+  `provenance.json` and `README.md`.
 
-### README Fixes
-- Removed duplicated paragraph (lines 12 and 38)
-- Removed hard-coded date "As of 2026-10-20"
-- Removed changelog-style sentence "Any previous references to the old Cp (~0.272) have been updated..."
-- Replaced hand-typed Cp numbers with GEN blocks
-- Added generated table for optimised-passive design with labelled columns
-- Added generated table for counter-rotating pair with sensitivity sweep
-- All numbers in prose now come from GEN blocks or are removed
+### Phase 4 — uncertainty consistency (critical)
+- Saltelli/Sobol is canonical for sensitivity indices; LHS retained only for scenario
+  intervals (not yet regenerated as LHS). Never mixed in one headline table.
+- `scripts/uncertainty.py` — fixed wrong total-run print in Saltelli mode; stamp metadata
+  now records method, sample count, runs per anchor, total runs, seed, active/inert
+  parameters, UQ spec hash, source/polar hashes, script version.
+- `uncertainty_results.json` regenerated with full metadata (Saltelli N=64).
+- `scripts/build_readme.py` — collapsed triplicated `_load_all`/`_bound` blocks to one;
+  added inline UQ sample-count generators (`uq_method`, `uq_n_samples`, `uq_total_runs`,
+  `uq_active_inert`).
 
-### New Documentation
-- `docs/calibration_plan.md` - Measurement protocol and calibration procedure
-- `tests/test_ds_sensitivity.py` - DS sensitivity ranking tests
-- `tests/test_readme_lint.py` - README lint checks
-- `REVIEW_FIX_REPORT.md` - This report
+### Phase 5 — figure infrastructure
+- `scripts/make_all_figures.py` — regenerates all required figures from current JSON,
+  writes `docs/figure_manifest.json` with image + source hashes.
+- `scripts/check_figures.py` — verifies figure hashes vs manifest and source hashes.
+- `tests/test_figures.py` — manifest coverage, hash freshness, non-empty figures,
+  counter-rotating speculative labels.
+- `scripts/make_figures.sh` — thin wrapper calling `make_all_figures.py`.
+- `scripts/plot_aep.py` — counter-rotating panel labelled
+  "SPECULATIVE SCENARIO" / "NOT A VALIDATED ARRAY PREDICTION"; hard-coded "+2.8 %"
+  replaced with computed gain.
+- New `scripts/plot_uncertainty.py`, `scripts/plot_spearman.py` (plot-only from JSON).
 
-## Phase 6: Repo Hygiene
-- Removed `test_*.png` files from repo root
-- Deleted empty directories: `vawt_core/`, `scripts/aep_results/`, `scripts/aep_scaleup/`, `scripts/aep_turbulent/`, `scripts/aep_rigid_fair/`, `scripts/aep_counter_rotating/`, `scripts/optimization_passive/`, `scripts/optimization_scaleup/`, `scripts/optimization_actuator/`, `scripts/uncertainty_results/`, `scripts/diag_qa/`, `scripts/diag_active_lift/`, `docs/images/`, `docs/plots/`
-- Trimmed `.gitignore`: removed `lib/`, `lib64/`, `parts/`, `var/`, `downloads/`, `sdist/`, `eggs/`, `develop-eggs/`
-- CI matrix: Python 3.11/3.12, added pure-Python job with `NUMBA_DISABLE_JIT=1`, removed duplicate validate step, added freshness and README checks to fast job
+### Phase 6 — tests / CI
+- `tests/test_single_implementation.py` — one physics implementation, bit-identical
+  re-export equivalence, scripts must not import `vawt_core`.
+- `tests/test_stamps.py` — unique stamp-map keys, every result JSON mapped once, semantic
+  versions, stamp covers presets/polars/core sources, tamper detection.
+- `tests/test_freshness.py` — schema v2 stamp structure, cwd-independent freshness.
+- `tests/test_readme_lint.py` — no unsupported "validated", no mixed Saltelli/LHS, no
+  hard-coded sample counts/Cp outside GEN blocks, no scenario-as-CI, GEN blocks present.
+- `.github/workflows/ci.yml` — Python 3.11/3.12 matrix, ruff, `NUMBA_DISABLE_JIT=1`
+  pure-Python job, freshness, README sync, figure check, separate slow Ham job.
+- Added `tests/test_prototype_tools.py`, `tests/test_ds_calibration.py` (see below).
 
-## Phase 7: Test Audit
-- All validation tests pass (9/9)
-- Core physics tests: 84 passed, 3 skipped
-- Added `tests/test_ds_sensitivity.py` - DS sensitivity ranking tests
-- Added `tests/test_readme_lint.py` - README lint checks
-- Added `tests/test_freshness.py` - Freshness stamp validation
-- `tests/test_freshness.py` now runnable from any cwd
+### Phase 7 — prototype validation preparation (not yet validated)
+- `docs/prototype_validation_plan.md` — pre-registered protocol (geometry, drivetrain,
+  sensors, wind/RPM/power/torque measurement, load steps, start-up, repetitions,
+  exclusions, uncertainty propagation, frozen inputs/outputs, acceptance criteria,
+  explicit non-claims).
+- `data/prototype/{raw,processed,metadata,results}/` with READMEs and a `geometry_R0p6.json`
+  template + `frozen_model_settings.template.json`.
+- `data/prototype/README.md` — CSV schema (all required columns listed).
+- `scripts/import_prototype_data.py` — schema validation, rejects missing/non-finite
+  critical values, derives shaft power/torque/TSR/CP with first-order uncertainty,
+  retains excluded rows with reasons, stamped `import_only_not_validation`.
+- `scripts/compare_prototype.py` — loads frozen settings, predicts RPM/power/Cp,
+  reports errors, status one of `not_yet_available` / `discrepancy` /
+  `validation_criteria_met`; synthetic data never validates.
 
-## Phase 7: UQ Re-run with ind_drag_scale
+### Phase 8 — dynamic-stall calibration preparation (not yet calibrated)
+- `docs/dynamic_stall_calibration_plan.md` — DS uncalibrated; calibratable params
+  `ds_Tf`, `ds_Tv`, `ds_Ta`, `ds_Kv`, `ds_Knc` (no separate vortex-moment parameter);
+  independent measured data only; calibration/held-out split by `case_id`; acceptance
+  criteria; explicit non-claims.
+- `scripts/calibrate_dynamic_stall.py` — bound-constrained least-squares fit, held-out
+  evaluation, identifiability check, refuses to mark "calibrated" unless held-out criteria
+  met AND provenance is `measured`; does not change default DS constants.
+- Default DS constants in `sharp_vawt/config.py` unchanged.
 
-### UQ Results (N=40 LHS, 40 samples per anchor)
+### Phase 9 — documentation / claims
+- `README.md` — first screen answers what is verified/cross-checked/not validated,
+  numerical limitations, production defaults, reproduction, and a "Do not claim" section.
+  Version citation updated 3.3.1 → 3.4.0. Uncertainty section now states Saltelli N=64,
+  12 active / 1 inert, scenario ranges not CIs. Counter-rotating described as speculative
+  scenario. Ham described as 2-D upper-bound literature comparison (not reproduction,
+  not validation).
+- `REVIEW_FIX_REPORT.md` — this file.
+- `CHANGELOG.md` — updated for this round (see below).
 
-| Anchor | Before Mean Cp | After Mean Cp | Change | Before 90% CI | After 90% CI |
-|--------|----------------|---------------|--------|---------------|--------------|
-| Ham 1979 | 0.4897 | 0.4894 | -0.0003 | [0.463, 0.510] | [0.461, 0.509] |
-| Sharp-inspired CPPC | 0.0325 | 0.0596 | +0.0271 | [0.003, 0.113] | [0.004, 0.140] |
-| Optimised Passive | 0.1937 | 0.2572 | +0.0635 | [0.061, 0.279] | [0.122, 0.342] |
-| Scale-up | 0.3877 | 0.4192 | +0.0315 | [0.331, 0.427] | [0.376, 0.473] |
+## Files regenerated (this round)
 
-### Key Changes with ind_drag_scale
-- **Sharp-inspired CPPC:** Mean Cp increased from 0.033 to 0.060; working-branch mean 0.095; collapse fraction 69% → 45%
-- **Optimised Passive:** Mean Cp increased from 0.194 to 0.257; collapse fraction 1% → 0%
-- **Scale-up:** Mean Cp increased from 0.388 to 0.419; collapse fraction 0% → 0%
-- **Ham 1979:** Minimal change (0.490 → 0.489) - ind_drag_scale has minimal effect with tip loss off
+`tip_loss_scan.json`, `cm_scale_scan.json`, `branch_point_checks.json`,
+`diag_aep_branches.json`, `finite_span_ablation.json`, `ham_finite_span_check.json`,
+`aep_rigid_fair.json`, `aep_results.json`, `aep_scaleup.json`, `aep_turbulent.json`,
+`aep_counter_rotating.json`, `uncertainty_results.json` (Saltelli N=64),
+`spearman_results.json`, `optimization_actuator.json`, `optimization_passive.json`,
+`optimization_scaleup.json`, `robust_optimization.json`. All 17 result JSONs now
+carry current schema-v2 stamps; `python3 scripts/check_freshness.py` reports zero stale.
 
-### Sobol Indices (with ind_drag_scale)
-- **Ham 1979:** tau_rev dominant (S₁=0.77); ind_drag_scale negligible (tip loss off)
-- **Sharp CPPC:** tip_loss_multiplier (S₁=0.44); ind_drag_scale S₁=0.12, ST=0.31
-- **Optimised passive:** tip_loss_multiplier dominant (S₁=0.72); ind_drag_scale S₁=0.05
-- **Scale-up:** ind_drag_scale S₁=0.15; tip_loss_multiplier S₁=0.30
+Saltelli rerun: `python3 scripts/uncertainty.py --saltelli --saltelli-n 64`
+(completed in background; method=saltelli, base N=64, 1024 runs per anchor,
+4096 total runs, seed 42, 12 active + `arm_cd` inert, uq_spec_hash recorded,
+stamp records git commit, Python version, CLI args `--saltelli --saltelli-n 64`,
+per-script version `2.0.0`).
 
-### Key Finding
-The `ind_drag_scale` parameter allows the UQ to properly capture the trade-off between lift loss and induced drag. The previous model forced both to scale together via `tip_loss_multiplier`, which was physically incorrect.
+## Tests added / updated
 
-## Open Issues / Needs Human Input
+Added: `tests/test_single_implementation.py`, `tests/test_stamps.py`,
+`tests/test_freshness.py`, `tests/test_readme_lint.py`, `tests/test_prototype_tools.py`,
+`tests/test_ds_calibration.py`, `tests/test_figures.py`. Updated: `tests/test_physics.py`,
+`tests/test_factory.py`, `tests/test_geometry.py`, `tests/test_polars.py`,
+`tests/test_readme_numbers.py`, `tests/test_regression.py`, `tests/test_validation.py`,
+`tests/test_diag_qa.py`, `tests/conftest.py`.
 
-1. **Measured polar data:** No physical rotor or wind-tunnel validation exists. Template at `data/measured_template.csv` provided.
-2. **Counter-rotating interaction:** Heuristic model only; no validation at 0.37D spacing.
-3. **Dynamic stall calibration:** No measured DS constants for this geometry; Pawsey 2002 data not in repo.
-4. **Optimization re-runs:** Slow scripts (optimize_passive, optimize_scaleup, optimize_actuator, compute_aep_scaleup, compute_aep_turbulent, diag_aep_branches) need re-running for fresh stamps.
-5. **Production UQ:** Need Saltelli N=256 for bootstrap CIs on Sobol indices (currently N=40 for CI speed).
+Test results: `pytest -q` → 140 passed, 3 skipped, 0 failed. No tests deleted,
+skipped as expected-failures, or weakened.
 
-## Before/After Headline Numbers Summary
+## CI status
 
-| Metric | Before | After | Notes |
-|--------|--------|-------|-------|
-| Sharp Cp (UQ mean) | 0.0448 | 0.0596 | +33% |
-| Sharp Cp (working branch) | 0.0448 | 0.095 | New metric |
-| Sharp collapse fraction | 56.8% | 45% | Improved |
-| Optimised passive Cp (UQ mean) | 0.194 | 0.257 | +32% |
-| Optimised passive collapse | 2.0% | 0% | Eliminated |
-| Scale-up Cp (UQ mean) | 0.384 | 0.419 | +9% |
-| Ham 1979 bias window | 0-60.4% | 0-9.0% | Tightened |
-| Ham 1979 peak Cp | 0.4897 | 0.489 | Stable |
-| Scale-up AEP | 17.3 MWh | 16.6 MWh | -4% (new rating) |
-| Scale-up rigid AEP | 15.2 MWh | 14.1 MWh | -7% |
-| Scale-up passive vs rigid | +13.9% | +25.5% | Improved |
-| check_polars warnings | 10 | 0 | Fixed |
+`.github/workflows/ci.yml` — Python 3.11/3.12 matrix, ruff lint,
+`NUMBA_DISABLE_JIT=1` pure-Python job, freshness check, README sync, figure check,
+separate slow Ham validation job. `ruff` added to `requirements-dev.txt` and
+`pyproject.toml` package-data includes `provenance.json` and `README.md`.
 
----
-*Report generated 2026-10-24*
+## Remaining limitations (honest statement)
+
+- **Verification only**: internal numerical checks pass (energy ledger closes within a few
+  percent for passive runs; pitch-torque sign check; bit-identical re-export equivalence).
+- **Cross-check only**: Ham 1979 is a 2-D upper-bound literature comparison, not
+  validation; sharp-fsi agreement would be a model-class cross-check, not independent
+  validation.
+- **Not validated**: no measured prototype data exist; DS constants are uncalibrated
+  literature-typical values; deep-stall Cm is synthetic; counter-rotating results are a
+  speculative heuristic scenario.
+- **Model-form uncertainty not quantified**: DMS closure, lagged DS structure, Adams
+  curvature scaling, polar source, and fixed model-form choices are outside the parameter
+  UQ study; the 90 % intervals are not a total predictive uncertainty.
+- Long optimisation jobs (`optimize_actuator`, `optimize_scaleup`, `robust_reopt`) were
+  still running at report time; their JSONs must be re-stamped on completion before the
+  freshness check passes.
