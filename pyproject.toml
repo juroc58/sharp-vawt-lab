@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sharp-vawt-lab"
-version = "3.3.1"
+version = "3.4.0"
 description = "2D BEM solver for the Sharp cycloturbine (passive variable-pitch VAWT with centrifugal-pendulum pitch control)"
 readme = "README.md"
 license = { text = "MIT" }
@@ -33,18 +33,77 @@ dev = [
     "pytest>=8.0",
     "pytest-timeout>=2.3",
     "pytest-cov>=5.0",
+    "ruff>=0.8",
 ]
 
 [project.urls]
 Homepage = "https://github.com/juroc58/sharp-vawt-lab"
 Repository = "https://github.com/juroc58/sharp-vawt-lab"
 
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["."]
+
+# Legacy scripts not refactored in this repair round retain pre-existing lint
+# debt (BLE001 blind-except, EXE001/EXE002 shebang bits, PLW1510 subprocess,
+# F821 undefined-name, SIM115 open-without-context, etc.). They are covered by
+# tests and freshness checks; lint debt is tracked as a follow-up. New files
+# added in this round (sharp_vawt/*, vawt_core.py, scripts/stamp.py,
+# scripts/check_freshness.py, scripts/uncertainty.py, scripts/build_readme.py,
+# scripts/import_prototype_data.py, scripts/compare_prototype.py,
+# scripts/calibrate_dynamic_stall.py, scripts/make_all_figures.py,
+# scripts/check_figures.py, scripts/plot_uncertainty.py,
+# scripts/plot_spearman.py, tests/test_*.py new in this round) are ruff-clean.
+[tool.ruff.per-file-ignores]
+"scripts/check_polars.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/compute_aep_counter_rotating.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/compute_aep.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/compute_aep_rigid_fair.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/compute_aep_scaleup.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/compute_aep_turbulent.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/diag_active_lift.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/diag_aep_branches.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/diag_qa.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/finite_span_ablation.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/__init__.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/optimize_actuator.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/optimize_passive.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/optimize_scaleup.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/passive_sharp.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/passive_sweeps.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/plot_ham_curve.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/plot_style.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/plot_validation.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/render_animation.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/robust_reopt.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/spearman_sensitivity.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/validate_all.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/validate_ds_off.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/validate_finite_span.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"scripts/validate_ham.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/conftest.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_ds_sensitivity.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_readme_numbers.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_validation.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510", "RUF012"]
+"tests/test_diag_qa.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_regenerate_golden.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_factory.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_geometry.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_polars.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_regression.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/test_physics.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510", "RUF059"]
+
 [tool.setuptools]
-py-modules = ["vawt_core"]
-packages = ["polars"]
+packages = ["sharp_vawt"]
+package-dir = { "sharp_vawt" = "sharp_vawt" }
 
 [tool.setuptools.package-data]
-polars = ["naca0012/*.csv"]
+sharp_vawt = [
+    "airfoil_polars/naca0012/*.csv",
+    "airfoil_polars/provenance.json",
+    "airfoil_polars/README.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -58,7 +117,7 @@ markers = [
 timeout = 300
 
 [tool.coverage.run]
-source = ["vawt_core", "scripts"]
+source = ["sharp_vawt", "scripts"]
 omit = ["tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]

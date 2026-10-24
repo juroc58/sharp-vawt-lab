@@ -7,13 +7,59 @@ on:
     branches: [main]
 
 jobs:
+  # Fast suite: tests + lint + freshness + README sync + figure smoke.
   test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: |
+          ruff check .
+
+      - name: Run fast test suite
+        run: |
+          python -m pytest tests/ -q -m "not slow"
+
+      - name: Polar sanity report (warnings, not a gate)
+        run: |
+          python scripts/check_polars.py --fail-on-warnings
+
+      - name: Freshness check (result JSON stamps)
+        run: |
+          python scripts/check_freshness.py
+
+      - name: Validate README in sync with generated JSON
+        run: |
+          python scripts/build_readme.py --check
+
+      - name: Figure check (lightweight smoke)
+        run: |
+          python scripts/check_figures.py
+
+  # Pure-Python job: numba disabled, verifies the engine runs without JIT.
+  no-jit:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -24,19 +70,31 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: Run test suite
+      - name: Run fast test suite with NUMBA_DISABLE_JIT=1
         run: |
-          python -m pytest tests/ -q
+          NUMBA_DISABLE_JIT=1 python -m pytest tests/ -q -m "not slow"
 
-      - name: Polar sanity report (warnings, not a gate)
+  # Slow validation job: Ham comparison and full validation suite.
+  # Marked slow so it can be run less frequently if needed.
+  slow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
         run: |
-          python scripts/check_polars.py --fail-on-warnings
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-      - name: Validate README in sync
-        run: |
-          python scripts/build_readme.py --check
-
-      - name: Run Ham comparison (2D upper bound)
+      - name: Run Ham 1979 comparison (2D upper bound, not validation)
         run: |
           python scripts/validate_ham.py
 
