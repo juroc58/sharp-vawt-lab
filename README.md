@@ -29,11 +29,9 @@ quoted, not reproduced here).
 
 ## Scope and Limitations
 
-This is a 2D computational study. As of 2026-10-20, **no physical rotor has been built or instrumented**. All passive CPPC results are model hypotheses, not experimental predictions.
+This is a 2D computational study. **No physical rotor has been built or instrumented**. All passive CPPC results are model hypotheses, not experimental predictions.
 
 The passive CPPC mechanism relies heavily on the dynamic-stall model. At the Sharp-inspired anchor, disabling DS drops Cp from ~0.067 to ~0.006. Until DS is independently calibrated against measured rotor data, these passive results should be treated as a numerical exploration of the mechanism.
-
-The optimised passive design has been re-run on the current NeuralFoil/Helmbold physics. Any previous references to the old Cp (~0.272) have been updated to the re-optimised Cp ≈ 0.270.
 
 The project ships one physics core and a set of validation scripts. Every
 number in this README is reproducible from the scripts in `scripts/`, except

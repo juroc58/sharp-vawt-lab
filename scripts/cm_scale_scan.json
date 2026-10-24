@@ -223,16 +223,17 @@
     }
   },
   "stamp": {
-    "code_hash": "1ff32811d7aa041d",
+    "code_hash": "9d0bedc66d47193d",
     "script": "scripts/scan_cm_scale.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T12:23:21.727898Z",
+    "created_utc": "2026-10-24T00:00:00Z",
+    "n": 20,
+    "seed": 0,
     "extra_files": [
       "vawt_presets.py",
-      "scripts/uncertainty.py"
+      "scripts/uncertainty.py",
+      "vawt_core.py"
     ],
-    "extra_data": {},
-    "n": 20,
-    "seed": 0
+    "extra_data": {}
   }
 }

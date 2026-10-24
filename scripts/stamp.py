@@ -95,6 +95,9 @@ def compute_code_hash(
     return h.hexdigest()[:16]
 
 
+_PLACEHOLDER_HASH = "0000000000000000"
+
+
 def make_stamp(
     script_path: str,
     script_version: str = "",
@@ -116,10 +119,19 @@ def make_stamp(
 
     Returns:
         Dictionary with stamp fields
+
+    Raises:
+        ValueError: If a placeholder hash would be generated (should never happen)
     """
     import datetime
 
     code_hash = compute_code_hash(script_path, extra_files, extra_data, script_version)
+
+    if code_hash == _PLACEHOLDER_HASH:
+        raise ValueError(
+            f"Refusing to generate placeholder hash for {script_path}. "
+            f"This indicates a bug in compute_code_hash."
+        )
 
     stamp = {
         "code_hash": code_hash,
@@ -164,6 +176,9 @@ def verify_stamp(json_path: str, expected_script: str) -> tuple[bool, str]:
     for field in required:
         if field not in stamp:
             return False, f"Missing stamp field '{field}' in {json_path}"
+
+    if stamp["code_hash"] == _PLACEHOLDER_HASH:
+        return False, f"Placeholder hash detected in {json_path} (stamp was created with a placeholder)"
 
     # Check script matches
     if stamp["script"] != expected_script:

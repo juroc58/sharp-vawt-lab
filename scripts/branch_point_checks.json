@@ -119,11 +119,17 @@
     }
   ],
   "stamp": {
-    "code_hash": "0000000000000000",
+    "code_hash": "c9959364c0d90c7e",
     "script": "scripts/check_branch_points.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T00:00:00Z",
-    "n": 0,
-    "seed": 0
+    "created_utc": "2026-10-24T00:00:00Z",
+    "n": 52,
+    "seed": 0,
+    "extra_files": [
+      "vawt_presets.py",
+      "vawt_core.py",
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {}
   }
 }

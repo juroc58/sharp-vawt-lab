@@ -3,7 +3,7 @@
     "code_hash": "635700ec7536e2c1",
     "script": "scripts/compute_aep.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T10:54:44.204713Z",
+    "created_utc": "2026-10-24T07:50:58.029822Z",
     "extra_files": [
       "vawt_presets.py"
     ],

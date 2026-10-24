@@ -141,11 +141,17 @@
     }
   },
   "stamp": {
-    "code_hash": "0000000000000000",
+    "code_hash": "5d760ba7334e5a5c",
     "script": "scripts/robust_reopt.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T00:00:00Z",
-    "n": 0,
-    "seed": 0
+    "created_utc": "2026-10-24T00:00:00Z",
+    "n": 27,
+    "seed": 0,
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/compute_aep.py",
+      "vawt_core.py"
+    ],
+    "extra_data": {}
   }
 }

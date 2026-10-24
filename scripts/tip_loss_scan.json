@@ -231,11 +231,17 @@
     ]
   },
   "stamp": {
-    "code_hash": "0000000000000000",
+    "code_hash": "b0f5d203f7a85975",
     "script": "scripts/scan_tip_loss.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T00:00:00Z",
-    "n": 0,
-    "seed": 0
+    "created_utc": "2026-10-24T00:00:00Z",
+    "n": 66,
+    "seed": 0,
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/uncertainty.py",
+      "vawt_core.py"
+    ],
+    "extra_data": {}
   }
 }

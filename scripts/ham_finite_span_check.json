@@ -345,11 +345,16 @@
     }
   ],
   "stamp": {
-    "code_hash": "0000000000000000",
+    "code_hash": "526878ed818c7bf9",
     "script": "scripts/ham_finite_span_check.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T00:00:00Z",
-    "n": 0,
-    "seed": 0
+    "created_utc": "2026-10-24T00:00:00Z",
+    "n": 10,
+    "seed": 0,
+    "extra_files": [
+      "vawt_presets.py",
+      "vawt_core.py"
+    ],
+    "extra_data": {}
   }
 }

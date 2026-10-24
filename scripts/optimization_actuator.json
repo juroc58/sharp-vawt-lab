@@ -60,11 +60,15 @@
   "best_cp": 0.4968,
   "verified": true,
   "stamp": {
-    "code_hash": "0000000000000000",
+    "code_hash": "a293b529d6db324b",
     "script": "scripts/optimize_actuator.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-23T00:00:00Z",
+    "created_utc": "2026-10-24T00:00:00Z",
     "n": 0,
-    "seed": 0
+    "seed": 0,
+    "extra_files": [
+      "vawt_core.py"
+    ],
+    "extra_data": {}
   }
 }
