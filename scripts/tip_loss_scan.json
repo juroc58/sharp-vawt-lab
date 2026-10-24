@@ -1,4 +1,17 @@
 {
+  "stamp": {
+    "code_hash": "a3b4a74a3a27c52c",
+    "script": "scripts/scan_tip_loss.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-24T09:06:30.066522Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/uncertainty.py"
+    ],
+    "extra_data": {},
+    "n": 1,
+    "seed": 0
+  },
   "note": "Deterministic scan at each anchor's nominal parameters. The central finite-span estimate is now Helmbold (1942); tip_loss_multiplier < 1 means stronger loss than Helmbold. The Sharp-inspired rotor switches from a rotation-sustaining branch to a collapsed branch between multipliers 0.955 and 0.96, only ~4 % below the Helmbold central value (1.0).",
   "multipliers": [
     0.7,
@@ -229,19 +242,5 @@
         "steady": true
       }
     ]
-  },
-  "stamp": {
-    "code_hash": "b0f5d203f7a85975",
-    "script": "scripts/scan_tip_loss.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 66,
-    "seed": 0,
-    "extra_files": [
-      "vawt_presets.py",
-      "scripts/uncertainty.py",
-      "vawt_core.py"
-    ],
-    "extra_data": {}
   }
 }

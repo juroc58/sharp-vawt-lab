@@ -27,6 +27,8 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 SCALEUP_BASE = dict(PRESETS["scaleup"])
 
@@ -204,8 +206,16 @@ def main():
     
     # Save results
     out_path = os.path.join(_HERE, "diag_aep_branches.json")
-    with open(out_path, 'w') as fh:
-        json.dump(results, fh, indent=2)
+    write_json_with_stamp(
+        path=out_path,
+        data=results,
+        script="scripts/diag_aep_branches.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/vawt_core.py"],
+        extra_data={},
+    )
     print(f"\nSaved detailed results to {out_path}")
 
 

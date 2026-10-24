@@ -1,4 +1,17 @@
 {
+  "stamp": {
+    "code_hash": "a2f06afbf1380ac0",
+    "script": "scripts/check_branch_points.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-24T09:05:51.458892Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/compute_aep.py"
+    ],
+    "extra_data": {},
+    "n": 1,
+    "seed": 0
+  },
   "note": "Suspicious AEP points re-run with longer T_max and several initial conditions. 'baseline' matches the production setup. This is a convergence check, not new measured data.",
   "fixed_tsr_3.25": [
     {
@@ -117,19 +130,5 @@
       "steady": true,
       "stop_pct": 0.0
     }
-  ],
-  "stamp": {
-    "code_hash": "c9959364c0d90c7e",
-    "script": "scripts/check_branch_points.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 52,
-    "seed": 0,
-    "extra_files": [
-      "vawt_presets.py",
-      "vawt_core.py",
-      "scripts/compute_aep.py"
-    ],
-    "extra_data": {}
-  }
+  ]
 }

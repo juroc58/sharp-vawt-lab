@@ -32,6 +32,8 @@ sys.path.insert(0, _ROOT)
 
 from vawt_core import create_sim_from_params
 from vawt_presets import PRESETS
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 
 # Ham 1979 measured band (from validation scripts)
@@ -149,8 +151,16 @@ def main():
 
     # Save JSON
     out_json = os.path.join(os.path.dirname(_HERE), "scripts", "finite_span_ablation.json")
-    with open(out_json, "w") as fh:
-        json.dump(results, fh, indent=2)
+    write_json_with_stamp(
+        path=out_json,
+        data=results,
+        script="scripts/finite_span_ablation.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "vawt_core.py"],
+        extra_data={},
+    )
     print(f"\nWrote {out_json}")
 
     # Plot

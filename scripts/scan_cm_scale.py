@@ -30,6 +30,7 @@ sys.path.insert(0, _HERE)
 
 from vawt_core import create_sim_from_params  # noqa: E402
 import uncertainty as U  # noqa: E402
+from scripts.stamp import write_json_with_stamp
 
 CM_VALUES = [0.0, 0.25, 0.5, 0.75, 1.0]
 TIP_VALUES = [0.90, 0.94, 0.95, 0.955, 0.96, 0.98, 1.00]
@@ -91,9 +92,16 @@ def main(argv=None):
         out["anchors"][anchor] = entry
 
     path = os.path.join(_HERE, "cm_scale_scan.json")
-    with open(path, "w") as fh:
-        json.dump(out, fh, indent=2)
-        fh.write("\n")
+    write_json_with_stamp(
+        path=path,
+        data=out,
+        script="scripts/scan_cm_scale.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/uncertainty.py"],
+        extra_data={},
+    )
     print(f"\nwrote {path}")
     return 0
 

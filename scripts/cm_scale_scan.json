@@ -1,4 +1,17 @@
 {
+  "stamp": {
+    "code_hash": "9834bd7329293779",
+    "script": "scripts/scan_cm_scale.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-24T09:06:51.933134Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/uncertainty.py"
+    ],
+    "extra_data": {},
+    "n": 1,
+    "seed": 0
+  },
   "note": "Deterministic scans at the nominal anchor parameters. cm_scale is a uniform model-form scale: 0 = physical symmetric-section Cm (~0), 1 = raw NeuralFoil table. tip_loss_multiplier < 1 means stronger finite-span loss than Helmbold. These are scenario probes, not measured values.",
   "cm_scale_values": [
     0.0,
@@ -221,19 +234,5 @@
         }
       ]
     }
-  },
-  "stamp": {
-    "code_hash": "9d0bedc66d47193d",
-    "script": "scripts/scan_cm_scale.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 20,
-    "seed": 0,
-    "extra_files": [
-      "vawt_presets.py",
-      "scripts/uncertainty.py",
-      "vawt_core.py"
-    ],
-    "extra_data": {}
   }
 }

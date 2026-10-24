@@ -22,10 +22,13 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
+from scripts.stamp import write_json_with_stamp
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
+_SCRIPTS = os.path.join(_ROOT, "scripts")
 sys.path.insert(0, _ROOT)
+sys.path.insert(0, os.path.join(_ROOT, "scripts"))
 
 
 # ---------------------------------------------------------------------------
@@ -225,11 +228,19 @@ def main():
 
     # Save
     out_json = os.path.join(_HERE, "spearman_results.json")
-    with open(out_json, "w") as fh:
-        json.dump({
+    write_json_with_stamp(
+        path=out_json,
+        data={
             "param_names": param_names,
             "anchor_results": summary_out,
-        }, fh, indent=2)
+        },
+        script="scripts/spearman_sensitivity.py",
+        version="v1.0",
+        n=1,
+        seed=42,
+        extra_files=["scripts/uncertainty.py"],
+        extra_data={},
+    )
     print(f"\nWrote {out_json}")
 
 

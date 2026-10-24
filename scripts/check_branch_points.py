@@ -27,6 +27,8 @@ sys.path.insert(0, _HERE)
 
 from vawt_core import create_sim_from_params  # noqa: E402
 from compute_aep import BASE  # noqa: E402
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 OUT = os.path.join(_HERE, "branch_point_checks.json")
 
@@ -76,9 +78,16 @@ def main():
                   f"Cp={row['cp']:.4f}  TSR={row['tsr_eq']:.3f}  "
                   f"steady={row['steady']}")
 
-    with open(OUT, "w") as fh:
-        json.dump(out, fh, indent=2)
-        fh.write("\n")
+    write_json_with_stamp(
+        path=OUT,
+        data=out,
+        script="scripts/check_branch_points.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/compute_aep.py"],
+        extra_data={},
+    )
     print(f"\nwrote {OUT}")
     return 0
 

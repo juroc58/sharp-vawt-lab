@@ -37,6 +37,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
 from vawt_core import create_sim_from_params
+from scripts.stamp import write_json_with_stamp
 
 
 # ---------------------------------------------------------------------------
@@ -363,7 +364,16 @@ class PassiveOptimizer:
             "local_time_s": float(report.local_time_s),
             "history": report.history,
         }
-        Path(path).write_text(json.dumps(payload, indent=2))
+        write_json_with_stamp(
+            path=str(out_path),
+            data=payload,
+            script="scripts/optimize_passive.py",
+            version="v1.0",
+            n=1,
+            seed=42,
+            extra_files=["vawt_presets.py"],
+            extra_data={"PARAM_BOUNDS": PARAM_BOUNDS, "PARAM_NAMES": PARAM_NAMES},
+        )
         print(f"[Opt] report saved -> {Path(path).resolve()}")
 
     # ------------------------------------------------------------------

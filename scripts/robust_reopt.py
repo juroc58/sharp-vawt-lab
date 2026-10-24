@@ -39,6 +39,8 @@ sys.path.insert(0, _HERE)
 
 from vawt_core import create_sim_from_params  # noqa: E402
 from vawt_presets import PRESETS  # noqa: E402
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 BETZ = 16.0 / 27.0
 PENALTY = 1000.0
@@ -199,9 +201,16 @@ def main(argv=None):
             _scaleup_params, args)
 
     path = os.path.join(_HERE, "robust_optimization.json")
-    with open(path, "w") as fh:
-        json.dump(out, fh, indent=2, default=float)
-        fh.write("\n")
+    write_json_with_stamp(
+        path=path,
+        data=out,
+        script="scripts/robust_reopt.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/compute_aep.py"],
+        extra_data={},
+    )
     print(f"\nwrote {path}")
     return 0
 

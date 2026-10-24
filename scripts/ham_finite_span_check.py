@@ -37,6 +37,8 @@ sys.path.insert(0, _ROOT)
 sys.path.insert(0, _HERE)
 
 from vawt_core import create_sim_from_params  # noqa: E402
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 R_HAM, C_HAM, H_HAM, N_HAM = 1.83, 0.305, 1.37, 3
 AR_GEOMETRIC = H_HAM / C_HAM
@@ -160,9 +162,16 @@ def main():
         "ar_scan": ar_rows,
     }
     path = os.path.join(_HERE, "ham_finite_span_check.json")
-    with open(path, "w") as fh:
-        json.dump(out, fh, indent=2)
-        fh.write("\n")
+    write_json_with_stamp(
+        path=path,
+        data=out,
+        script="scripts/ham_finite_span_check.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "vawt_core.py"],
+        extra_data={},
+    )
     print(f"\n  no-tip peak          = {no_tip['peak_cp']:.4f}")
     print(f"  Helmbold-corrected   = {tip['peak_cp']:.4f}")
     print(f"  undershoots band     = {out['tip_loss_undershoots_band']}")

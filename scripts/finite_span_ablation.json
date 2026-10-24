@@ -1,4 +1,17 @@
 {
+  "stamp": {
+    "code_hash": "9741bef459e9cf3e",
+    "script": "scripts/finite_span_ablation.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-24T09:07:46.452921Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "vawt_core.py"
+    ],
+    "extra_data": {},
+    "n": 1,
+    "seed": 0
+  },
   "geometry": {
     "R": 1.83,
     "H": 1.37,

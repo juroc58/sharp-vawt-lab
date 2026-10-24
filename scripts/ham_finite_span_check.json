@@ -1,4 +1,17 @@
 {
+  "stamp": {
+    "code_hash": "461d3347bce99408",
+    "script": "scripts/ham_finite_span_check.py",
+    "script_version": "v1.0",
+    "created_utc": "2026-10-24T09:05:38.224803Z",
+    "extra_files": [
+      "vawt_presets.py",
+      "vawt_core.py"
+    ],
+    "extra_data": {},
+    "n": 1,
+    "seed": 0
+  },
   "ham_geometry": {
     "R": 1.83,
     "c": 0.305,
@@ -343,18 +356,5 @@
       "peak_tsr": 2.5,
       "f_ar": 0.7207592200561265
     }
-  ],
-  "stamp": {
-    "code_hash": "526878ed818c7bf9",
-    "script": "scripts/ham_finite_span_check.py",
-    "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 10,
-    "seed": 0,
-    "extra_files": [
-      "vawt_presets.py",
-      "vawt_core.py"
-    ],
-    "extra_data": {}
-  }
+  ]
 }

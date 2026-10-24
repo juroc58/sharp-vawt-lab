@@ -149,6 +149,47 @@ def make_stamp(
     return stamp
 
 
+def write_json_with_stamp(
+    path: str,
+    data: Dict[str, Any],
+    script: str,
+    version: str,
+    n: Optional[int] = None,
+    seed: Optional[int] = None,
+    extra_files: Optional[List[str]] = None,
+    extra_data: Optional[Dict[str, Any]] = None,
+) -> None:
+    """
+    Write a JSON file with an embedded freshness stamp.
+
+    This is the standard way to write result JSONs. It creates a stamp with
+    the current code hash and embeds it in the JSON under the "stamp" key.
+
+    Args:
+        path: Path to write the JSON file (relative to repo root or absolute)
+        data: Dictionary of data to write (will have "stamp" key added)
+        script: Script path relative to repo root (e.g., "scripts/compute_aep.py")
+        version: Script version string (e.g., "v1.0")
+        n: Number of samples/runs
+        seed: Random seed used
+        extra_files: Additional files to include in hash
+        extra_data: Additional data to include in hash
+    """
+    stamp = make_stamp(
+        script_path=script,
+        script_version=version,
+        n=n,
+        seed=seed,
+        extra_files=extra_files,
+        extra_data=extra_data,
+    )
+    output = {"stamp": stamp, **data}
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(output, fh, indent=2)
+
+
 def verify_stamp(json_path: str, expected_script: str) -> tuple[bool, str]:
     """
     Verify that a result JSON has a valid, current stamp.
@@ -213,7 +254,6 @@ STAMP_CHECK_MAP = {
     "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
     "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
     "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
-    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
     "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
     "cm_scale_scan.json": "scripts/scan_cm_scale.py",
     "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
@@ -224,12 +264,20 @@ STAMP_CHECK_MAP = {
     "optimization_passive.json": "scripts/optimize_passive.py",
     "optimization_scaleup.json": "scripts/optimize_scaleup.py",
     "optimization_actuator.json": "scripts/optimize_actuator.py",
+    "spearman_results.json": "scripts/spearman_sensitivity.py",
+    "tip_loss_scan.json": "scripts/scan_tip_loss.py",
+    "cm_scale_scan.json": "scripts/scan_cm_scale.py",
+    "finite_span_ablation.json": "scripts/finite_span_ablation.py",
+    "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
+    "branch_point_checks.json": "scripts/check_branch_points.py",
+    "diag_aep_branches.json": "scripts/diag_aep_branches.py",
     "sobol_results.json": "scripts/sobol_sensitivity.py",
     "spearman_results.json": "scripts/spearman_sensitivity.py",
     "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
     "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
     "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
-    "tip_loss_scan.json": "scripts/scan_tip_loss.py",
+    "aep_results.json": "scripts/compute_aep.py",
+    "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
 }
 
 
@@ -271,3 +319,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# Export all public functions
+__all__ = [
+    "compute_code_hash",
+    "make_stamp",
+    "write_json_with_stamp",
+    "verify_stamp",
+    "list_stale_results",
+    "STAMP_CHECK_MAP",
+]

@@ -1,17 +1,22 @@
 {
   "stamp": {
-    "code_hash": "e6fcef0829c898c8",
+    "code_hash": "3a49eeef0bf503b0",
     "script": "scripts/compute_aep_scaleup.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 82,
-    "seed": 0,
+    "created_utc": "2026-10-24T09:13:40.726217Z",
     "extra_files": [
       "vawt_presets.py",
-      "scripts/compute_aep.py",
-      "vawt_core.py"
+      "scripts/compute_aep.py"
     ],
-    "extra_data": {}
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0
+    },
+    "n": 82,
+    "seed": 0
   },
   "geometry": {
     "R": 2.7179,

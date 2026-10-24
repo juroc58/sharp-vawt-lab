@@ -33,6 +33,8 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from vawt_core import create_sim_from_params
+from scripts.stamp import write_json_with_stamp
+from scripts.stamp import write_json_with_stamp
 
 # ----------------------------------------------------------------- design space
 # Four pitch coefficients, matching the core's prescribed-pitch law.
@@ -326,7 +328,16 @@ class VAWTOptimizer:
                 for h in report.history
             ],
         }
-        Path(filepath).write_text(json.dumps(payload, indent=2))
+        write_json_with_stamp(
+            path=filepath,
+            data=payload,
+            script="scripts/optimize_actuator.py",
+            version="v1.0",
+            n=1,
+            seed=42,
+            extra_files=["vawt_presets.py"],
+            extra_data={"PARAM_BOUNDS": PARAM_BOUNDS, "PARAM_NAMES": PARAM_NAMES},
+        )
         print(f"[Opt] Report saved → {Path(filepath).resolve()}")
 
     # ------------------------------------------------------------------

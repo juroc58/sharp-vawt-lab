@@ -27,6 +27,7 @@ sys.path.insert(0, _HERE)
 
 from vawt_core import create_sim_from_params  # noqa: E402
 import uncertainty as U  # noqa: E402
+from scripts.stamp import write_json_with_stamp
 
 MULTIPLIERS = [0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30]
 ANCHORS = ["sharp_cppc", "optimised_passive", "scaleup"]
@@ -63,9 +64,16 @@ def main():
         print()
 
     path = os.path.join(_HERE, "tip_loss_scan.json")
-    with open(path, "w") as fh:
-        json.dump(out, fh, indent=2)
-        fh.write("\n")
+    write_json_with_stamp(
+        path=path,
+        data=out,
+        script="scripts/scan_tip_loss.py",
+        version="v1.0",
+        n=1,
+        seed=0,
+        extra_files=["vawt_presets.py", "scripts/uncertainty.py"],
+        extra_data={},
+    )
     print(f"wrote {path}")
 
 

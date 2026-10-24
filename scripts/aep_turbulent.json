@@ -1,17 +1,24 @@
 {
   "stamp": {
-    "code_hash": "13ac470fa6d0247d",
+    "code_hash": "395af8555cb575ae",
     "script": "scripts/compute_aep_turbulent.py",
     "script_version": "v1.0",
-    "created_utc": "2026-10-24T00:00:00Z",
-    "n": 230,
-    "seed": 0,
+    "created_utc": "2026-10-24T09:23:08.311263Z",
     "extra_files": [
-      "vawt_presets.py",
-      "scripts/compute_aep.py",
-      "vawt_core.py"
+      "scripts/compute_aep.py"
     ],
-    "extra_data": {}
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0,
+      "TURB_I": 0.12,
+      "TURB_L": 30.0,
+      "N_SEEDS": 10
+    },
+    "n": 460,
+    "seed": 0
   },
   "turbulence": {
     "I": 0.12,
