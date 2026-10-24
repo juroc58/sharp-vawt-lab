@@ -1,0 +1,18 @@
+{
+  "geometry_id": "R0p6",
+  "R_m": 0.60,
+  "c_m": 0.14,
+  "H_m": 0.40,
+  "N": 3,
+  "ar": 0.50,
+  "sp": 0.25,
+  "arm_d_m": 0.0,
+  "n_arm": 2,
+  "arm_cd": 1.0,
+  "mb_kg": 0.010,
+  "xbcg_over_c": 0.20,
+  "mc_kg": 0.002,
+  "dcw": 0.30,
+  "J_hub_kgm2": 0.02,
+  "notes": "Template only. Do not treat these as measured until the physical rotor has been surveyed and this file is updated with measured values and a dated signature."
+}
