@@ -15,7 +15,7 @@ import json
 import math
 import os
 import sys
-from typing import Dict, Any, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -25,20 +25,34 @@ sys.path.insert(0, _HERE)
 sys.path.insert(0, _ROOT)
 
 from plot_style import (
-    apply_style, create_figure_3panel, create_figure_4panel,
-    COL_PASSIVE_KLOAD, COL_PASSIVE_FIXED, COL_RIGID,
-    COL_HIGH_BRANCH, COL_LOW_BRANCH, COL_WEIBULL,
-    LS_SOLID, LS_DASHED, LS_DOTTED,
-    MK_FIXED, MK_FREE, MK_HIGH, MK_LOW,
-    add_weibull_axis, set_legend_outside, annotate_with_arrow,
-    finalize_figure, save_figure,
-    FONT_SIZE, GRID_ALPHA,
+    COL_HIGH_BRANCH,
+    COL_LOW_BRANCH,
+    COL_PASSIVE_FIXED,
+    COL_PASSIVE_KLOAD,
+    COL_RIGID,
+    FONT_SIZE,
+    GRID_ALPHA,
+    LS_DASHED,
+    LS_DOTTED,
+    LS_SOLID,
+    MK_FIXED,
+    MK_FREE,
+    MK_HIGH,
+    MK_LOW,
+    add_weibull_axis,
+    annotate_with_arrow,
+    apply_style,
+    create_figure_3panel,
+    create_figure_4panel,
+    finalize_figure,
+    save_figure,
+    set_legend_outside,
 )
 
 from vawt_presets import PRESETS
 
 
-def load_json(path: str) -> Dict[str, Any]:
+def load_json(path: str) -> dict[str, Any]:
     with open(path) as fh:
         return json.load(fh)
 
@@ -48,7 +62,7 @@ def weibull_pdf(U, U_mean, k):
     return (k / lam) * (U / lam) ** (k - 1.0) * np.exp(-(U / lam) ** k)
 
 
-def plot_aep_small_rotor(data: Dict[str, Any], out_path: str):
+def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
     """Plot AEP for the small-rotor (R=0.60 m) from aep_results.json."""
     apply_style()
     fig, axes = create_figure_3panel()
@@ -56,8 +70,8 @@ def plot_aep_small_rotor(data: Dict[str, Any], out_path: str):
     geo = data['geometry']
     wind = data['wind']
     res_p = data['results']['passive_k_load']
-    res_f = data['results']['passive_fixed_rpm']
-    rigid = data.get('rigid_fair_ref')
+    data['results']['passive_fixed_rpm']
+    data.get('rigid_fair_ref')
 
     R = geo['R']
     preset = PRESETS.get('sharp_cppc', {})
@@ -70,8 +84,6 @@ def plot_aep_small_rotor(data: Dict[str, Any], out_path: str):
     # Build power curves from Cp data
     U_grid = np.linspace(wind['cut_in'], wind['cut_out'], 200)
     A = 2.0 * R * H
-    RHO = 1.225
-    ETA = 0.90
     p_rated = wind['p_rated_W']
 
     # Reconstruct Cp vs U for branch-traced
@@ -158,7 +170,7 @@ def plot_aep_small_rotor(data: Dict[str, Any], out_path: str):
     save_figure(fig, out_path)
 
 
-def plot_aep_scaleup(data: Dict[str, Any], out_path: str):
+def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     """Plot AEP for the scale-up (R=2.72 m) from aep_scaleup.json."""
     apply_style()
     fig, axes = create_figure_4panel()
@@ -220,8 +232,8 @@ def plot_aep_scaleup(data: Dict[str, Any], out_path: str):
             cpl = np.array([f['cp'] for f in lfr])
             cp_low = np.interp(U_grid, Ul, cpl)
 
-    P_high = np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_high, 0, 0.593) * ETA, p_rated)
-    P_low = np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_low, 0, 0.593) * ETA, p_rated)
+    np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_high, 0, 0.593) * ETA, p_rated)
+    np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_low, 0, 0.593) * ETA, p_rated)
 
     # Panel 1: Cp vs TSR (fixed rpm) with both branches
     ax = axes[0]
@@ -371,7 +383,7 @@ def plot_aep_scaleup(data: Dict[str, Any], out_path: str):
         for i, aep in enumerate(aep_vals):
             if i < len(strategies) - 1 and rigid_aep > 0:
                 gain = (aep / rigid_aep - 1.0) * 100
-                ax.text(i, aep_vals[i] / 2, f"{gain:+.1f}%", ha='center', va='center',
+                ax.text(i, aep / 2, f"{gain:+.1f}%", ha='center', va='center',
                         fontsize=FONT_SIZE - 1, color='k', fontweight='bold')
 
     ax.set_xticks(x)
@@ -386,12 +398,12 @@ def plot_aep_scaleup(data: Dict[str, Any], out_path: str):
     save_figure(fig, out_path)
 
 
-def plot_aep_turbulent(data: Dict[str, Any], out_path: str):
+def plot_aep_turbulent(data: dict[str, Any], out_path: str):
     apply_style()
     fig, axes = create_figure_3panel()
-    ax1, ax2, ax3 = axes
+    _ax1, _ax2, _ax3 = axes
 
-    wind = data['wind']
+    data['wind']
     steady = data['steady']
     turbulent = data['turbulent']
 
@@ -431,7 +443,7 @@ def plot_aep_turbulent(data: Dict[str, Any], out_path: str):
                 fontsize=FONT_SIZE - 1, fontweight='bold')
     ax.text(0.5, max(aep_vals) * 0.6, f"Turbulence effect:\n{gain:+.1f}%",
             ha='center', va='center', fontsize=FONT_SIZE,
-            bbox=dict(boxstyle="round,pad=0.4", fc="wheat", ec="k", alpha=0.9))
+            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9})
 
     ax.set_xticks(x)
     ax.set_xticklabels(strategies)
@@ -456,10 +468,10 @@ def plot_aep_turbulent(data: Dict[str, Any], out_path: str):
     save_figure(fig, out_path)
 
 
-def plot_aep_counter_rotating(data: Dict[str, Any], out_path: str):
+def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
     apply_style()
     fig, axes = create_figure_3panel()
-    ax1, ax2, ax3 = axes
+    _ax1, _ax2, _ax3 = axes
 
     single = data['single_rotor_baseline']
     counter = data['counter_rotating']
@@ -488,7 +500,7 @@ def plot_aep_counter_rotating(data: Dict[str, Any], out_path: str):
     gain_vs_two = counter.get('vs_two_independent_rotors_improvement_percent', 0)
     ax.text(0.5, max(aep_vals) * 0.6, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",
             ha='center', va='center', fontsize=FONT_SIZE,
-            bbox=dict(boxstyle="round,pad=0.4", fc="wheat", ec="k", alpha=0.9))
+            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9})
 
     ax.set_xticks(x)
     ax.set_xticklabels(strategies)
@@ -515,11 +527,11 @@ def plot_aep_counter_rotating(data: Dict[str, Any], out_path: str):
     # Panel 3: Model caveat
     ax = axes[2]
     ax.text(0.5, 0.5,
-            "Counter-rotating pair is a SPECULATIVE SCENARIO.\n"
+            "SPECULATIVE SCENARIO.\n"
             "Interaction model: heuristic momentum/wake/channeling.\n"
             "2D BEM cannot resolve 3D wake at 0.37D spacing.\n"
-            "Gain over two independent rotors: +2.8%\n"
-            "Not a validated array prediction.",
+            f"Gain over two independent rotors: {gain_vs_two:+.1f}%\n"
+            "NOT A VALIDATED ARRAY PREDICTION.",
             ha='center', va='center', transform=ax.transAxes, fontsize=FONT_SIZE)
     ax.set_title("Model caveat")
     ax.axis('off')
