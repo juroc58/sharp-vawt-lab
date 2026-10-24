@@ -17,18 +17,19 @@ import json
 import os
 import sys
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.stats import spearmanr
-from scripts.stamp import write_json_with_stamp
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
-_SCRIPTS = os.path.join(_ROOT, "scripts")
 sys.path.insert(0, _ROOT)
 sys.path.insert(0, os.path.join(_ROOT, "scripts"))
+
+from stamp import write_json_with_stamp
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +236,7 @@ def main():
             "anchor_results": summary_out,
         },
         script="scripts/spearman_sensitivity.py",
-        version="v1.0",
+        version="2.0.0",
         n=1,
         seed=42,
         extra_files=["scripts/uncertainty.py"],

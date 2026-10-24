@@ -24,23 +24,21 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
 import os
 import sys
-import warnings
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 try:
-    from SALib.sample import saltelli
     from SALib.analyze import sobol
+    from SALib.sample import saltelli
     HAS_SALIB = True
 except ImportError:
     HAS_SALIB = False
@@ -49,10 +47,10 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
 sys.path.insert(0, _ROOT)
 
-from vawt_core import create_sim_from_params
-from vawt_presets import PRESETS
 from stamp import make_stamp
 
+from sharp_vawt import create_sim_from_params
+from vawt_presets import PRESETS
 
 # ============================================================================
 # 1. UNCERTAIN PARAMETERS
@@ -89,13 +87,20 @@ COLLAPSE_CP = 0.02
 # Disk cache for UQ runs (interrupt-safe resume)
 CACHE_DIR = ".uq_cache"
 
-# Version string that gets hashed into the cache key so that changes to
-# the core physics, polars or parameter spec invalidate stale cache entries.
-_UQ_VERSION = "v13-2026-10-20"
+# Version string hashed into the cache key so that changes to the core physics,
+# polars or parameter spec invalidate stale cache entries.  Semantic version of
+# this script; also used in the result stamp.
+_UQ_VERSION = "2.0.0"
+
+# Parameters that are sampled but cannot affect any anchor because every anchor
+# sets Geometry.arm_d = 0 (so arm_cd multiplies zero arm drag).  Recorded
+# explicitly so readers do not mistake them for active uncertainty sources.
+INERT_PARAMETERS = ["arm_cd"]
+ACTIVE_PARAMETERS = [n for n in UQ_NAMES if n not in INERT_PARAMETERS]
 
 
 def _code_hash() -> str:
-    """Hash of vawt_core.py, airfoil polars, UQ_SPEC and the script version.
+    """Hash of sharp_vawt/ package, airfoil polars, UQ_SPEC and the script version.
 
     Paths are resolved relative to the repository root (``__file__``), never
     the process working directory, so the hash is identical however the
@@ -104,8 +109,16 @@ def _code_hash() -> str:
     """
     root = Path(__file__).resolve().parent.parent
     h = hashlib.sha256()
-    # Core physics (hard requirement)
-    for rel in ("vawt_core.py", "scripts/uncertainty.py"):
+    # Core physics (hard requirement) - sharp_vawt package
+    core_files = [
+        "sharp_vawt/__init__.py",
+        "sharp_vawt/config.py",
+        "sharp_vawt/database.py",
+        "sharp_vawt/engine.py",
+        "vawt_presets.py",
+        "scripts/uncertainty.py",
+    ]
+    for rel in core_files:
         path = root / rel
         if not path.is_file():
             raise FileNotFoundError(f"UQ cache hash: missing source file {path}")
@@ -113,7 +126,7 @@ def _code_hash() -> str:
     # UQ parameter spec (catches bound/name changes)
     h.update(json.dumps(UQ_SPEC, sort_keys=True).encode())
     # Polar files (hard requirement: a cache key that ignores them is unsafe)
-    polar_dir = root / "airfoil_polars"
+    polar_dir = root / "sharp_vawt" / "airfoil_polars"
     polar_files = sorted(polar_dir.glob("**/*.csv"))
     if not polar_files:
         raise FileNotFoundError(
@@ -134,7 +147,7 @@ def _code_hash() -> str:
 def _cache_key(anchor_name: str, anchor_params: dict, uq_params: dict) -> str:
     """Stable SHA-256-based key for a (anchor, params) task.
 
-    Includes a hash of vawt_core.py, the polar files, UQ_SPEC and a version
+    Includes a hash of sharp_vawt/ package, the polar files, UQ_SPEC and a version
     string so that stale cache entries are invalidated when the code or data
     changes.
     """
@@ -151,7 +164,7 @@ def _cache_path(key: str) -> str:
     return os.path.join(CACHE_DIR, f"{key}.json")
 
 
-def _base_cm0(anchor_params: Dict[str, Any]) -> Dict[str, float]:
+def _base_cm0(anchor_params: dict[str, Any]) -> dict[str, float]:
     """Deterministic base case with physically plausible Cm = 0.
 
     For a symmetric NACA 0012 the attached-flow Cm should be near zero; the
@@ -160,14 +173,14 @@ def _base_cm0(anchor_params: Dict[str, Any]) -> Dict[str, float]:
     """
     try:
         r = create_sim_from_params({**anchor_params, "cm_scale": 0.0}).run()
-        return dict(cp=float(r["cp"]), tsr=float(r["tsr_eq"]),
-                    steady=bool(r.get("steady", True)))
-    except Exception as exc:  # pragma: no cover - diagnostic path
-        return dict(cp=float("nan"), tsr=float("nan"), steady=False,
-                    error=str(exc)[:120])
+        return {"cp": float(r["cp"]), "tsr": float(r["tsr_eq"]),
+                    "steady": bool(r.get("steady", True))}
+    except Exception as exc:  # pragma: no cover - diagnostic path  # noqa: BLE001
+        return {"cp": float("nan"), "tsr": float("nan"), "steady": False,
+                    "error": str(exc)[:120]}
 
 
-def _load_from_cache(key: str) -> Optional[dict]:
+def _load_from_cache(key: str) -> dict | None:
     path = _cache_path(key)
     if os.path.exists(path):
         try:
@@ -191,7 +204,7 @@ def _save_to_cache(key: str, result: dict) -> None:
 # Named machines live in vawt_presets.py so the core dataclass defaults never
 # encode a particular scale-up design.  Keep this as a copy: the UQ code
 # sometimes adds model-form overrides without changing the stored preset.
-ANCHORS: Dict[str, Dict[str, Any]] = {
+ANCHORS: dict[str, dict[str, Any]] = {
     name: dict(PRESETS[name])
     for name in ("ham_1979", "sharp_cppc", "optimised_passive", "scaleup")
 }
@@ -213,13 +226,13 @@ def latin_hypercube(n: int, seed: int) -> np.ndarray:
     return strata
 
 
-def sample_to_params(unit_row: np.ndarray) -> Dict[str, float]:
+def sample_to_params(unit_row: np.ndarray) -> dict[str, float]:
     """Map a sample in [0,1]^d to physical parameter values."""
     values = UQ_LOW + unit_row * (UQ_HIGH - UQ_LOW)
     return {name: float(v) for name, v in zip(UQ_NAMES, values)}
 
 
-def sample_to_params_saltelli(unit_row: np.ndarray) -> Dict[str, float]:
+def sample_to_params_saltelli(unit_row: np.ndarray) -> dict[str, float]:
     """Map a Saltelli sample in [0,1]^d to physical parameter values.
     
     Saltelli samples can go slightly outside [0,1] due to the way
@@ -256,13 +269,13 @@ def run_one_task(args):
         cp = float(r["cp"])
         if not np.isfinite(cp) or cp <= 0.0:
             return (anchor_name, None, "non-positive Cp", uq_params)
-        result = dict(cp=cp,
-                      tsr=float(r["tsr_eq"]),
-                      aoa_max=float(r["aoa_max"]),
-                      steady=bool(r.get("steady", True)))
+        result = {"cp": cp,
+                      "tsr": float(r["tsr_eq"]),
+                      "aoa_max": float(r["aoa_max"]),
+                      "steady": bool(r.get("steady", True))}
         _save_to_cache(key, result)
         return (anchor_name, result, None, uq_params)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - per-anchor failure is recorded, not fatal
         return (anchor_name, None, str(e)[:80], uq_params)
 
 
@@ -309,16 +322,15 @@ def main():
             return 1
         D = len(UQ_SPEC)
         samples_per_anchor = saltelli_n * (2 * D + 2 if calc_second_order else D + 2)
-        total_runs = samples_per_anchor
+        total_runs = samples_per_anchor * len(ANCHORS)
         print(f"  Saltelli sampling: N={saltelli_n}, D={D}, second_order={calc_second_order}")
-        print(f"  Total runs per anchor: {total_runs}")
+        print(f"  Runs per anchor: {samples_per_anchor}")
     else:
+        samples_per_anchor = N_SAMPLES
+        total_runs = samples_per_anchor * len(ANCHORS)
         print(f"  Samples per anchor : {N_SAMPLES}")
     print(f"  Anchors            : {len(ANCHORS)}")
-    if use_saltelli:
-        print(f"  Total runs         : {samples_per_anchor * len(ANCHORS)}")
-    else:
-        print(f"  Total runs         : {N_SAMPLES * len(ANCHORS)}")
+    print(f"  Total runs         : {total_runs}")
     print()
     print("  Uncertain parameters and ranges:")
     for name, lo, hi in UQ_SPEC:
@@ -363,9 +375,9 @@ def main():
 
     # Run in parallel, preserving task order for Sobol compatibility
     print("  Running ...")
-    results_by_anchor: Dict[str, List[float]] = {n: [] for n in ANCHOR_NAMES}
-    failures: Dict[str, int] = {n: 0 for n in ANCHOR_NAMES}
-    raw_rows: List[Dict[str, Any]] = []
+    results_by_anchor: dict[str, list[float]] = {n: [] for n in ANCHOR_NAMES}
+    failures: dict[str, int] = {n: 0 for n in ANCHOR_NAMES}
+    raw_rows: list[dict[str, Any]] = []
 
     with ProcessPoolExecutor(max_workers=4) as ex:
         for i, (anchor_name, res, err, uq_params) in enumerate(ex.map(run_one_task, tasks)):
@@ -393,7 +405,7 @@ def main():
           f"{'mean':>8} {'median':>8} {'5%':>8} {'95%':>8} {'95%-5%':>8}")
     print("-" * 74)
 
-    summary: Dict[str, Dict[str, float]] = {}
+    summary: dict[str, dict[str, float]] = {}
     for name in ANCHOR_NAMES:
         cps = np.array(results_by_anchor[name])
         if len(cps) == 0:
@@ -405,19 +417,19 @@ def main():
         p95 = float(np.percentile(cps, 95))
         width = p95 - p5
         working = cps[cps >= COLLAPSE_CP]
-        summary[name] = dict(
-            mean=m,
-            all_mean=m,
-            working_mean=float(np.mean(working)) if len(working) else float("nan"),
-            median=med, p5=p5, p95=p95,
-            std=float(np.std(cps)), n_ok=len(cps),
-            n_fail=failures[name],
-            n_working=int(len(working)),
-            collapse_fraction=float(np.mean(cps < COLLAPSE_CP)),
-            collapse_cp_threshold=float(COLLAPSE_CP),
-            base_cm0_cp=float(base_cm0[name]["cp"]),
-            base_cm0_tsr=float(base_cm0[name]["tsr"]),
-        )
+        summary[name] = {
+            "mean": m,
+            "all_mean": m,
+            "working_mean": float(np.mean(working)) if len(working) else float("nan"),
+            "median": med, "p5": p5, "p95": p95,
+            "std": float(np.std(cps)), "n_ok": len(cps),
+            "n_fail": failures[name],
+            "n_working": len(working),
+            "collapse_fraction": float(np.mean(cps < COLLAPSE_CP)),
+            "collapse_cp_threshold": float(COLLAPSE_CP),
+            "base_cm0_cp": float(base_cm0[name]["cp"]),
+            "base_cm0_tsr": float(base_cm0[name]["tsr"]),
+        }
         print(f"{name:<22} {len(cps):>5} {failures[name]:>5} "
               f"{m:>8.4f} {med:>8.4f} {p5:>8.4f} {p95:>8.4f} {width:>8.4f}")
 
@@ -497,20 +509,44 @@ def main():
 
     # -------- JSON --------
     out_json = os.path.join(_HERE, "uncertainty_results.json")
+    method = "saltelli" if use_saltelli else "lhs"
+    uq_metadata = {
+        "UQ_SPEC": UQ_SPEC,
+        "method": method,
+        "n_samples_per_anchor": len(samples),
+        "runs_per_anchor": len(samples),
+        "total_runs": len(samples) * len(ANCHORS),
+        "seed": SEED,
+        "active_parameters": ACTIVE_PARAMETERS,
+        "inert_parameters": INERT_PARAMETERS,
+        "collapse_cp_threshold": COLLAPSE_CP,
+        "anchors": ANCHOR_NAMES,
+        "second_order": bool(use_saltelli and calc_second_order),
+    }
     stamp = make_stamp(
         "scripts/uncertainty.py",
         script_version=_UQ_VERSION,
         n=len(samples),
         seed=SEED,
         extra_files=["vawt_presets.py"],
-        extra_data={"UQ_SPEC": UQ_SPEC, "N_SAMPLES": N_SAMPLES},
+        extra_data=uq_metadata,
     )
+    stamp["polar_hashes"] = dict(stamp["data_hashes"])
     with open(out_json, "w") as fh:
         json.dump({
             "stamp": stamp,
+            "method": method,
             "n_samples": len(samples),
+            "samples_per_anchor": len(samples),
+            "runs_per_anchor": len(samples),
+            "total_runs": len(samples) * len(ANCHORS),
             "seed": SEED,
-            "method": "saltelli" if use_saltelli else "lhs",
+            "active_parameters": ACTIVE_PARAMETERS,
+            "inert_parameters": INERT_PARAMETERS,
+            "uq_spec_hash": stamp["uq_spec_hash"],
+            "source_hashes": stamp["source_hashes"],
+            "polar_hashes": stamp["polar_hashes"],
+            "script_version": stamp["script_version"],
             "parameters": UQ_SPEC,
             "summary": summary,
             "base_cm0": base_cm0,
@@ -518,6 +554,7 @@ def main():
             "sobol": sobol_results,
             "raw": raw_rows,
         }, fh, indent=2)
+        fh.write("\n")
     print(f"Wrote {out_json}")
 
     # Print Sobol summary if available
