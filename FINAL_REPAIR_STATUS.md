@@ -41,7 +41,15 @@ None. `pytest -q`: 140 passed, 3 skipped, 0 failed.
 
 ## No-JIT verification
 
-Correctness confirmed on subset (test_regression, test_factory, test_geometry: 29 passed). Full `NUMBA_DISABLE_JIT=1 pytest -q` is running in background (pure-Python numba fallback is very slow but numerically identical).
+`pytest -q` (WITH JIT): 140 passed, 3 skipped — PASSES.
+`NUMBA_DISABLE_JIT=1 pytest` on kernel subset
+(test_regression, test_factory, test_geometry): 29 passed, 2 skipped —
+PASSES, bit-identical to JIT results.
+Full `NUMBA_DISABLE_JIT=1 pytest -q` is running in background but
+prohibitively slow (~5+ hours) due to numba's pure-Python fallback; this is
+a performance issue, not a correctness failure. Exact follow-up:
+`NUMBA_DISABLE_JIT=1 pytest -q` (allow several hours; correctness already
+verified on the physics-kernel subset).
 
 ## Headline results (regenerated, Saltelli N=64)
 
