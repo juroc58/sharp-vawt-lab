@@ -49,8 +49,6 @@ from plot_style import (
     set_legend_outside,
 )
 
-from vawt_presets import PRESETS
-
 
 def load_json(path: str) -> dict[str, Any]:
     with open(path) as fh:
@@ -74,8 +72,16 @@ def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
     data.get('rigid_fair_ref')
 
     R = geo['R']
-    preset = PRESETS.get('sharp_cppc', {})
-    H = preset.get('H', 0.40)
+    H = geo.get('H')
+    if H is None:
+        raise ValueError(
+            f"geometry in {out_path} is missing 'H'; regenerate the JSON with "
+            f"authoritative geometry metadata so figure titles reflect the true "
+            f"machine design instead of a preset from a different design."
+        )
+    # Authoritative title from JSON geometry (never fall back to a preset from
+    # a different design).
+    title = fr"AEP — Passive CPPC, $R = {R:.2f}$ m, $H = {H:.2f}$ m"
 
     tsrs = np.array(res_p['tsr'])
     cp_tsr = np.array(res_p['cp_tsr'])
@@ -165,7 +171,7 @@ def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
     ax.axvline(wind['rated_wind_speed'], color='k', ls=':', lw=1, alpha=0.5)
     set_legend_outside(ax, ncol=2)
 
-    title = fr"AEP - Small-Rotor CPPC, $R = {R:.2f}$ m"
+    title = fr"AEP — Passive CPPC, $R = {R:.2f}$ m, $H = {H:.2f}$ m"
     finalize_figure(fig, suptitle=title)
     save_figure(fig, out_path)
 
@@ -183,7 +189,12 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     rigid = data.get('rigid_fair_ref')
 
     R = geo['R']
-    H = geo.get('H', PRESETS['scaleup']['H'])
+    H = geo.get('H')
+    if H is None:
+        raise ValueError(
+            "geometry in aep_scaleup.json is missing 'H'; regenerate the JSON "
+            "with authoritative geometry metadata."
+        )
     tsrs = np.array(res_p['tsr'])
     cp_tsr = np.array(res_p['cp_tsr'])
     free = res_p.get('free_results', [])
@@ -393,7 +404,7 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     ax.set_ylim(bottom=0, top=max(aep_vals) * 1.3 if aep_vals else 1)
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
-    title = fr"AEP - Scale-Up CPPC, $R = {geo['R']:.2f}$ m, AR $\approx$ {geo.get('AR', H/geo['c']):.1f}"
+    title = fr"AEP — Passive CPPC, $R = {geo['R']:.2f}$ m, $H = {geo['H']:.2f}$ m"
     finalize_figure(fig, suptitle=title, rect=[0, 0.05, 1, 0.95])
     save_figure(fig, out_path)
 
@@ -406,17 +417,22 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
     data['wind']
     steady = data['steady']
     turbulent = data['turbulent']
+    pws = data.get('per_wind_speed', [])
+    if not pws:
+        raise ValueError(
+            "aep_turbulent.json is missing per_wind_speed data. Regenerate with "
+            "scripts/compute_aep_turbulent.py (current version stores per-wind-"
+            "speed dicts with Cp_steady, Cp_turb_mean, Cp_turb_std). Do not plot "
+            "empty arrays."
+        )
+    # per_wind_speed rows carry both steady and turbulent results at each U.
+    U_s = np.array([d['U'] for d in pws])
+    cp_s = np.array([d['Cp_steady'] for d in pws])
+    U_t = np.array([d['U'] for d in pws])
+    cp_t = np.array([d['Cp_turb_mean'] for d in pws])
+    cp_t_std = np.array([d['Cp_turb_std'] for d in pws])
 
-    # Panel 1: Cp vs U
     ax = axes[0]
-    spd = steady.get('per_wind_speed', [])
-    tpd = turbulent.get('per_wind_speed', [])
-    U_s = np.array([u for u, _, _, _ in spd])
-    cp_s = np.array([cp for _, _, cp, _ in spd])
-    U_t = np.array([u for u, _, _, _, _, _ in tpd])
-    cp_t = np.array([cp for _, _, _, cp, _, _ in tpd])
-    cp_t_std = np.array([std for _, _, _, _, std, _ in tpd])
-
     ax.plot(U_s, cp_s, LS_SOLID, color=COL_PASSIVE_KLOAD, lw=1.8, marker=MK_FIXED,
             label="Steady wind")
     ax.errorbar(U_t, cp_t, yerr=cp_t_std, fmt='o', color=COL_HIGH_BRANCH,
@@ -452,15 +468,18 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
     ax.set_ylim(bottom=0, top=max(aep_vals) * 1.3)
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
-    # Panel 3: Turbulence effect explanation
+    # Panel 3: Turbulence effect explanation (conditional on the actual results)
     ax = axes[2]
     ax.text(0.5, 0.5,
-            "Turbulence gives a net gain from:\n"
+            f"Turbulence effect: {gain:+.1f}% on AEP "
+            f"({('gain' if gain >= 0 else 'loss')}).\n"
+            "Possible mechanisms (not established causation):\n"
             "1. Cube bias: E[U^3] > (E[U])^3 (Jensen)\n"
             "2. Cp(U) convexity: E[Cp(U)] > Cp(E[U])\n"
-            "Real turbines lose 2-8% to 3D effects",
+            "Vertical bars: seed-to-seed std (temporal variability), "
+            "not a confidence interval.",
             ha='center', va='center', transform=ax.transAxes, fontsize=FONT_SIZE)
-    ax.set_title("Why turbulence gives a gain")
+    ax.set_title("Turbulence effect (conditional on results)")
     ax.axis('off')
 
     title = f"AEP - Turbulent Wind (I = {data['turbulence']['I']*100:.0f}%, L = {data['turbulence']['L_m']:.0f} m)"

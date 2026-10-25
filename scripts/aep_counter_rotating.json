@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "5cbfdbadeeb3d4cb5515ed4046f1635f09597dd5485ac0aad34b25d768d8388f",
+    "code_hash": "320be18de8c5258d4133e9e00d95eeee5d51ade71aed6abb38b6166980b89cc4",
     "script": "scripts/compute_aep_counter_rotating.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-24T18:00:57.474595+00:00",
+    "created_utc": "2026-10-24T20:48:34.059357+00:00",
     "python_version": "3.14.4",
-    "git_commit": "46fd455d87614b9281be0b1a5ab6c513b8ac4cfb",
+    "git_commit": "9eaaf5f8972d4b9fa8c299ab32775a40e03a645e",
     "seed": 0,
     "n": 69,
     "script_args": [],
@@ -31,7 +31,7 @@
       "vawt_core.py": "07671e2ff1384dcde04af3fd33e54e0e12109b2e0e0cbd23d63a5bd3679f1929",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/compute_aep_counter_rotating.py": "6bdc284690f10fbc95e08f8f2eb0caf33de3ac369ce747eabd4da259c9d17956",
-      "scripts/compute_aep.py": "acc2ad2692045518207f5ca4fe53d08a342355efeca36d92cc7dd3074214f400"
+      "scripts/compute_aep.py": "730b5b591cde6e11731b0d7e9a2414b13c655db96aa6c46b5a0181f323b989e4"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

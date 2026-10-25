@@ -410,7 +410,7 @@ def main():
     # --- plot ---
     # --- json dump ---
     summary = {
-        "geometry": {"R": R, "c": BASE['c'], "N": BASE['N'],
+        "geometry": {"R": R, "c": BASE['c'], "H": H, "N": BASE['N'],
                      "sigma": BASE['N']*BASE['c']/(2*math.pi*R)},
         "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                  "cut_in": CUT_IN, "cut_out": CUT_OUT,

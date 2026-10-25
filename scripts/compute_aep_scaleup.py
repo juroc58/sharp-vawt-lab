@@ -235,7 +235,7 @@ def main():
 
     # --- JSON dump with stamp ---
     summary = {
-        "geometry": {"R": R, "c": SCALEUP_BASE['c'], "N": SCALEUP_BASE['N'],
+        "geometry": {"R": R, "c": SCALEUP_BASE['c'], "H": H, "N": SCALEUP_BASE['N'],
                      "sigma": sigma, "AR": H/SCALEUP_BASE['c']},
         "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                  "cut_in": CUT_IN, "cut_out": CUT_OUT,

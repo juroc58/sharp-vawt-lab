@@ -56,27 +56,43 @@ def apply_style():
         'lines.linewidth': 1.6,
         'lines.markersize': 5,
         'savefig.dpi': DPI,
-        'savefig.bbox': 'tight',
         'savefig.transparent': False,
     })
 
 
 def create_figure_3panel(**kwargs):
-    """Create a 3-panel figure with shared style."""
-    fig, axes = plt.subplots(1, 3, figsize=FIGSIZE_3PANEL, **kwargs)
+    """Create a 3-panel figure with constrained layout and a dedicated bottom
+    legend row (GridSpec height_ratios reserve real space for legends so they
+    never overlap axis labels, subplot titles, or neighbouring panels)."""
+    fig = plt.figure(figsize=FIGSIZE_3PANEL, constrained_layout=True, **kwargs)
+    gs = fig.add_gridspec(2, 3, height_ratios=[1, 0.10], hspace=0.30, wspace=0.20)
+    axes = [fig.add_subplot(gs[0, i]) for i in range(3)]
+    legend_ax = fig.add_subplot(gs[1, :])
+    legend_ax.axis("off")
+    fig._legend_ax = legend_ax
     for ax in axes:
-        ax.grid(True, alpha=GRID_ALPHA, linestyle='-')
-        ax.axhline(0, color='k', lw=0.5)
+        ax.grid(True, alpha=GRID_ALPHA, linestyle="-")
+        ax.axhline(0, color="k", lw=0.5)
     return fig, axes
 
 
 def create_figure_4panel(**kwargs):
-    """Create a 2x2 figure with shared style."""
-    fig, axes = plt.subplots(2, 2, figsize=FIGSIZE_4PANEL, **kwargs)
-    axes = axes.flatten()
+    """Create a 2x2 figure with constrained layout and a dedicated bottom
+    legend row (GridSpec height_ratios reserve real space for legends)."""
+    fig = plt.figure(figsize=FIGSIZE_4PANEL, constrained_layout=True, **kwargs)
+    gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 0.10], hspace=0.30, wspace=0.20)
+    axes = [
+        fig.add_subplot(gs[0, 0]),
+        fig.add_subplot(gs[0, 1]),
+        fig.add_subplot(gs[1, 0]),
+        fig.add_subplot(gs[1, 1]),
+    ]
+    legend_ax = fig.add_subplot(gs[2, :])
+    legend_ax.axis("off")
+    fig._legend_ax = legend_ax
     for ax in axes:
-        ax.grid(True, alpha=GRID_ALPHA, linestyle='-')
-        ax.axhline(0, color='k', lw=0.5)
+        ax.grid(True, alpha=GRID_ALPHA, linestyle="-")
+        ax.axhline(0, color="k", lw=0.5)
     return fig, axes
 
 
@@ -87,17 +103,46 @@ def add_weibull_axis(ax, U_grid, pdf, mean_U, k_weibull, color=COL_WEIBULL, labe
     ax2.set_ylabel("pdf [1/m/s]", color=color, fontsize=FONT_SIZE - 1)
     ax2.tick_params(axis='y', labelcolor=color, labelsize=FONT_SIZE - 1)
     ax2.set_ylim(0, ax2.get_ylim()[1] * 1.1)
-    # Combine legends
-    lines1, labels1 = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    if lines1 or lines2:
-        ax.legend(lines1 + lines2, labels1 + labels2, fontsize=LEGEND_FONT_SIZE, loc='upper left')
+    # Weibull handle is collected into the shared bottom legend by
+    # set_legend_outside; do not draw a competing inside-axes legend here.
     return ax2
 
 
-def set_legend_outside(ax, loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=2):
-    """Place legend below the axes."""
-    ax.legend(fontsize=LEGEND_FONT_SIZE, loc=loc, bbox_to_anchor=bbox_to_anchor, ncol=ncol, framealpha=0.9)
+def set_legend_outside(ax, ncol=2):
+    """Draw a single combined legend for all axes into the dedicated bottom
+    legend row (GridSpec row reserved for legends).
+
+    Collects handles/labels from every axes in the figure, de-duplicates by
+    label, and places one legend in ``fig._legend_ax``.  Called once per panel;
+    the last call wins and includes every axis plotted so far, so the final
+    figure has exactly one non-overlapping legend below all panels.
+    """
+    fig = ax.figure
+    legend_ax = getattr(fig, "_legend_ax", None)
+    if legend_ax is None:
+        # Fallback for figures built without the GridSpec legend row.
+        ax.legend(fontsize=LEGEND_FONT_SIZE, loc="lower center",
+                  bbox_to_anchor=(0.5, -0.30), ncol=ncol, framealpha=0.9)
+        return
+    legend_ax.clear()
+    legend_ax.axis("off")
+    handles, labels = [], []
+    for a in fig.axes:
+        if a is legend_ax:
+            continue
+        h, l = a.get_legend_handles_labels()
+        handles.extend(h)
+        labels.extend(l)
+    seen = {}
+    for h, l in zip(handles, labels):
+        if l not in seen:
+            seen[l] = h
+    if seen:
+        legend_ax.legend(
+            list(seen.values()), list(seen.keys()),
+            loc="center", ncol=ncol, frameon=False,
+            fontsize=LEGEND_FONT_SIZE,
+        )
 
 
 def annotate_with_arrow(ax, x, y, text, xytext=(10, 10), **kwargs):
@@ -112,12 +157,15 @@ def annotate_with_arrow(ax, x, y, text, xytext=(10, 10), **kwargs):
 
 
 def finalize_figure(fig, suptitle=None, rect=None):
-    """Apply final layout adjustments."""
+    """Apply final layout adjustments.
+
+    Constrained layout (enabled at figure creation) handles spacing; do NOT
+    call tight_layout here (incompatible with constrained_layout) and do not
+    rely on bbox_inches='tight' at save time (that changes the saved bounding
+    box rather than reserving real space).
+    """
     if suptitle:
         fig.suptitle(suptitle, fontsize=FONT_SIZE_SUP, fontweight='bold')
-    if rect is None:
-        rect = [0, 0.08, 1, 0.95] if suptitle else [0, 0.05, 1, 0.98]
-    fig.tight_layout(rect=rect)
     return fig
 
 
@@ -126,7 +174,7 @@ def save_figure(fig, path):
     dirname = os.path.dirname(path)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
-    fig.savefig(path, dpi=DPI, bbox_inches='tight')
+    fig.savefig(path, dpi=DPI)
     plt.close(fig)
     print(f"  Wrote {path}")
 

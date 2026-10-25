@@ -114,6 +114,46 @@ The following must be written to `data/prototype/metadata/frozen_model_settings.
 input during the first comparison.** Any later recalibration uses the held-out protocol in
 `docs/dynamic_stall_calibration_plan.md` and must be reported as a separate, post-hoc analysis.
 
+## 6. Finite-span calibration plan (pre-registered)
+
+The 2-D BEM model without finite-span correction over-predicts Ham's 1979 measured
+peak Cp. From `scripts/ham_finite_span_check.json` (stamp schema v2) and
+`scripts/finite_span_ablation.json` (stamp schema v2):
+
+- Default 2-D model (no tip loss): peak Cp = 0.4743 at TSR = 2.5, about +9 % above
+  Ham's measured band midpoint (0.435) and above Ham's 3D measured band of
+  [0.42, 0.45]. This is the documented 2-D upper-bound literature comparison,
+  **not** validation of the model against Ham's data.
+- Helmbold finite-span correction at Ham's geometry (AR = 4.49): peak Cp =
+  0.2939, undershooting Ham's measured band by ~32 %.
+- Finite-span ablation at Ham's geometry (AR = 4.49), from
+  `scripts/finite_span_ablation.json`:
+  - Neither (no correction): peak Cp = 0.4743
+  - Lift-loss only: peak Cp = 0.3026 (undershoots by ~34 %)
+  - Induced-drag only: peak Cp = 0.3463 (undershoots by ~23 %)
+  - Both (lift loss + induced drag): peak Cp = 0.2939 (undershoots by ~32 %)
+- Aspect-ratio scan at Ham geometry: peak Cp ranges from 0.233 at AR = 3.0 to
+  0.331 at AR = 6.0.
+
+Calibration rules (pre-registered):
+
+1. **At most one scalar may be calibrated**: either the finite-span lift-loss scale
+   or the induced-drag scale, but not both simultaneously.
+2. **Calibration set and held-out set must be disjoint**: fit on one set of cases
+   (e.g., a particular Reynolds number range or wind-speed range), hold out all
+   other cases (other Reynolds numbers, other geometries, prototype data when it
+   exists). The held-out set is never used to choose the fitted value.
+3. **Constants confounded with model-form error must not be calibrated against
+   the same transients**: `cm_scale`, `cd_add`, and `tau_rev` are entangled with
+   model-form error and must not be calibrated against the same transient data
+   that is used to assess finite-span error.
+4. **Acceptance criterion must be pre-registered**: before fitting, declare the
+   acceptance criterion (e.g., held-out RMSE < X % or bias within Y %). The fitted
+   value is recorded in `sharp_vawt/airfoil_polars/provenance.json` style
+   provenance with dataset, date, and held-out result.
+5. **Defaults do not change**: `sharp_vawt/config.py` defaults are not modified
+   until a calibrated value passes the pre-registered held-out criterion.
+
 ## 6. Model outputs to compare
 
 At each measured condition, run the frozen model with the measured wind speed and the measured load

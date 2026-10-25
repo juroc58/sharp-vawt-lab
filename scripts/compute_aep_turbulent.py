@@ -270,6 +270,7 @@ def main():
 
     data = {
         "turbulence": {"I": TURB_I, "L_m": TURB_L, "n_seeds": N_SEEDS},
+        "geometry": {"R": BASE["R"], "H": BASE["H"], "N": BASE["N"], "c": BASE["c"]},
         "wind": {"mean_U": U_MEAN, "k_weibull": K_WEIBULL,
                  "cut_in": CUT_IN, "cut_out": CUT_OUT,
                  "p_rated_W": float(p_rated),
@@ -282,8 +283,12 @@ def main():
             {
                 "U":              float(u),
                 "P_steady_W":     float(steady_by_u[u][1]),
+                "Cp_steady":      float(steady_by_u[u][2]),
                 "P_turb_mean_W":  float(turb_by_u[u][1]),
                 "P_turb_std_W":   float(turb_by_u[u][2]),
+                "Cp_turb_mean":   float(turb_by_u[u][3]),
+                "Cp_turb_std":    float(turb_by_u[u][4]),
+                "n_seeds":        int(turb_by_u[u][5]),
             }
             for u in common_u
         ],

@@ -121,3 +121,10 @@ opencode.json
 # Context files (local agent config)
 CLAUDE.md
 CONTEXT.md
+
+# Temporary AI repair/audit artifacts (root-level only)
+/AUDIT_FINDINGS.md
+/FINAL_REPAIR_STATUS.md
+/REVIEW_FIX_REPORT.md
+/repomix-output.xml
+/repomix-output.md

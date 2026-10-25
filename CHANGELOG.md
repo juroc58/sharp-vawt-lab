@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Finite-span calibration pre-registration in `docs/prototype_validation_plan.md`:
+  documents the 2-D model over-prediction of Ham's 1979 band (~+9% above midpoint
+  at Cp = 0.4743), finite-span undershoot across all variants (lift-only
+  Cp = 0.3026, induced-drag-only Cp = 0.3463, both Cp = 0.2939 vs measured band
+  0.40-0.45), and the calibration protocol: at most one scalar (lift-loss scale
+  OR induced-drag scale), calibration/held-out split by dataset, pre-registered
+  acceptance criterion, and defaults unchanged until held-out criteria are met.
+
+## [3.4.0] - 2026-10-24
+
+### Added
 - **Consolidation to one canonical physics implementation.** `sharp_vawt/engine.py`
   is now the sole `_kernel`, `CycloturbineSim`, and `create_sim_from_params`;
   `sharp_vawt/config.py` holds dataclasses/constants/validation only;

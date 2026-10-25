@@ -12,8 +12,7 @@ abstract: >-
 type: software
 authors:
   - name: juroc58
-version: 3.3.1
-date-released: "2026-10-20"
+version: 3.4.0
 license: MIT
 repository-code: "https://github.com/juroc58/sharp-vawt-lab"
 keywords:
