@@ -1,6 +1,8 @@
 """Polar generation, provenance and the aerosandbox shim."""
+import math
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -9,7 +11,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from scripts import gen_real_polars
+from scripts import check_polars, gen_real_polars
 
 
 def test_check_polars_flags_neuralfoil_cm_variant_artefacts():
@@ -82,3 +84,40 @@ def test_deep_stall_constants_are_named():
     assert cl == pytest.approx(0.0, abs=1e-9)
     assert cd == pytest.approx(gen_real_polars.DEEP_STALL_CD_AMP
                                + gen_real_polars.DEEP_STALL_CD_OFFSET)
+
+
+def _write_bad_polar(tmp_path: Path) -> Path:
+    """A polar whose Cm changes sign in the attached range."""
+    path = tmp_path / "polars_naca0012_Re_200000.csv"
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("alpha_deg,Cl,Cd,Cm_default,Cm_neuralfoil\n")
+        for a in range(-20, 21):
+            cl = 0.1 * a
+            cd = 0.02 + 0.01 * (a / 20) ** 2
+            cm = 0.01 * math.sin(math.radians(2 * a))  # sign changes in attached range
+            fh.write(f"{a},{cl},{cd},{cm},{cm}\n")
+    return path
+
+
+def test_check_polars_default_is_report_only(tmp_path):
+    """Default behaviour publishes warnings without failing (report only)."""
+    bad = _write_bad_polar(tmp_path)
+    rc = check_polars.main(["--polar-glob", str(bad)])
+    assert rc == 0
+
+
+def test_check_polars_fail_on_warnings_exits_nonzero(tmp_path):
+    """--fail-on-warnings exits non-zero when a polar raises a warning."""
+    bad = _write_bad_polar(tmp_path)
+    rc = check_polars.main(["--polar-glob", str(bad), "--fail-on-warnings"])
+    assert rc != 0
+
+
+def test_check_polars_fail_on_warnings_exits_zero_when_clean(tmp_path):
+    """--fail-on-warnings exits zero when no polar raises a warning."""
+    import glob as _glob
+    good = sorted(_glob.glob(
+        os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "naca0012", "*.csv")))
+    assert good, "committed default polars must exist"
+    rc = check_polars.main(["--polar-glob", good[0], "--fail-on-warnings"])
+    assert rc == 0

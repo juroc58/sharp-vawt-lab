@@ -34,13 +34,14 @@ from scripts.stamp import make_stamp
 
 REQUIRED_TEXT = [
     "run_id", "date_utc", "operator", "rotor_id", "geometry_id",
-    "generator_model", "drivetrain_efficiency_assumption",
+    "generator_model",
 ]
 REQUIRED_NUMERIC = [
     "wind_speed_mps", "wind_speed_uncertainty_mps",
     "rpm", "rpm_uncertainty",
     "electrical_power_W", "electrical_power_uncertainty_W",
     "load_ohms",
+    "drivetrain_efficiency_assumption",
     "air_density_kgm3",
     "temperature_C", "pressure_hPa", "humidity_percent",
 ]
@@ -96,15 +97,19 @@ def process_row(row: dict[str, str], geo: dict[str, Any]) -> dict[str, Any]:
             raise SchemaError(f"{row.get('run_id', '?')}: missing required text field {key!r}")
 
     vals = {key: _num(row, key) for key in REQUIRED_NUMERIC}
-    eta = vals["drivetrain_efficiency_assumption"] = _num(row, "drivetrain_efficiency_assumption")
+    eta = vals["drivetrain_efficiency_assumption"]
+    if not math.isfinite(eta):
+        raise SchemaError(f"{row['run_id']}: drivetrain efficiency must be finite")
     if not (0.0 < eta <= 1.0):
         raise SchemaError(f"{row['run_id']}: drivetrain efficiency must be in (0, 1]")
+
+    for key, value in vals.items():
+        if not math.isfinite(value):
+            raise SchemaError(f"{row['run_id']}: {key} must be finite")
 
     for key in ("wind_speed_mps", "wind_speed_uncertainty_mps", "rpm", "rpm_uncertainty",
                 "electrical_power_W", "electrical_power_uncertainty_W",
                 "air_density_kgm3"):
-        if not math.isfinite(vals[key]):
-            raise SchemaError(f"{row['run_id']}: {key} must be finite")
         if vals[key] < 0.0:
             raise SchemaError(f"{row['run_id']}: {key} must be non-negative")
 
@@ -116,8 +121,11 @@ def process_row(row: dict[str, str], geo: dict[str, Any]) -> dict[str, Any]:
     uP_elec = vals["electrical_power_uncertainty_W"]
     rho = vals["air_density_kgm3"]
     urho = _num(row, "air_density_uncertainty_kgm3", required=False)
-    if not math.isfinite(urho):
+    if math.isnan(urho):
         urho = 0.0
+    elif not math.isfinite(urho) or urho < 0.0:
+        raise SchemaError(
+            f"{row['run_id']}: air_density_uncertainty_kgm3 must be finite and non-negative")
 
     if U == 0.0:
         raise SchemaError(f"{row['run_id']}: wind speed is zero; TSR undefined")

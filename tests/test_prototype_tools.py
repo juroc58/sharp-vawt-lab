@@ -7,6 +7,7 @@ label synthetic data as validation.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import subprocess
 import sys
@@ -19,7 +20,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts import import_prototype_data as imp
-from scripts.compare_prototype import evaluate_criteria
+from scripts.compare_prototype import (
+    SettingsError,
+    evaluate_criteria,
+    predict_row,
+    resolve_settings,
+)
 
 GEOMETRY = {
     "geometry_id": "TEST",
@@ -72,6 +78,109 @@ def _write_formats(tmp_path: Path):
     return geo
 
 
+def _polar_hashes() -> dict[str, str]:
+    polar_dir = ROOT / "sharp_vawt" / "airfoil_polars" / "naca0012"
+    return {
+        p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(polar_dir.glob("*.csv"))
+    }
+
+
+def _make_settings(
+    geometry_path: Path,
+    *,
+    status: str = "FROZEN",
+    model: dict | None = None,
+    experimental: dict | None = None,
+    acceptance: dict | None = None,
+    provenance: dict | None = None,
+    operational_limits: dict | None = None,
+) -> dict:
+    """A complete, valid frozen-settings object for synthetic tooling tests."""
+    frozen_model = {
+        "polar_dir": "airfoil_polars/naca0012",
+        "polar_variant": "neuralfoil",
+        "use_dynamic_stall": True,
+        "ds_Tf": 3.0, "ds_Tv": 6.0, "ds_Ta": 0.1,
+        "ds_Kv": 0.5, "ds_Knc": 1.0,
+        "use_dmst": True, "use_dynamic_inflow": True,
+        "tau_rev": 0.1, "a_fix": 0.2,
+        "use_tip_loss": True, "tip_loss_multiplier": 1.0,
+        "tip_loss_floor_override": 0.0,
+        "e_osw": 0.9, "ind_drag_scale": 1.0,
+        "cd_add": 0.002, "cm_scale": 1.0, "c_scale_override": 0.0,
+        "use_flow_curvature": True,
+        "balance": 0, "bias_deg": 0.0,
+        "win_deg": 45.0, "wstop": 300.0,
+        "cb": 2e-5, "kc": 0.0, "mu_c": 3e-4, "r_bearing": 0.002,
+        "prescribe_pitch": False,
+        "dt": 2e-4, "T_max_s": 20.0, "stride": 5, "n_rev_fixed": 16,
+        "w0_frac": 0.9, "psi0_deg": 0.0, "seed": 0,
+        "turb_I": 0.0, "turb_L": 30.0, "turb_model": "dryden",
+        "gust_g": 0.0, "gust_t0": 0.0, "gust_tg": 0.0,
+        "load_policy": "quadratic_k_load", "k_load": 0.0025,
+        "drivetrain_efficiency": 0.9,
+    }
+    exp = {
+        "wind_speed": "measurement_row",
+        "air_density": "measurement_row",
+        "efficiency_policy": "row_assumption",
+    }
+    acc = {
+        "mean_rel_cp_max": 0.15,
+        "rmse_cp_max": 0.03,
+        "mean_rel_rpm_max": 0.10,
+        "abs_bias_cp_max": 0.02,
+        "coverage_min": 0.70,
+        "min_repeats_per_condition": 3,
+        "scenario_band": {
+            "available": True,
+            "cp_half_width": 0.02,
+            "statistic": "pre-registered half-width of the declared model scenario range",
+            "provenance": "synthetic test fixture; not an experimental uncertainty",
+            "condition_dependent": False,
+            "scalar_approximation_justification": None,
+            "reason": None,
+        },
+    }
+    prov = {
+        "geometry_id": GEOMETRY["geometry_id"],
+        "geometry_sha256": hashlib.sha256(geometry_path.read_bytes()).hexdigest(),
+        "polar_hashes": _polar_hashes(),
+        "frozen_at_utc": "2026-10-24T00:00:00+00:00",
+        "frozen_by": "tests",
+        "code_commit": "0" * 40,
+        "stamp_schema_version": "2",
+        "notes": "synthetic test fixture",
+    }
+    if model:
+        frozen_model.update(model)
+    if experimental:
+        exp.update(experimental)
+    if acceptance:
+        acc.update(acceptance)
+    if provenance:
+        prov.update(provenance)
+    return {
+        "schema_version": 1,
+        "status": status,
+        "instructions": "synthetic test fixture",
+        "frozen_model": frozen_model,
+        "experimental_inputs": exp,
+        "acceptance": acc,
+        "provenance": prov,
+        "operational_limits": operational_limits,
+    }
+
+
+def _resolved(tmp_path: Path | None = None, **kwargs):
+    if tmp_path is None:
+        import tempfile as _tf
+        tmp_path = Path(_tf.mkdtemp())
+    geo = _write_formats(tmp_path)
+    return resolve_settings(_make_settings(geo, **kwargs), geo), geo
+
+
 def test_import_valid_rows_infers_and_keeps_exclusions(tmp_path):
     geo = _write_formats(tmp_path)
     raw = tmp_path / "raw.csv"
@@ -122,13 +231,33 @@ def test_import_rejects_duplicate_run_id(tmp_path):
                   "--out", str(tmp_path / "out.csv")])
 
 
-def test_import_rejects_invalid_efficiency(tmp_path):
+def test_efficiency_is_a_numeric_schema_field():
+    """The efficiency assumption is numeric, not duplicated text validation."""
+    assert "drivetrain_efficiency_assumption" in imp.REQUIRED_NUMERIC
+    assert "drivetrain_efficiency_assumption" not in imp.REQUIRED_TEXT
+
+
+@pytest.mark.parametrize("value", ["", "abc", "nan", "inf", "0", "-0.2", "1.5"])
+def test_import_rejects_invalid_efficiency(tmp_path, value):
     geo = _write_formats(tmp_path)
     raw = tmp_path / "raw.csv"
-    _write_csv(raw, [_row(drivetrain_efficiency_assumption="1.5")])
+    _write_csv(raw, [_row(drivetrain_efficiency_assumption=value)])
     with pytest.raises(imp.SchemaError, match="efficiency"):
         imp.main(["--input", str(raw), "--geometry", str(geo),
                   "--out", str(tmp_path / "out.csv")])
+
+
+def test_import_accepts_valid_efficiency_and_derives_shaft_power(tmp_path):
+    geo = _write_formats(tmp_path)
+    raw = tmp_path / "raw.csv"
+    _write_csv(raw, [_row(drivetrain_efficiency_assumption="0.5")])
+    out = tmp_path / "out.csv"
+    assert imp.main(["--input", str(raw), "--geometry", str(geo),
+                     "--out", str(out)]) == 0
+    with open(out, newline="", encoding="utf-8") as fh:
+        row = next(csv.DictReader(fh))
+    # 30 W electrical at eta = 0.5 -> 60 W shaft.
+    assert float(row["shaft_power_W"]) == pytest.approx(60.0)
 
 
 def test_import_rejects_measured_torque_without_uncertainty(tmp_path):
@@ -154,54 +283,165 @@ def _criterion_rows(pred_cp=0.30, pred_rpm=250.0, measured_cp=0.30,
     return rows
 
 
-FROZEN = {"status": "FROZEN", "model_scenario_band_cp": 0.02}
+def test_resolve_settings_rejects_unknown_keys(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["frozen_model"]["nonexistent_setting"] = 1
+    with pytest.raises(SettingsError, match="unknown key"):
+        resolve_settings(bad, geo)
 
 
-def test_criteria_pass_on_measured_perfect_agreement():
+def test_resolve_settings_rejects_missing_required_model_field(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["frozen_model"].pop("drivetrain_efficiency")
+    with pytest.raises(SettingsError, match="drivetrain_efficiency"):
+        resolve_settings(bad, geo)
+
+
+def test_resolve_settings_rejects_invalid_efficiency_range(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["frozen_model"]["drivetrain_efficiency"] = 1.5
+    with pytest.raises(SettingsError, match="drivetrain_efficiency"):
+        resolve_settings(bad, geo)
+    bad = dict(_make_settings(geo))
+    bad["frozen_model"]["drivetrain_efficiency"] = 0.0
+    with pytest.raises(SettingsError, match="drivetrain_efficiency"):
+        resolve_settings(bad, geo)
+
+
+def test_resolve_settings_rejects_frozen_wind_speed(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["experimental_inputs"]["wind_speed"] = "frozen_8mps"
+    with pytest.raises(SettingsError, match="measurement_row"):
+        resolve_settings(bad, geo)
+
+
+def test_resolve_settings_rejects_condition_dependent_band_without_justification(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["acceptance"]["scenario_band"] = {
+        "available": True, "cp_half_width": 0.02,
+        "statistic": "pre-registered half-width",
+        "provenance": "synthetic fixture",
+        "condition_dependent": True,
+        "scalar_approximation_justification": None,
+        "reason": None,
+    }
+    with pytest.raises(SettingsError, match="justification"):
+        resolve_settings(bad, geo)
+
+
+def test_resolve_settings_accepts_valid_band(tmp_path):
+    _ctx, _geo = _resolved(tmp_path)
+    assert _ctx.scenario_band["available"] is True
+    assert _ctx.scenario_band["cp_half_width"] == 0.02
+
+
+def test_evaluate_criteria_pass_on_measured_perfect_agreement(tmp_path):
+    ctx, _geo = _resolved(tmp_path)
     status, metrics, blockers = evaluate_criteria(
-        _criterion_rows(), FROZEN, "measured")
+        _criterion_rows(), ctx, "measured")
     assert status == "validation_criteria_met", blockers
     assert metrics["criteria"]["min_repeats"]
     assert metrics["coverage"] == 1.0
 
 
-def test_synthetic_data_never_validates_even_with_perfect_agreement():
+def test_synthetic_data_never_validates_even_with_perfect_agreement(tmp_path):
+    ctx, _geo = _resolved(tmp_path)
     status, _metrics, blockers = evaluate_criteria(
-        _criterion_rows(), FROZEN, "synthetic")
+        _criterion_rows(), ctx, "synthetic")
     assert status == "not_yet_available"
     assert any("synthetic" in b for b in blockers)
 
 
-def test_unfrozen_settings_never_validate():
+def test_unfrozen_settings_never_validate(tmp_path):
+    ctx, _geo = _resolved(tmp_path, status="TEMPLATE")
     status, _metrics, blockers = evaluate_criteria(
-        _criterion_rows(), {"status": "TEMPLATE"}, "measured")
+        _criterion_rows(), ctx, "measured")
     assert status == "not_yet_available"
     assert any("FROZEN" in b for b in blockers)
 
 
-def test_failed_criterion_is_discrepancy_not_validation():
+def test_failed_criterion_is_discrepancy_not_validation(tmp_path):
+    ctx, _geo = _resolved(tmp_path)
     status, metrics, blockers = evaluate_criteria(
-        _criterion_rows(pred_cp=0.40), FROZEN, "measured")
+        _criterion_rows(pred_cp=0.40), ctx, "measured")
     assert status == "discrepancy"
     assert not blockers
     assert not metrics["criteria"]["mean_rel_cp"]
 
 
-def test_too_few_repeats_fails():
+def test_too_few_repeats_fails(tmp_path):
+    ctx, _geo = _resolved(tmp_path)
     status, metrics, _ = evaluate_criteria(
-        _criterion_rows(repeat=1), FROZEN, "measured")
+        _criterion_rows(repeat=1), ctx, "measured")
     assert status == "discrepancy"
     assert not metrics["criteria"]["min_repeats"]
 
 
+def test_unavailable_band_blocks_acceptance_but_allows_descriptive_comparison(tmp_path):
+    ctx, _geo = _resolved(
+        tmp_path,
+        acceptance={"scenario_band": {
+            "available": False, "cp_half_width": None, "statistic": None,
+            "provenance": None, "condition_dependent": False,
+            "scalar_approximation_justification": None,
+            "reason": "no band pre-registered before data were examined"},
+        })
+    status, metrics, blockers = evaluate_criteria(
+        _criterion_rows(), ctx, "measured")
+    assert status == "not_yet_available", blockers
+    assert any("band unavailable" in b.lower() for b in blockers)
+    assert metrics["coverage_status"] == "unavailable"
+    assert metrics["coverage"] is None
+
+
+def test_zero_and_negative_band_are_invalid(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    for width in (0.0, -0.01):
+        bad = dict(_make_settings(geo))
+        bad["acceptance"]["scenario_band"] = {
+            "available": True, "cp_half_width": width,
+            "statistic": "half-width", "provenance": "fixture",
+            "condition_dependent": False,
+            "scalar_approximation_justification": None, "reason": None,
+        }
+        with pytest.raises(SettingsError, match="cp_half_width"):
+            resolve_settings(bad, geo)
+
+
+def test_nan_band_is_rejected(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["acceptance"]["scenario_band"] = {
+        "available": True, "cp_half_width": float("nan"),
+        "statistic": "half-width", "provenance": "fixture",
+        "condition_dependent": False,
+        "scalar_approximation_justification": None, "reason": None,
+    }
+    with pytest.raises(SettingsError, match="cp_half_width"):
+        resolve_settings(bad, geo)
+
+
+def test_empty_reason_when_band_unavailable_is_rejected(tmp_path):
+    _ctx, geo = _resolved(tmp_path)
+    bad = dict(_make_settings(geo))
+    bad["acceptance"]["scenario_band"] = {
+        "available": False, "cp_half_width": None, "statistic": None,
+        "provenance": None, "condition_dependent": False,
+        "scalar_approximation_justification": None, "reason": "",
+    }
+    with pytest.raises(SettingsError, match="reason"):
+        resolve_settings(bad, geo)
+
+
 def test_compare_cli_keeps_every_row_and_never_validates_synthetic(tmp_path):
-    geo = _write_formats(tmp_path)
-    settings = dict(FROZEN, geometry_id="TEST", k_load=1e-5, T_max_s=1.5,
-                    stride=20, use_dynamic_stall=False,
-                    use_flow_curvature=False, use_tip_loss=False,
-                    use_dmst=False, polar_variant="neuralfoil")
+    ctx, geo = _resolved(tmp_path)
     settings_path = tmp_path / "settings.json"
-    settings_path.write_text(json.dumps(settings), encoding="utf-8")
+    settings_path.write_text(json.dumps(ctx.settings), encoding="utf-8")
     processed = tmp_path / "processed.csv"
     fields = ["run_id", "wind_speed_mps", "rpm", "cp", "tsr", "load_ohms",
               "torque_used_Nm", "torque_source", "drivetrain_efficiency_assumption",
@@ -235,3 +475,16 @@ def test_compare_cli_keeps_every_row_and_never_validates_synthetic(tmp_path):
     assert data["status"] == "not_yet_available"
     assert len(data["rows"]) == 2
     assert data["rows"][1]["accepted"] is False
+    assert "effective_model_config" in data
+    assert "effective_model_config_sha256" in data
+
+
+def test_predict_row_uses_efficiency_policy_row_assumption():
+    ctx, _geo = _resolved()
+    assert ctx.efficiency_policy == "row_assumption"
+    pred = predict_row(
+        {"wind_speed_mps": 8.0, "tsr": 1.96,
+         "drivetrain_efficiency_assumption": 0.5,
+         "air_density_kgm3": 1.225}, ctx)
+    assert pred["drivetrain_efficiency_used"] == pytest.approx(0.5)
+    assert pred["drivetrain_efficiency_source"] == "row_assumption"

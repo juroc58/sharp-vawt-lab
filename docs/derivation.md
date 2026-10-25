@@ -579,10 +579,28 @@ $$
 \tag{10.1}
 $$
 
-with $\Delta E_{\text{kin}}$ the change in kinetic plus elastic energy of the
-coupled rotor + pitch system between $t=0$ and $t=T$. In passive mode the
-residual is a genuine diagnostic and should be below 2 %; in prescribed-pitch
-mode the actuator work is unaccounted for and the residual is not meaningful.
+with $\Delta E_{\text{kin}} = E_1 - E_0$ the change in kinetic plus elastic
+energy of the coupled rotor + pitch system between $t=0$ and $t=T$.
+
+**Normalisation.** The code reports the absolute closure error in joules
+together with two dimensionless ratios:
+
+1. the historical normalisation above, with scale
+   $\max(|E_{\text{in}}|, |E_{\text{shaft}}| + |E_{\text{arm}}|)$;
+2. a throughput-based ratio whose scale is the sum of the absolute values of
+   every channel, $|E_{\text{in}}| + |E_{\text{shaft}}| + |E_{\text{arm}}| +
+   |E_{\text{vis}}| + |E_{\text{cou}}| + |E_{\text{stop}}| + |\Delta E_{\text{kin}}|$.
+
+If a chosen scale is below $10^{-9}$ J the corresponding ratio is reported as
+undefined rather than divided by an arbitrary epsilon.  The throughput ratio is
+never used to hide an imbalance: it is smaller than or equal to the primary
+ratio whenever both are defined, so an identical absolute imbalance can look
+smaller under throughput normalisation and must not be compared with the 2 %
+threshold derived for the primary scale.
+
+In passive mode the residual is a genuine diagnostic and should be below
+2 %; in prescribed-pitch mode the actuator work is unaccounted for and the
+residual is not meaningful (the ledger is marked invalid).
 
 ---
 
@@ -711,6 +729,53 @@ Additional known-good behaviours:
   used $-\psi$ instead of $+\psi$; this reversed the direction of the
   aerodynamic pitch moment and destroyed the passive mechanism. The
   `scripts/diag_qa.py` test verifies the correct sign on every build.
+
+---
+
+## 13. Output columns, units and time levels
+
+The simulator writes one row per integration stride.  Raw columns use the
+names and units below; the summary statistics convert angular columns to
+degrees and document that conversion.
+
+| Column | Unit | Meaning |
+|---|---|---|
+| `t` | s | time at the start of the integration step |
+| `theta` | rad | rotor azimuth angle |
+| `omega` | rad/s | rotor angular velocity |
+| `psi_rad` | rad | blade-0 rocking/pitch angle about its pivot, relative to the arm nominal orientation |
+| `pitch_rad` | rad | total geometric chord pitch $\psi + \delta$ of blade 0 relative to the rotor radial (spanwise) line |
+| `aoa_rad` | rad | blade-0 angle of attack used by the aerodynamic lookup |
+| `torque_total` | N m | sum of blade aerodynamic torques about the rotor axis, excluding the Cm moment |
+| `Q_shaft` | N m | shaft/load torque delivered while holding the rotor speed |
+| `a_ind` | - | blade-0 axial induction factor |
+| `Fx_total` | N | sum of blade force components in the wind direction |
+| `P_aero` | W | aerodynamic power into the rotor plus the pitch degrees of freedom |
+| `psidot_0` | rad/s | blade-0 rocking pitch angular velocity |
+
+Reference frames:
+
+* $\psi$ is the rocking angle of the blade about its pitch pivot, measured
+  relative to the arm's nominal orientation (the orientation the blade would
+  have at zero pitch).  Positive $\psi$ means nose-out; see the sign
+  convention in section 0.
+* $\delta = \operatorname{atan2}(s_t, R_p + s_r)$ with
+  $(s_t, s_r) = (-x_q \cos\psi - a_r \sin\psi,\; -x_q \sin\psi + a_r \cos\psi)$
+  is the geometric offset of the quarter chord from the rotor radial line.
+* `psi_rad + delta`, written out as `pitch_rad`, is therefore the total
+  blade-chord pitch angle relative to the rotor radial direction, i.e. the
+  blade's geometric pitch setting.  It differs from `psi_rad` by design;
+  neither is "wrong", and `psi_rad` must not be substituted for `pitch_rad`.
+
+All columns are sampled from the state at the **start** of the integration
+step (before the pitch/position/velocity updates), so a single row mixes no
+integration time levels: `t`, `theta`, `omega`, `psi` and `aoa` are
+mutually consistent at the pre-update state.  Post-update values appear in
+the next row.
+
+Summary statistics (`pitch_min/max/rms`, `aoa_max`) are computed over the
+last four revolutions and reported in degrees; their unit is documented in
+the result metadata (`pitch_summary_units = "deg"`).
 
 ---
 

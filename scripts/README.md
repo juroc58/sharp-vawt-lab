@@ -29,7 +29,15 @@
   | `tip_loss_scan.json` | `scan_tip_loss.py` (deterministic multiplier sweep) |
   | `optimization_passive.json` | `optimize_passive.py` |
   | `optimization_scaleup.json` | `optimize_scaleup.py` |
-  | `optimization_actuator.json` | **not** regenerated: a hand-verified `reference_design_point` snapshot (see its `_note`). Running `optimize_actuator.py` writes a different schema without `_note`/`kind`/`verified`. |
+  | `optimization_actuator.json` | `optimize_actuator.py`. The JSON is a real optimiser output
+    (`param_names`, `bounds`, `best_params`, `best_cp`, `de_time_s`, `local_time_s`,
+    `history`) stamped by `scripts/stamp.py`, not a hand-verified reference design.
+    The stored `best_cp` is 0.4969482961863245 at the committed polar tables and
+    seed 42. Regeneration runs a seeded differential-evolution search followed by a
+    local refinement and takes on the order of ten minutes; it is **not** a cheap
+    deterministic re-verification of the stored parameters. See
+    "Actuator provenance" below for a deterministic verification command and the
+    exact reproduction command. |
   | `uncertainty_results.json` | `uncertainty.py` |
   | `spearman_results.json` | `spearman_sensitivity.py` |
 
@@ -37,6 +45,52 @@
   each README claim without re-running the simulations.  If a script's
   outputs change (e.g. after a physics update), regenerate its JSON and
   commit the diff together with the README update.
+
+## Actuator provenance: `scripts/optimization_actuator.json`
+
+This file is the output of `scripts/optimize_actuator.py`: a seeded
+(differential-evolution + local refinement) optimisation over a prescribed
+Fourier pitch law.  Its top-level keys are
+`stamp, param_names, bounds, best_params, best_cp, de_time_s, local_time_s,
+history`; it has no `_note`, `kind`, or `verified` field, so it is not a
+hand-verified reference design.
+
+**Reproduction (expensive global search):**
+```bash
+python3 scripts/optimize_actuator.py
+```
+writes `scripts/optimization_actuator.json` with stamp schema v2.  The
+search is seeded (`seed=42`) but is not cheap; do not re-run it merely to
+verify the stored design.
+
+**Deterministic verification (recommended):**
+```bash
+python3 scripts/optimize_actuator.py --verify-stored
+```
+re-evaluates the stored `best_params` with the canonical engine
+(`sharp_vawt.create_sim_from_params`) and prints `Cp`, `TSR_eq`, `RPM`,
+and the energy-balance residual without launching a new global search.
+The stored design is considered still representative only if the verified
+`Cp` matches `best_cp` within a small tolerance; a mismatch is a blocker
+and means the result JSON is stale relative to the physics core.
+
+`scripts/stamp.py` maps `optimization_actuator.json` to
+`scripts/optimize_actuator.py`; the stamp covers `vawt_presets.py` plus
+the optional `scripts/optimizer_overrides.json` when it exists, so any
+source, polar, preset, or override change invalidates the stored stamp.
+
+**`scripts/optimizer_overrides.json` (optional input).**
+`scripts/optimize_actuator.py` reads `scripts/optimizer_overrides.json` if
+it exists and merges its entries over `DEFAULT_BASE` before the search.
+It is an input override, not a generated result, and is deliberately
+absent from the repository.  If you create it, it must contain only keys
+the core accepts (see `create_sim_from_params`); unknown keys are
+rejected.  Because it affects the optimisation result, it is included in
+the freshness dependency hash when present.
+
+Consumers such as `scripts/build_readme.py` read only
+`optimization_actuator.json["best_cp"]` for the prescribed-pitch upper
+bound; the verified Cp belongs to the deterministic check above.
 
 ## Design points used across the scripts
 

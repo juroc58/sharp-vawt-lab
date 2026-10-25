@@ -56,8 +56,9 @@ SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/spearman_sensitivity.py": "2.0.0",
     "scripts/uncertainty.py": "2.0.0",
     "scripts/import_prototype_data.py": "1.0.0",
-    "scripts/compare_prototype.py": "1.0.0",
-    "scripts/calibrate_dynamic_stall.py": "1.0.0",
+    "scripts/compare_prototype.py": "1.1.0",
+    "scripts/calibrate_dynamic_stall.py": "1.1.0",
+    "scripts/validate_ds_off.py": "1.1.0",
 }
 
 _GENERIC_VERSIONS = {"", "v1.0", "1.0", "1.0.0", "v1"}
@@ -359,6 +360,7 @@ STAMP_CHECK_MAP: dict[str, str] = {
     "spearman_results.json": "scripts/spearman_sensitivity.py",
     "tip_loss_scan.json": "scripts/scan_tip_loss.py",
     "uncertainty_results.json": "scripts/uncertainty.py",
+    "validate_ds_off.json": "scripts/validate_ds_off.py",
 }
 
 

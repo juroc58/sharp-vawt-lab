@@ -30,8 +30,8 @@ from sharp_vawt.database import PolarDatabase
 from sharp_vawt.engine import _aero_coeffs
 
 # Canonical defaults (documented in docs/dynamic_stall_calibration_plan.md).
-# These are read here for the fit baseline; the actual defaults live in
-# sharp_vawt/config.py and must not be changed by this process.
+# These are read from sharp_vawt.config so the fit baseline cannot drift from
+# the production defaults; this process never changes them.
 _CALIBRATABLE = ("ds_Tf", "ds_Tv", "ds_Ta", "ds_Kv", "ds_Knc")
 
 BOUNDS: dict[str, tuple[float, float]] = {
@@ -42,9 +42,21 @@ BOUNDS: dict[str, tuple[float, float]] = {
     "ds_Knc": (0.0, 2.0),
 }
 
+_DEFAULT_AERO = cfg.AeroConfig()
 DEFAULTS: dict[str, float] = {
-    "ds_Tf": 3.0, "ds_Tv": 6.0, "ds_Ta": 0.1, "ds_Kv": 0.5, "ds_Knc": 1.0,
+    p: float(getattr(_DEFAULT_AERO, p)) for p in _CALIBRATABLE
 }
+
+
+def _identifiability(jac) -> tuple[float, bool]:
+    """Approximate Jacobian condition number and finite-identifiability flag."""
+    import numpy as np
+    try:
+        sv = np.linalg.svd(np.asarray(jac, dtype=float), compute_uv=False)
+        cond = float(sv[0] / max(sv[-1], 1e-300)) if sv.size else float("nan")
+    except Exception:  # noqa: BLE001 - SVD may fail on a degenerate Jacobian
+        return float("nan"), False
+    return cond, bool(math.isfinite(cond) and cond < 1e10)
 
 class CalibrationError(ValueError):
     pass
@@ -118,7 +130,6 @@ def _case_split(cases: dict[str, list[dict[str, float]]],
                 fraction: float,
                 cal: list[str] | None,
                 hold: list[str] | None) -> tuple[list[str], list[str]]:
-    import hashlib as _h
     ids = sorted(cases)
     if cal is not None and hold is not None:
         cal_set, hold_set = set(cal), set(hold)
@@ -131,7 +142,7 @@ def _case_split(cases: dict[str, list[dict[str, float]]],
         return sorted(cal_set), sorted(hold_set)
     cal_ids, hold_ids = [], []
     for cid in ids:
-        bucket = int(_h.sha256(cid.encode()).hexdigest(), 16) % 100
+        bucket = int(hashlib.sha256(cid.encode()).hexdigest(), 16) % 100
         (cal_ids if bucket < fraction * 100 else hold_ids).append(cid)
     return cal_ids, hold_ids
 
@@ -141,12 +152,22 @@ def _case_split(cases: dict[str, list[dict[str, float]]],
 # ---------------------------------------------------------------------------
 
 class ModelRunner:
-    """Evaluate the DS-enhanced aerodynamics over an alpha time series."""
+    """Evaluate the DS-enhanced aerodynamics over an alpha time series.
+
+    Uses the production aerodynamic routine with the same aerodynamic policy as
+    the rotor engine: the same packaged polars and variant, the same global
+    ``PolarDatabase.Cl_max`` clamp, the same ``cm_scale``, and the same
+    dynamic-stall on/off choice.  Rotor-only corrections (curvature, finite-span
+    lift loss, induced drag, added parasitic drag) are not applied: the input is
+    an externally imposed airfoil trace, not a rotating-blade element.
+    """
 
     def __init__(self):
-        self.pdb = PolarDatabase()  # packaged polars, resolved relative to package
-        # Static clmax per Re for clamping; reuse lookup output.
-        self.cla_re = self.pdb.cla_re
+        self.aero = cfg.AeroConfig()
+        self.pdb = PolarDatabase(self.aero.polar_dir, variant=self.aero.polar_variant)
+        self.clmax = self.pdb.Cl_max
+        self.cm_scale = self.aero.cm_scale
+        self.dyn = int(self.aero.use_dynamic_stall)
 
     def simulate(self, points: list[dict[str, float]], params: dict[str, float]) -> list[tuple[float, float, float]]:
         """Return per-step (Cl, Cd, Cm) predictions for one trace."""
@@ -159,22 +180,16 @@ class ModelRunner:
             t = pt["time"]
             dt = (t - prev_t) if prev_t is not None else 0.05 * pt["chord"] / max(pt["W"], 1e-3)
             prev_t = t
-            math.log(max(pt["Re"], 1e3))
             Cl, Cd, _Cl_nc, _f, Cm = _aero_coeffs(
                 ds, math.radians(pt["alpha"]), pt["W"], pt["chord"], dt, pt["Re"],
-                1,  # dyn: delayed-separation model
+                self.dyn,
                 p["ds_Tf"], p["ds_Tv"], p["ds_Ta"],
-                p["ds_Kv"], float(max(0.8, self._clmax_at(pt["Re"]))),
+                p["ds_Kv"], self.clmax,
                 self.pdb.logRe_grid, self.pdb.alpha_grid, self.pdb.cla_re,
-                self.pdb.Cl, self.pdb.Cd, self.pdb.Cm, 1.0,
+                self.pdb.Cl, self.pdb.Cd, self.pdb.Cm, self.cm_scale,
             )
             out.append((float(Cl), float(Cd), float(Cm)))
         return out
-
-    def _clmax_at(self, Re: float) -> float:
-        import numpy as np
-        lr = math.log10(max(Re, 1.0))
-        return float(np.interp(lr, np.log10(cfg._RE_PTS), cfg._CLMAX))
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +252,10 @@ def main(argv=None) -> int:
     invalid_fit = [p for p in args.fit if p not in BOUNDS]
     if invalid_fit:
         raise CalibrationError(f"unknown --fit parameter(s): {invalid_fit}")
+    if not args.fit:
+        raise CalibrationError("--fit must select at least one parameter")
+    if not 0.0 < args.calibration_fraction < 1.0:
+        raise CalibrationError("--calibration-fraction must lie strictly between 0 and 1")
 
     cases, cols = load_dataset(args.data)
     cal_ids, hold_ids = _case_split(cases, args.calibration_fraction,
@@ -275,15 +294,6 @@ def main(argv=None) -> int:
     held_defaults = rmse_for_params(runner, hold_ids, cases, defaults, fit_cm="cm" in cols)
     held_candidate = rmse_for_params(runner, hold_ids, cases, fitted, fit_cm="cm" in cols)
 
-    # Identifiability: approximate Jacobian condition number.
-    try:
-        J = res.jac
-        import numpy as np
-        sv = np.linalg.svd(J, compute_uv=False)
-        cond = float(sv[0] / max(sv[-1], 1e-300)) if sv.size else float("nan")
-    except Exception:  # noqa: BLE001 - SVD may fail on degenerate Jacobian
-        cond = float("nan")
-
     cm_present = "cm" in cols
     cl_imp = (held_defaults["cl"] - held_candidate["cl"]) / max(held_defaults["cl"], 1e-12)
     cd_imp = (held_defaults["cd"] - held_candidate["cd"]) / max(held_defaults["cd"], 1e-12)
@@ -294,11 +304,24 @@ def main(argv=None) -> int:
     inside_bounds = all(
         BOUNDS[p][0] * 1.001 < fitted[p] < BOUNDS[p][1] * 0.999 for p in args.fit
     )
-    identifiable = math.isfinite(cond) and cond < 1e10
+    cond, cond_ok = _identifiability(res.jac)
+
+    import numpy as np
+    try:
+        cov = np.linalg.inv(res.jac.T @ res.jac) * (
+            res.cost * 2 / max(len(res.fun) - len(res.x), 1))
+        intervals = {p: float(2.0 * math.sqrt(max(cov[i, i], 0.0)))
+                     for i, p in enumerate(args.fit)}
+    except Exception:  # noqa: BLE001 - covariance may be singular
+        intervals = {p: float("nan") for p in args.fit}
+    intervals_finite = all(math.isfinite(v) for v in intervals.values())
+    identifiable = bool(cond_ok and intervals_finite)
+    converged = bool(res.success)
 
     criteria = {
         "holdout_min_cases": len(hold_ids) >= 2,
         "holdout_min_samples": hold_samples >= 50,
+        "fit_converged": converged,
         "rmse_cl_threshold": bool(math.isfinite(held_candidate["cl"])) and held_candidate["cl"] <= 0.08,
         "rmse_cd_threshold": bool(math.isfinite(held_candidate["cd"])) and held_candidate["cd"] <= 0.06,
         "rmse_cm_threshold": (not cm_present) or (
@@ -311,20 +334,10 @@ def main(argv=None) -> int:
         "not_pinned": inside_bounds,
     }
 
-    all_met = bool(identifiable and inside_bounds and criteria["cl_improvement"]
-                   and criteria["cd_improvement"] and criteria["cl_threshold"] if False else
-                   all(v for v in criteria.values()))
+    all_met = all(criteria.values())
 
     calibration_claim_allowed = bool(args.provenance == "measured" and all_met)
     status = "calibrated" if calibration_claim_allowed else "not_calibrated"
-
-    import numpy as np
-    try:
-        cov = np.linalg.inv(res.jac.T @ res.jac) * (res.cost * 2 / max(len(res.fun) - len(res.x), 1))
-        intervals = {p: float(2.0 * math.sqrt(max(cov[i, i], 0.0)))
-                     for i, p in enumerate(args.fit)}
-    except Exception:  # noqa: BLE001 - covariance may be singular
-        intervals = {p: float("nan") for p in args.fit}
 
     report = {
         "status": status,
@@ -352,6 +365,9 @@ def main(argv=None) -> int:
         "heldout_rmse_candidate": held_candidate,
         "improvement_vs_defaults": {"cl": cl_imp, "cd": cd_imp, "cm": cm_imp},
         "cost": float(res.cost),
+        "fit_success": converged,
+        "fit_message": str(res.message),
+        "n_function_evaluations": int(res.nfev),
         "condition_number": cond,
         "intervals_95": intervals,
         "criteria": criteria,
@@ -359,7 +375,7 @@ def main(argv=None) -> int:
     }
 
     stamp = make_stamp("scripts/calibrate_dynamic_stall.py",
-                       script_version="1.0.0",
+                       script_version="1.1.0",
                        n=len(cases),
                        extra_files=[str(Path(args.data).resolve())],
                        extra_data={"provenance": args.provenance,

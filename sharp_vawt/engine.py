@@ -155,6 +155,17 @@ def _energy(w, psi, psd, N, M, xg, ar, Rp, Ip, J_hub, ks, kc, win):
 # =============================================================================
 
 @njit(cache=True)
+def _cm_moment(rho, W2, c, H, Cm):
+    """Pitch moment about the pitch pivot from the section moment coefficient [N m].
+
+    ``Q_Cm = 0.5 * rho * W^2 * c^2 * H * Cm``.  The dynamic pressure times the
+    blade planform area is ``0.5 * rho * W^2 * c * H``; the additional chord
+    factor comes from the pitching-moment coefficient reference length.
+    """
+    return 0.5 * rho * W2 * c * c * H * Cm
+
+
+@njit(cache=True)
 def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             win, ks, cs, cb, kc, mu_c, r_b, arm_k, k_load, free, w_init, psi0,
             prescribe, pp0, pp1, pp2, pp3, ppph, dmst, tau_rev, a_fix, dyn, Tf, Tv, Ta, Kv,
@@ -272,9 +283,9 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
             Fnt = q * Clnc * math.sin(pf)          # apparent-mass force, acts at mid-chord
             Fnr = q * Clnc * math.cos(pf)
 
-            # Pitch moment from Cm: Qa_cm = q * Cm * c
-            # q = 0.5 * rho * W2 * c * H already contains c * H, so multiply by c only
-            Qa_cm = q * Cm * c
+            # Pitch moment from Cm: Qa_cm = 0.5 * rho * W^2 * c^2 * H * Cm.
+            # q = 0.5 * rho * W2 * c * H already contains c * H, so multiply by c only.
+            Qa_cm = _cm_moment(rho, W2, c, H, Cm)
 
             xcp = (0.25 + 0.25 * (1.0 - wt)) * c - sp      # centre of pressure moves aft in stall
             stc = -xcp * cp_ - ar * sn_
@@ -363,8 +374,81 @@ def _kernel(U_arr, dt, stride, rho, R, Rp, N, c, H, ar, sp, M, xg, Ip, J_hub,
 # SIMULATION CLASS
 # =============================================================================
 
-OUT_COLS = ["t", "theta", "omega", "psi_0", "pitch_deg", "aoa_deg",
+OUT_COLS = ["t", "theta", "omega", "psi_rad", "pitch_rad", "aoa_rad",
             "torque_total", "Q_shaft", "a_ind", "Fx_total", "P_aero", "psidot_0"]
+
+# Every raw output column carries an explicit unit.  Angular columns are
+# radians: ``pitch_deg``/``aoa_deg`` used to name radians, which was misleading.
+OUT_UNITS = {
+    "t": "s",
+    "theta": "rad",
+    "omega": "rad/s",
+    "psi_rad": "rad",
+    "pitch_rad": "rad",
+    "aoa_rad": "rad",
+    "torque_total": "N m",
+    "Q_shaft": "N m",
+    "a_ind": "1",
+    "Fx_total": "N",
+    "P_aero": "W",
+    "psidot_0": "rad/s",
+}
+
+OUT_DESCRIPTIONS = {
+    "t": "time at the start of the integration step",
+    "theta": "rotor azimuth angle",
+    "omega": "rotor angular velocity",
+    "psi_rad": "blade-0 rocking pitch angle about its pivot, relative to the arm nominal orientation",
+    "pitch_rad": "total geometric chord pitch psi + delta of blade 0 relative to the rotor radial line",
+    "aoa_rad": "blade-0 angle of attack used by the aerodynamic lookup",
+    "torque_total": "sum of blade aerodynamic torques about the rotor axis excluding the Cm moment",
+    "Q_shaft": "shaft/load torque delivered while holding the rotor speed",
+    "a_ind": "blade-0 axial induction factor",
+    "Fx_total": "sum of blade force components in the wind direction",
+    "P_aero": "aerodynamic power into the rotor plus pitch degrees of freedom",
+    "psidot_0": "blade-0 rocking pitch angular velocity",
+}
+
+# Documented normalisation of the energy-ledger residual.  The throughput form
+# is reported separately; it is never a substitute for the absolute error.
+ENERGY_BALANCE_SCALE_BASIS = "max(|E_in|, |E_shaft| + |E_arm|)"
+ENERGY_BALANCE_THROUGHPUT_BASIS = (
+    "sum(|E_in|, |E_shaft|, |E_arm|, |E_vis|, |E_cou|, |E_stop|, |dE_stored|)")
+ENERGY_BALANCE_NEAR_ZERO_J = 1e-9
+
+
+def _energy_diagnostics(led) -> dict[str, float | bool | str]:
+    """Return absolute and normalised energy-closure diagnostics from a ledger.
+
+    ``led`` is ``[E_in, E_shaft, E_arm, E_vis, E_cou, E_stop, E0, E1]`` in
+    joules.  The historical ``energy_balance`` normalisation is preserved for
+    compatibility.  The absolute closure error is always reported in joules,
+    and a separately named throughput-based ratio is also provided.  When the
+    chosen denominator is below ``ENERGY_BALANCE_NEAR_ZERO_J`` the ratio is
+    undefined (NaN) rather than dividing by an arbitrary epsilon.
+    """
+    E_in, E_sh, E_arm, E_vis, E_cou, E_stop, E0, E1 = (float(x) for x in led)
+    d_stored = E1 - E0
+    resid_abs = E_in - (E_sh + E_arm + E_vis + E_cou + E_stop + d_stored)
+    primary_scale = max(abs(E_in), abs(E_sh) + abs(E_arm), ENERGY_BALANCE_NEAR_ZERO_J)
+    primary_defined = primary_scale > ENERGY_BALANCE_NEAR_ZERO_J
+    throughput = (
+        abs(E_in) + abs(E_sh) + abs(E_arm) + abs(E_vis)
+        + abs(E_cou) + abs(E_stop) + abs(d_stored)
+    )
+    throughput_defined = throughput > ENERGY_BALANCE_NEAR_ZERO_J
+    return {
+        "energy_balance": resid_abs / primary_scale if primary_defined else float("nan"),
+        "energy_balance_abs_J": resid_abs,
+        "energy_balance_scale_J": primary_scale,
+        "energy_balance_scale_basis": ENERGY_BALANCE_SCALE_BASIS,
+        "energy_balance_defined": primary_defined,
+        "energy_balance_throughput": (
+            resid_abs / throughput if throughput_defined else float("nan")),
+        "energy_balance_throughput_defined": throughput_defined,
+        "energy_balance_throughput_basis": ENERGY_BALANCE_THROUGHPUT_BASIS,
+        "d_stored_J": d_stored,
+    }
 
 
 class CycloturbineSim:
@@ -574,11 +658,10 @@ class CycloturbineSim:
     def _post(self, out, led, t_arr, U_arr, store_history):
         g, s, ae = self.geo, self.sim, self.aero
         E_in, E_sh, E_arm, E_vis, E_cou, E_stop, E0, E1 = led
-        resid_abs = E_in - (E_sh + E_arm + E_vis + E_cou + E_stop + (E1 - E0))
-        scale = max(abs(E_in), abs(E_sh) + abs(E_arm), 1e-9)
-        resid = resid_abs / scale
+        diag = _energy_diagnostics(led)
+        resid = float(diag["energy_balance"])
         valid = not ae.prescribe_pitch      # prescribed pitch: actuator work is not in the ledger
-        if valid and abs(resid) > 0.02:
+        if valid and diag["energy_balance_defined"] and abs(resid) > 0.02:
             warnings.warn(f"Energy balance residual {resid * 100:.2f}% (dt too large or stiff stops?)")
 
         nrev = 4
@@ -594,7 +677,8 @@ class CycloturbineSim:
         steady = bool(abs(w[half:].mean() - w[:half].mean()) < 0.01 * max(w.mean(), 1e-9)) if half else True
         beta = np.degrees(out[m, 4])
         res = {
-            "out": out, "columns": OUT_COLS, "t": t_arr, "U": U_arr,
+            "out": out, "columns": OUT_COLS, "column_units": OUT_UNITS,
+            "column_descriptions": OUT_DESCRIPTIONS, "t": t_arr, "U": U_arr,
             "cp": cp, "cq": cp / max(tsr_eq, 1e-3), "tsr_eq": tsr_eq, "rpm": float(w.mean() * 60.0 / TWO_PI),
             "steady": steady,
             "pitch_min": float(beta.min()), "pitch_max": float(beta.max()), "pitch_rms": float(beta.std()),
@@ -602,7 +686,19 @@ class CycloturbineSim:
             "stop_pct": float(100.0 * np.mean(np.abs(out[m, 3]) > 0.98 * self.win)) if self.win > 0 else 100.0,
             "pitch_freq_ratio": float(self.fn_ratio),
             "ct": float(out[m, 9].mean() / (0.5 * s.rho * s.U ** 2 * 2.0 * g.R * g.H)),
-            "energy_balance": float(resid), "energy_balance_valid": valid,
+            "energy_balance": resid,
+            "energy_balance_abs_J": float(diag["energy_balance_abs_J"]),
+            "energy_balance_scale_J": float(diag["energy_balance_scale_J"]),
+            "energy_balance_scale_basis": diag["energy_balance_scale_basis"],
+            "energy_balance_defined": bool(diag["energy_balance_defined"]),
+            "energy_balance_throughput": float(diag["energy_balance_throughput"]),
+            "energy_balance_throughput_defined": bool(
+                diag["energy_balance_throughput_defined"]),
+            "energy_balance_throughput_basis": diag["energy_balance_throughput_basis"],
+            "energy_balance_valid": valid,
+            "pitch_summary_units": "deg",
+            "pitch_summary_convention": (
+                "pitch_min/max/rms are degrees of psi + delta over the last four revolutions"),
             "energies": {"aero": E_in, "shaft": E_sh, "arm": E_arm, "piv_vis": E_vis, "piv_cou": E_cou,
                           "stop": E_stop, "d_stored": E1 - E0},
             "history": {},

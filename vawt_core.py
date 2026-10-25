@@ -65,6 +65,7 @@ from sharp_vawt.engine import (
 
 # Legacy column names for the same positional output produced by the canonical
 # engine.  Positional order is the compatibility contract; names are metadata.
+# Angular columns (psi, beta, alpha) and psd are in radians (psd in rad/s).
 OUT_COLS = ["t", "th", "w", "psi", "beta", "alpha", "Tsum", "Qshaft",
             "a", "Fx", "P_blade", "psd"]
 
