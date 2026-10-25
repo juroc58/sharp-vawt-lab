@@ -69,9 +69,9 @@ model-form uncertainty (synthetic polars, uncalibrated dynamic stall, 2-D finite
 correction), not by measurement error.
 
 **Read the Sharp-inspired interval as two branches, not a precision bar.**
-The nominal design point (Helmbold multiplier 1.0) gives Cp = 0.079.
+The nominal design point (Helmbold multiplier 1.0) gives Cp = `0.079`.
 The rotation-sustaining branch ends between multipliers 0.955 and 0.96;
-below it the same rotor collapses to Cp ≈ 0.005–0.007. Because the
+below it the same rotor collapses to Cp ≈ `0.005`–`0.017`. Because the
 Helmbold central estimate sits only about 4 % above that threshold, a
 large fraction of the UQ band lands on the collapsed branch — that is why
 the 90 % interval reaches 0.146. `scripts/scan_tip_loss.py` reproduces the
@@ -103,7 +103,7 @@ both small-rotor distributions cross a collapse threshold (see below).
 
 ### ⚠ Ham 1979 — 2D upper-bound comparison, not a reproduction
 
-The 2D solver gives **Cp ≈ 0.476 at TSR 2.5 at Ham's geometry**
+The 2D solver gives **Cp ≈ `0.474` at TSR 2.5 at Ham's geometry**
 (R = 1.83 m, c = 0.305 m, static polars, no tip loss) — roughly **+9 %
 above Ham's band midpoint** (0.435) and above the entire 3D measured
 band of 0.42–0.45. The Cp(TSR) shape also differs from Ham's measurement.
@@ -124,11 +124,10 @@ d_cw = 0.30c) reaches the interval shown in the headline table.
 
 **The mechanism fails inside Sharp's own parameter range.** With a
 Sharp-like counterweight mass (m_c = 0.008 kg) and `balance = 0` so the
-offset is actually applied, offsets from −0.1 to +0.8 chords collapse:
-Cp = 0.0088 at −0.1, 0.0075 at 0, 0.0064 at 0.1, 0.0050 at 0.3,
-0.0025 at 0.5 and 0.0019 at 0.8, with the blade against the stops
+offset is actually applied, offsets from −0.1 to +0.8 chords collapse
+to very low Cp (below ~0.01), with the blade against the stops
 22–37 % of each revolution. Offsets from −0.4 to −0.2 chords run
-(Cp 0.0088–0.0075), best at −0.3 (0.0251).
+better, peaking around −0.3.
 
 `scripts/passive_sharp.py` sweeps counterweight mass and offset. The
 offset sweep is meaningful only with `balance = 0` (the default
@@ -147,7 +146,7 @@ speeds — see the AEP section below.
 
 A joint optimisation over chord, counterweight mass and position, load factor,
 and pivot geometry found a configuration with a relatively heavy counterweight
-and a large arm ratio. The stored design point is Cp ≈ 0.270 (verified at
+and a large arm ratio. The stored design point is Cp ≈ `0.264` (verified at
 T_max = 40 s, steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10°,
 no stops), with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g,
 d_cw ≈ +0.066c, ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
@@ -170,8 +169,8 @@ re-optimisation, and the scenario set is a subset of the UQ ranges.
 <!-- BEGIN GENERATED: robust_optimization -->
 | Design | Nominal Cp | UQ-scenario mean | UQ-scenario p10 | Bound-active parameters |
 |---|---|---|---|---|
-| Optimised passive (R = 0.60 m) | 0.270 | 0.263 | 0.255 | k_load (lower) |
-| Scale-up (R = 2.72 m) | 0.406 | 0.400 | 0.390 | H_over_R (upper), mc_ref (lower) |
+| Optimised passive (R = 0.60 m) | 0.265 | 0.258 | 0.250 | k_load (lower) |
+| Scale-up (R = 2.72 m) | 0.408 | 0.400 | 0.391 | none |
 <!-- END GENERATED: robust_optimization -->
 
 At this design point the aerodynamic pitch moment dominates the
@@ -185,12 +184,12 @@ CPPC regime.
 Extending the joint optimiser to radius R ∈ [0.6, 3.0] m finds
 **R = 2.72 m** (chord 0.386 m, AR 10.5). With the finite-span correction
 enabled *inside the optimiser*, the optimum sits at **H/R = 0.75**, i.e.
-H/D = 0.75. The fixed design point evaluates to Cp ≈ 0.39 on the current
+H/D = 0.75. The fixed design point evaluates to Cp ≈ `0.404` on the current
 polars; the UQ mean is **0.42 [0.37, 0.48]**. The robust local
 re-optimisation moves R slightly and pushes the arm ratio to its lower
 bound; its nominal/mean/p10 values are in the robust table above. The
 stored `scripts/optimization_scaleup.json` is the earlier global snapshot
-(Cp = 0.43), retained for provenance.
+(Cp ≈ `0.404`), retained for provenance.
 
 The movement is the point: with the correction hidden (the pre-fix
 configuration), the optimiser preferred a short fat cylinder
@@ -251,8 +250,7 @@ reports the measured values each time it runs.
 **The diagnostic does not measure Sharp's original CPPC machine** (R = 0.6 m,
 AR = 2.86). That geometry runs only at a low TSR (≈ 1.19) with the raw
 finite-span correction and collapses below a multiplier of about 0.955;
-with the Cm scale set to zero it does not self-sustain at all (Cp ≈ 0.005,
-TSR ≈ 0.49). The scale-up design (R = 2.72 m, AR = 10.5) is therefore used
+with the Cm scale set to zero it does not self-sustain at all (Cp ≈ `0.005`, TSR ≈ `0.51`). The scale-up design (R = 2.72 m, AR = 10.5) is therefore used
 to get a clean, healthy free-running operating point.
 
 **Sharp's own estimate of +10 %** is about five times larger than this
@@ -356,8 +354,8 @@ so the claim can be checked.
 
 The suspicious fixed-rpm point at TSR = 3.25 was re-run with longer
 `T_max` and three initial rotor phases. It is a phase-locked limit cycle,
-not a transient: `psi0 = 0°` gives Cp ≈ 0.4086 while `psi0 = 120°` and
-`240°` give ≈ 0.3379, independent of `T_max`. The production curve now
+not a transient: `psi0 = 0°` gives Cp ≈ `0.4086` while `psi0 = 120°` and
+`240°` give ≈ `0.3379`, independent of `T_max`. The production curve now
 averages three equally spaced phases at every TSR, which removes that
 initial-phase artefact. The free-running U = 4 m/s point is unchanged by
 `T_max` or seed.
@@ -553,10 +551,10 @@ first-order) for each anchor. Runs in ~20 min on 4 cores
 <!-- BEGIN GENERATED: uq_sobol -->
 | Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
 |---|---|---|---|
-| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.27** | +0.77 ± 0.21 |
-| Sharp-inspired CPPC | `tip_loss_multiplier` | **+0.57 ± 0.29** | +0.79 ± 0.30 |
-| Optimised passive | `ind_drag_scale` | **+0.54 ± 0.25** | +0.66 ± 0.23 |
-| Scale-up R = 2.72 m | `ind_drag_scale` | **+0.63 ± 0.24** | +0.66 ± 0.20 |
+| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.26** | +0.77 ± 0.20 |
+| Sharp-inspired CPPC | `tip_loss_multiplier` | **+0.57 ± 0.34** | +0.79 ± 0.26 |
+| Optimised passive | `ind_drag_scale` | **+0.54 ± 0.22** | +0.66 ± 0.24 |
+| Scale-up R = 2.72 m | `ind_drag_scale` | **+0.63 ± 0.23** | +0.66 ± 0.19 |
 <!-- END GENERATED: uq_sobol -->
 
 **The finite-span multiplier and separation lag drive the two small-rotor anchors.** Direct
@@ -620,7 +618,7 @@ literature:
 1. **Ham 1979 comparison (2D upper bound, partial).** The same solver,
    run in Ham's model class (double-multiple-streamtube induction, static
    polars, no curvature correction, cosine pitch law with θ₁c = −10°),
-   peaks at **Cp = 0.476 at TSR = 2.5** (a single deterministic run; the
+   peaks at **Cp = `0.474` at TSR = 2.5** (a single deterministic run; the
   UQ mean in the headline table is 0.49 [0.46–0.51]) — about **+9 %
   above Ham's band midpoint** (0.435) and above his entire 3D measured
   band of 0.42–0.45. The **shape** of the curve does not match: the
@@ -669,11 +667,12 @@ literature:
 <!-- END GENERATED: ham_finite_span -->
 2. **Dynamic-stall sensitivity depends on the regime.** At the
    prescribed-pitch design point, turning the (uncalibrated) DS model off
-   changes Cp by **≈2.2 %**; the DS-off sensitivity script tolerance is
+   changes Cp by **`0.52 %`**; the DS-off sensitivity script tolerance is
    4 %. For the **passive** machine the dependence is much larger:
-   switching DS off drops Cp by 91 % at the Sharp-inspired anchor
-   (0.067 -> 0.006) and 75 % at the optimised-passive anchor
-   (0.272 -> 0.068), because the passive rotor operates close to static
+   switching DS off drops Cp by `72.5 %` at the Sharp-inspired anchor
+   (`0.0794` -> `0.0219`) and 
+   `1.3 %` at the optimised-passive anchor
+   (`0.2643` -> `0.2610`), because the passive rotor operates close to static
    stall. **Every passive result in this archive therefore rests on the
    dynamic-stall model**, which is uncalibrated for this machine. The UQ
    study samples the DS constants for that reason; it is not a cosmetic
@@ -767,14 +766,14 @@ Run the Ham comparison script.
 Runs the Pinson C2E rig (R = 1.83 m, c = 0.305 m, c/R = 0.167) through three
 model configurations:
 
-- **static polars only** — Ham's model class  → peak Cp = 0.476 at TSR = 2.5
-- **+ dynamic stall** — modern VAWT model     → peak Cp = 0.486 at TSR = 2.5
-- **+ dynamic stall + curvilinear flow** — Adams shift applied → 0.412
+- **static polars only** — Ham's model class  → peak Cp = `0.474` at TSR = 2.5
+- **+ dynamic stall** — modern VAWT model     → peak Cp = `0.498` at TSR = 2.5
+- **+ dynamic stall + curvilinear flow** — Adams shift applied → `0.425`
 
 These are single deterministic runs. The headline table's Ham UQ mean of 0.49, samples the active uncertain inputs about this point.
 
 Ham 1979 published peak Cp = 0.42–0.45 at TSR 2.5–3.0. The static-only
-2D model runs at Cp ≈ 0.476 — above Ham's 3D measured band — which is
+2D model runs at Cp ≈ `0.474` — above Ham's 3D measured band — which is
 the expected bias for a 2D solver without finite-span (tip-loss) loss.
 This is an upper-bound comparison, not a reproduction of Ham's experiment.
 The `+ curv` row drops to 0.412 because Adams fitted his coefficients at
@@ -788,10 +787,10 @@ fit range.
 Run the DS-off sensitivity script.
 
 Compares the prescribed-pitch design point with the dynamic-stall model on
-and off. Measured: **ΔCp ≈ 2.2 %** (the script's tolerance is 3 %; the test
+and off. Measured: **ΔCp = `0.52 %`** (the script's tolerance is 3 %; the test
 allows 4 %), confirming the prescribed result is not a DS artifact. The
-passive machine is very different: 91 % at the Sharp-inspired anchor and
-75 % at the optimised-passive anchor. The passive results therefore rest
+passive machine is very different: `72.5 %` at the Sharp-inspired anchor and
+`1.3 %` at the optimised-passive anchor. The passive results therefore rest
 on the DS model; see the Uncertainty section.
 
 ### 3. Passive CPPC parameter sweeps

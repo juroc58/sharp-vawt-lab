@@ -26,11 +26,15 @@ STAMP_CHECK_MAP = {
     "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
     "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
     "optimization_actuator.json": "scripts/optimize_actuator.py",
+    "optimization_passive.json": "scripts/optimize_passive.py",
+    "optimization_scaleup.json": "scripts/optimize_scaleup.py",
     "cm_scale_scan.json": "scripts/scan_cm_scale.py",
     "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
     "branch_point_checks.json": "scripts/check_branch_points.py",
     "robust_optimization.json": "scripts/robust_reopt.py",
     "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
+    "validate_ds_off.json": "scripts/validate_ds_off.py",
+    "tip_loss_scan.json": "scripts/scan_tip_loss.py",
 }
 
 def _j(name):
@@ -60,7 +64,7 @@ def _fmt(x, d=2):
     return f"{x:.{d}f}"
 
 def _fmt_pct(x, d=1):
-    return f"{x*100:.{d}f}"
+    return f"{x*100:.{d}f} %"
 
 # Load all JSON data once
 def _load_all():
@@ -71,11 +75,15 @@ def _load_all():
         "aq_r": _j("aep_rigid_fair.json"),
         "aq_s": _j("aep_scaleup.json"),
         "act": _j("optimization_actuator.json"),
+        "opt_passive": _j("optimization_passive.json"),
+        "opt_scaleup": _j("optimization_scaleup.json"),
         "cm": _j("cm_scale_scan.json"),
+        "tl": _j("tip_loss_scan.json"),
         "ham": _j("ham_finite_span_check.json"),
         "branch_check": _j("branch_point_checks.json"),
         "rob": _j("robust_optimization.json"),
         "cr": _j("aep_counter_rotating.json"),
+        "ds_off": _j("validate_ds_off.json"),
     }
 
 DATA = _load_all()
@@ -91,6 +99,42 @@ def iv_sharp_cppc_ci():
 
 def iv_optimised_passive_cp():
     return _fmt(DATA["uq"]["summary"]["optimised_passive"]["mean"])
+
+def iv_optimised_passive_stored_cp():
+    """Stored design point best_cp from optimization_passive.json."""
+    return _fmt(DATA["opt_passive"]["best_cp"], 3)
+
+def iv_scaleup_stored_cp():
+    """Stored design point best_cp from optimization_scaleup.json."""
+    return _fmt(DATA["opt_scaleup"]["best_cp"], 3)
+
+def iv_cm_scale_zero_cp():
+    """Cp at cm_scale=0 from cm_scale_scan.json sharp_cppc anchor."""
+    for entry in DATA["cm"]["anchors"]["sharp_cppc"]["cm_scale"]:
+        if abs(entry["cm_scale"] - 0.0) < 1e-9:
+            return _fmt(entry["cp"], 3)
+    return "n/a"
+
+def iv_cm_scale_zero_tsr():
+    """TSR at cm_scale=0 from cm_scale_scan.json sharp_cppc anchor."""
+    for entry in DATA["cm"]["anchors"]["sharp_cppc"]["cm_scale"]:
+        if abs(entry["cm_scale"] - 0.0) < 1e-9:
+            return _fmt(entry["tsr"], 2)
+    return "n/a"
+
+def iv_branch_fixed_tsr_psi0_0_cp():
+    """Cp at fixed TSR 3.25, psi0=0° from branch_point_checks.json."""
+    for entry in DATA["branch_check"]["fixed_tsr_3.25"]:
+        if abs(entry["psi0_deg"] - 0.0) < 1e-9:
+            return _fmt(entry["cp"], 4)
+    return "n/a"
+
+def iv_branch_fixed_tsr_psi0_120_cp():
+    """Cp at fixed TSR 3.25, psi0=120° from branch_point_checks.json."""
+    for entry in DATA["branch_check"]["fixed_tsr_3.25"]:
+        if abs(entry["psi0_deg"] - 120.0) < 1e-9:
+            return _fmt(entry["cp"], 4)
+    return "n/a"
 
 def iv_optimised_passive_ci():
     s = DATA["uq"]["summary"]["optimised_passive"]
@@ -214,6 +258,52 @@ def iv_active_lift_coriolis_pct():
 def iv_active_lift_coriolis_fraction():
     return "28.6"
 
+# Dynamic-stall sensitivity inline generators (from validate_ds_off.json)
+def iv_ds_off_prescribed_delta_pct():
+    return _fmt_pct(DATA["ds_off"]["prescribed_pitch"]["delta_rel"], 2)
+
+def iv_ds_off_sharp_cppc_cp_ds_on():
+    return _fmt(DATA["ds_off"]["passive_anchors"]["sharp_cppc"]["cp_ds_on"], 4)
+
+def iv_ds_off_sharp_cppc_cp_ds_off():
+    return _fmt(DATA["ds_off"]["passive_anchors"]["sharp_cppc"]["cp_ds_off"], 4)
+
+def iv_ds_off_sharp_cppc_drop_pct():
+    return _fmt_pct(DATA["ds_off"]["passive_anchors"]["sharp_cppc"]["delta_rel"], 1)
+
+def iv_ds_off_optimised_passive_cp_ds_on():
+    return _fmt(DATA["ds_off"]["passive_anchors"]["optimised_passive"]["cp_ds_on"], 4)
+
+def iv_ds_off_optimised_passive_cp_ds_off():
+    return _fmt(DATA["ds_off"]["passive_anchors"]["optimised_passive"]["cp_ds_off"], 4)
+
+def iv_ds_off_optimised_passive_drop_pct():
+    return _fmt_pct(DATA["ds_off"]["passive_anchors"]["optimised_passive"]["delta_rel"], 1)
+
+# Tip loss scan inline generators
+def iv_tip_loss_sharp_cppc_cp_mult_1_0():
+    """Nominal Cp for sharp_cppc at tip_loss_multiplier = 1.0."""
+    for entry in DATA["tl"]["anchors"]["sharp_cppc"]:
+        if abs(entry["multiplier"] - 1.0) < 1e-9:
+            return _fmt(entry["cp"], 3)
+    return "n/a"
+
+def iv_collapsed_cp_min():
+    """Minimum Cp on collapsed branch from tip_loss_scan.json."""
+    entries = DATA["tl"]["anchors"]["sharp_cppc"]
+    collapsed = [e for e in entries if e["cp"] < 0.02]
+    if collapsed:
+        return _fmt(min(e["cp"] for e in collapsed), 3)
+    return "n/a"
+
+def iv_collapsed_cp_max():
+    """Maximum Cp on collapsed branch (before recovery) from tip_loss_scan.json."""
+    entries = DATA["tl"]["anchors"]["sharp_cppc"]
+    collapsed = [e for e in entries if e["cp"] < 0.02]
+    if collapsed:
+        return _fmt(max(e["cp"] for e in collapsed), 3)
+    return "n/a"
+
 # Scale-up AEP values
 def iv_scaleup_aep_passive_kwh():
     return _fmt(DATA["aq"]["results"]["passive_k_load"]["aep_kWh"])
@@ -240,6 +330,22 @@ def iv_ham_2_5_cp():
 def iv_ham_uq_ci():
     s = DATA["uq"]["summary"]["ham_1979"]
     return _ci(s['p5'], s['p95'])
+
+def iv_ham_peak_no_tip_cp():
+    """Ham 1979 peak Cp without tip loss from ham_finite_span_check.json."""
+    return _fmt(DATA["ham"]["peak_no_tip"], 3)
+
+def iv_ham_case_static_cd005_cp():
+    """Ham static polars only (cd_add=0.005) peak Cp."""
+    return _fmt(DATA["ham"]["cases"]["static_cd005"]["peak_cp"], 3)
+
+def iv_ham_case_ds_on_cd002_cp():
+    """Ham + dynamic stall (cd_add=0.002) peak Cp."""
+    return _fmt(DATA["ham"]["cases"]["ds_on_cd002"]["peak_cp"], 3)
+
+def iv_ham_case_ds_curv_cd002_cp():
+    """Ham + DS + curvilinear flow (cd_add=0.002) peak Cp."""
+    return _fmt(DATA["ham"]["cases"]["ds_curv_cd002"]["peak_cp"], 3)
 
 # Uncertainty CI widths
 
@@ -333,6 +439,12 @@ INLINE_FUNCS = {
     'sharp_cppc_cp': iv_sharp_cppc_cp,
     'sharp_cppc_ci': iv_sharp_cppc_ci,
     'optimised_passive_cp': iv_optimised_passive_cp,
+    'optimised_passive_stored_cp': iv_optimised_passive_stored_cp,
+    'scaleup_stored_cp': iv_scaleup_stored_cp,
+    'cm_scale_zero_cp': iv_cm_scale_zero_cp,
+    'cm_scale_zero_tsr': iv_cm_scale_zero_tsr,
+    'branch_fixed_tsr_psi0_0_cp': iv_branch_fixed_tsr_psi0_0_cp,
+    'branch_fixed_tsr_psi0_120_cp': iv_branch_fixed_tsr_psi0_120_cp,
     'optimised_passive_ci': iv_optimised_passive_ci,
     'scaleup_cp': iv_scaleup_cp,
     'scaleup_ci': iv_scaleup_ci,
@@ -376,6 +488,20 @@ INLINE_FUNCS = {
     'ham_2_0_cp': iv_ham_2_0_cp,
     'ham_2_5_cp': iv_ham_2_5_cp,
     'ham_uq_ci': iv_ham_uq_ci,
+    'ham_peak_no_tip_cp': iv_ham_peak_no_tip_cp,
+    'ham_case_static_cd005_cp': iv_ham_case_static_cd005_cp,
+    'ham_case_ds_on_cd002_cp': iv_ham_case_ds_on_cd002_cp,
+    'ham_case_ds_curv_cd002_cp': iv_ham_case_ds_curv_cd002_cp,
+    'ds_off_prescribed_delta_pct': iv_ds_off_prescribed_delta_pct,
+    'ds_off_sharp_cppc_cp_ds_on': iv_ds_off_sharp_cppc_cp_ds_on,
+    'ds_off_sharp_cppc_cp_ds_off': iv_ds_off_sharp_cppc_cp_ds_off,
+    'ds_off_sharp_cppc_drop_pct': iv_ds_off_sharp_cppc_drop_pct,
+    'ds_off_optimised_passive_cp_ds_on': iv_ds_off_optimised_passive_cp_ds_on,
+    'ds_off_optimised_passive_cp_ds_off': iv_ds_off_optimised_passive_cp_ds_off,
+    'ds_off_optimised_passive_drop_pct': iv_ds_off_optimised_passive_drop_pct,
+    'tip_loss_sharp_cppc_cp_mult_1_0': iv_tip_loss_sharp_cppc_cp_mult_1_0,
+    'collapsed_cp_min': iv_collapsed_cp_min,
+    'collapsed_cp_max': iv_collapsed_cp_max,
 }
 
 
