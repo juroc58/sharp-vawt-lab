@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "d247e472e49f4aaa180c118d9e545793757c500c81d4416c63cde11a3f53b84f",
+    "code_hash": "45c1e8dbeec4c1975452a0756f4c13c7d265fc057b300fb8dca8df7464fada4f",
     "script": "scripts/optimize_actuator.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-24T18:12:47.810204+00:00",
+    "created_utc": "2026-10-25T18:29:19.270135+00:00",
     "python_version": "3.14.4",
-    "git_commit": "46fd455d87614b9281be0b1a5ab6c513b8ac4cfb",
+    "git_commit": "118badf0502be81f3978fa8fb7fd3bccfb59176d",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -57,13 +57,13 @@
     "uq_spec_hash": null,
     "config_hash": "545c036b14dc2e541612bd3c7fd057284fd3475e0e601c1b4ef6ec9ba5c40c43",
     "source_hashes": {
-      "sharp_vawt/__init__.py": "4f418eeb28f703d3fedf56bd6e993edcd182600b0cf63ccc1c82d13951e40475",
+      "sharp_vawt/__init__.py": "b668e8225f256b2949f1a392191345d98f98755e3479d6b3af67512fafdde6cf",
       "sharp_vawt/config.py": "e6b935fc543d8eb5bf1cc2c4ab7cb07ca20a448efae7401d5b25366c1f5da79f",
       "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
-      "sharp_vawt/engine.py": "aca47b3ab93e17a6791eaa76f78a595c0a42efdfcf0f5c46b05418c1c0035503",
-      "vawt_core.py": "07671e2ff1384dcde04af3fd33e54e0e12109b2e0e0cbd23d63a5bd3679f1929",
+      "sharp_vawt/engine.py": "c3ecb1fc572395300866957490f487c215da229f1e9657aba5d45c55bbb24270",
+      "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
-      "scripts/optimize_actuator.py": "03170acf2426102e3724ff9ff0921b3ca23ca259c6ade8adb7c20edceaa98756"
+      "scripts/optimize_actuator.py": "8e0350f145ee9e0fc74790ad737c9ebbc710a045307bcb946e31097134aa20ce"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
@@ -160,8 +160,8 @@
     "k_load": 0.0014999772491221114
   },
   "best_cp": 0.4969482961863245,
-  "de_time_s": 663.7641252299945,
-  "local_time_s": 35.61768925999786,
+  "de_time_s": 1550.3134126220002,
+  "local_time_s": 59.80738416899976,
   "history": [
     {
       "stage": "DE",

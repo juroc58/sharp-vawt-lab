@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "e2fc76db73d12e88e588caf28c361ae052d06e983d085d51477df3c65e17334d",
+    "code_hash": "cac11e96f69fd6433af0740afd5a24b78d76b713bc016a227cbaf6393c191443",
     "script": "scripts/ham_finite_span_check.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-24T17:50:59.188594+00:00",
+    "created_utc": "2026-10-25T18:01:58.900429+00:00",
     "python_version": "3.14.4",
-    "git_commit": "46fd455d87614b9281be0b1a5ab6c513b8ac4cfb",
+    "git_commit": "118badf0502be81f3978fa8fb7fd3bccfb59176d",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -17,11 +17,11 @@
     "uq_spec_hash": null,
     "config_hash": "545c036b14dc2e541612bd3c7fd057284fd3475e0e601c1b4ef6ec9ba5c40c43",
     "source_hashes": {
-      "sharp_vawt/__init__.py": "4f418eeb28f703d3fedf56bd6e993edcd182600b0cf63ccc1c82d13951e40475",
+      "sharp_vawt/__init__.py": "b668e8225f256b2949f1a392191345d98f98755e3479d6b3af67512fafdde6cf",
       "sharp_vawt/config.py": "e6b935fc543d8eb5bf1cc2c4ab7cb07ca20a448efae7401d5b25366c1f5da79f",
       "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
-      "sharp_vawt/engine.py": "aca47b3ab93e17a6791eaa76f78a595c0a42efdfcf0f5c46b05418c1c0035503",
-      "vawt_core.py": "07671e2ff1384dcde04af3fd33e54e0e12109b2e0e0cbd23d63a5bd3679f1929",
+      "sharp_vawt/engine.py": "c3ecb1fc572395300866957490f487c215da229f1e9657aba5d45c55bbb24270",
+      "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/ham_finite_span_check.py": "2e03506693add00174cc9719b28be5f6ee070d05a3eefb7f2978a10baacebec1"
     },
