@@ -1,8 +1,10 @@
 """Tests for the physics overrides added for the UQ study."""
 import math
 
+import numpy as np
 import pytest
 
+from sharp_vawt.engine import _cm_moment, _energy_diagnostics
 from tests.conftest import BASE_QUICK
 from vawt_core import create_sim_from_params
 
@@ -154,16 +156,29 @@ class TestCmDimensions:
         assert np.all(np.diff(smooth.Cl[0, m]) >= -1e-9)
         assert np.all(np.diff(default.Cl[0, m]) >= -1e-9)
 
-    def test_cm_moment_dimensions(self):
-        """Cm moment per unit span is independent of H (blade height).
+    def test_cm_moment_scales_with_chord_height_and_velocity(self):
+        """The production Cm moment helper has the documented dimensions.
 
-        Qa_cm = q * Cm * c where q = 0.5 * rho * W^2 * c * H.
-        So Qa_cm / H = 0.5 * rho * W^2 * c^2 * Cm, independent of H.
-        Changing H should not change Cp dramatically if Cm torque
-        per unit span is correctly implemented.
+        Q_Cm = 0.5 rho W^2 c^2 H Cm.  Holding every other variable fixed:
+        linear in H, quadratic in c, quadratic in W, odd in Cm, zero at Cm=0.
         """
-        from vawt_core import create_sim_from_params
+        rho, W, c, H, Cm = 1.225, 8.0, 0.14, 0.40, 0.05
+        q = _cm_moment(rho, W * W, c, H, Cm)
+        assert q == pytest.approx(0.5 * rho * W * W * c * c * H * Cm, rel=1e-12)
+        assert _cm_moment(rho, W * W, c, 2.0 * H, Cm) == pytest.approx(2.0 * q, rel=1e-12)
+        assert _cm_moment(rho, W * W, 2.0 * c, H, Cm) == pytest.approx(4.0 * q, rel=1e-12)
+        assert _cm_moment(rho, (2.0 * W) ** 2, c, H, Cm) == pytest.approx(4.0 * q, rel=1e-12)
+        assert _cm_moment(rho, W * W, c, H, -Cm) == pytest.approx(-q, rel=1e-12)
+        assert _cm_moment(rho, W * W, c, H, 0.0) == 0.0
 
+    def test_cm_moment_whole_rotor_smoke(self):
+        """Integration smoke test: a Cm-bearing run stays in a sane Cp range.
+
+        H changes many other terms (Reynolds number, induction, planform area),
+        so this is deliberately a loose whole-rotor smoke test, not a
+        dimensional check of the Cm moment.  The isolated scaling check above
+        covers the moment law.
+        """
         base_params = {
             'R': 0.6, 'c': 0.15, 'H': 0.4, 'N': 3,
             'ar': 0.5, 'sp': 0.25,
@@ -187,9 +202,6 @@ class TestCmDimensions:
         assert r_h2['cp'] > 0
 
         cp_ratio = r_h2['cp'] / r_h1['cp']
-        # H affects many aero terms beyond Cm torque (dynamic pressure q = 0.5*rho*W^2*c*H,
-        # Reynolds number, induction), so Cp is not strictly H-independent.
-        # Bound [0.4, 1.5] catches gross errors while allowing realistic variation.
         assert 0.4 < cp_ratio < 1.5,             f"Cp ratio H=0.8/H=0.4 = {cp_ratio:.3f}"
 
 
@@ -374,6 +386,71 @@ class TestCScaleOverride:
         assert s.c_scale == pytest.approx(0.42)
 
 
+class TestOutputColumnContract:
+
+    def test_raw_angular_columns_are_radians_and_history_matches(self):
+        params = {
+            **BASE_QUICK, 'free': False, 'prescribe_pitch': True,
+            'pp0_deg': 5.0, 'pp1_deg': 0.0, 'pp2_deg': 0.0, 'pp3_deg': 0.0,
+            'T_max': 0.5, 'stride': 1,
+            'use_dynamic_stall': False, 'use_dmst': False,
+            'use_tip_loss': False, 'use_flow_curvature': False,
+        }
+        r = create_sim_from_params(params).run(store_history=True)
+        idx = {name: i for i, name in enumerate(r['columns'])}
+        assert r['columns'][3:6] == ['psi_rad', 'pitch_rad', 'aoa_rad']
+        assert 'pitch_deg' not in r['columns']
+        assert 'aoa_deg' not in r['columns']
+        assert r['column_units']['psi_rad'] == 'rad'
+        assert r['column_units']['pitch_rad'] == 'rad'
+        assert r['column_units']['aoa_rad'] == 'rad'
+        assert r['column_units']['psidot_0'] == 'rad/s'
+        psi = r['out'][:, idx['psi_rad']]
+        # A nontrivial angle: 5 deg == 0.0873 rad, so a degrees/radians
+        # mix-up cannot accidentally compare equal.
+        assert np.allclose(psi, math.radians(5.0), atol=1e-12)
+        assert not np.allclose(psi, 5.0)
+        for name in r['columns']:
+            assert np.array_equal(r['history'][name], r['out'][:, idx[name]])
+
+    def test_pitch_column_is_psi_plus_geometric_offset(self):
+        """pitch_rad is the total chord pitch psi + delta from the radial line."""
+        params = {
+            **BASE_QUICK, 'free': False, 'prescribe_pitch': True,
+            'pp0_deg': 7.0, 'pp1_deg': 0.0, 'pp2_deg': 0.0, 'pp3_deg': 0.0,
+            'T_max': 0.2, 'stride': 1,
+            'use_dynamic_stall': False, 'use_dmst': False,
+            'use_tip_loss': False, 'use_flow_curvature': False,
+        }
+        sim = create_sim_from_params(params)
+        r = sim.run()
+        idx = {name: i for i, name in enumerate(r['columns'])}
+        psi = math.radians(7.0)
+        stq = -sim.xq * math.cos(psi) - sim.ar_len * math.sin(psi)
+        srq = -sim.xq * math.sin(psi) + sim.ar_len * math.cos(psi)
+        delta = math.atan2(stq, sim.Rp + srq)
+        assert np.allclose(r['out'][:, idx['pitch_rad']], psi + delta, atol=1e-12)
+        assert not np.allclose(r['out'][:, idx['pitch_rad']],
+                               math.degrees(psi + delta))
+
+    def test_pitch_summary_converts_raw_radians_to_degrees(self):
+        r = create_sim_from_params({
+            **BASE_QUICK, 'T_max': 2.0, 'stride': 5,
+        }).run(store_history=True)
+        idx = {name: i for i, name in enumerate(r['columns'])}
+        theta = r['out'][:, idx['theta']]
+        m = theta > theta[-1] - 2.0 * math.pi * 4
+        if m.sum() < 5:
+            m = np.ones(len(theta), bool)
+        beta_deg = np.degrees(r['out'][m, idx['pitch_rad']])
+        assert r['pitch_summary_units'] == 'deg'
+        assert r['pitch_min'] == pytest.approx(float(beta_deg.min()))
+        assert r['pitch_max'] == pytest.approx(float(beta_deg.max()))
+        assert r['pitch_rms'] == pytest.approx(float(beta_deg.std()))
+        assert r['aoa_max'] == pytest.approx(
+            float(np.degrees(np.abs(r['out'][m, idx['aoa_rad']]).max())))
+
+
 class TestEnergyLedger:
 
     def test_energy_ledger_closes_for_passive_run(self):
@@ -383,6 +460,39 @@ class TestEnergyLedger:
         }).run()
         assert r['energy_balance_valid'] is True
         assert abs(r['energy_balance']) < 0.02
+
+    def test_energy_diagnostics_balanced_steady_transfer(self):
+        d = _energy_diagnostics([100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0])
+        assert d['energy_balance'] == pytest.approx(0.0)
+        assert d['energy_balance_abs_J'] == pytest.approx(0.0)
+        assert d['energy_balance_defined'] is True
+        assert d['energy_balance_throughput'] == pytest.approx(0.0)
+
+    def test_energy_diagnostics_transient_stored_energy(self):
+        d = _energy_diagnostics([100.0, 80.0, 0.0, 0.0, 0.0, 0.0, 10.0, 30.0])
+        assert d['energy_balance'] == pytest.approx(0.0)
+        assert d['d_stored_J'] == pytest.approx(20.0)
+
+    def test_energy_diagnostics_dissipative_channels(self):
+        d = _energy_diagnostics([100.0, 60.0, 10.0, 20.0, 5.0, 5.0, 0.0, 0.0])
+        assert d['energy_balance'] == pytest.approx(0.0)
+        assert d['energy_balance_defined'] is True
+
+    def test_energy_diagnostics_low_net_aerodynamic_work(self):
+        d = _energy_diagnostics([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        assert d['energy_balance_defined'] is False
+        assert math.isnan(d['energy_balance'])
+        assert d['energy_balance_throughput_defined'] is False
+        assert math.isnan(d['energy_balance_throughput'])
+
+    def test_energy_diagnostics_reports_absolute_and_both_normalisations(self):
+        # 10 J of imbalance with E_in = 100 J and E_shaft = 90 J.
+        d = _energy_diagnostics([100.0, 90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        assert d['energy_balance_abs_J'] == pytest.approx(10.0)
+        assert d['energy_balance'] == pytest.approx(0.10)
+        assert d['energy_balance_throughput'] == pytest.approx(10.0 / 190.0)
+        # The throughput ratio is smaller; it must never replace the absolute error.
+        assert d['energy_balance_throughput'] < d['energy_balance']
 
     def test_reproducibility(self):
         """Same seed + same params → same Cp."""
@@ -558,6 +668,7 @@ class TestPolarExtremeAngles:
 class TestActiveLiftDiagnostic:
     """Active lift isolation diagnostic produces sensible results."""
 
+    @pytest.mark.needs_jit
     def test_active_lift_runs(self):
         """diag_active_lift.py should run and produce a small ΔCp."""
         import os
@@ -570,6 +681,7 @@ class TestActiveLiftDiagnostic:
         )
         assert result.returncode == 0, f"diag_active_lift failed: {result.stderr}"
 
+    @pytest.mark.needs_jit
     def test_active_lift_delta_cp_small(self):
         """Active lift should produce a small ΔCp (< 0.01) at scale-up."""
         import os
