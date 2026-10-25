@@ -5,16 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.5.0] - 2026-10-25
+
+### Breaking
+- **Raw output column names renamed** in `sharp_vawt/engine.py` `OUT_COLS`:
+  `psi_0` → `psi_rad`, `pitch_deg` → `pitch_rad`, `aoa_deg` → `aoa_rad`.
+  All angular columns are in radians; summary statistics convert to degrees.
+  Added `column_units` and `column_descriptions` to result metadata.
+- **Energy diagnostics extended**: `energy_balance_abs_J` (absolute closure
+  error in joules), `energy_balance_scale_J`, `energy_balance_scale_basis`,
+  `energy_balance_defined`, `energy_balance_throughput`,
+  `energy_balance_throughput_defined`, `energy_balance_throughput_basis`.
+  Near-zero scales (< 1e-9 J) yield undefined (NaN) ratios instead of
+  division by epsilon.
+- **Frozen-settings schema v1** in `scripts/compare_prototype.py`:
+  `resolve_settings()` validates all model/numerical/experimental/acceptance/
+  provenance fields; rejects unknown or contradictory keys; checks polar
+  hashes and geometry identity. Records `effective_model_config_sha256`.
+- **Calibration/production aerodynamic alignment**: `ModelRunner` in
+  `scripts/calibrate_dynamic_stall.py` now uses `PolarDatabase.Cl_max`,
+  `AeroConfig.cm_scale`, and `int(AeroConfig.use_dynamic_stall)` — identical
+  to the rotor engine kernel.
 
 ### Added
-- Finite-span calibration pre-registration in `docs/prototype_validation_plan.md`:
-  documents the 2-D model over-prediction of Ham's 1979 band (~+9% above midpoint
-  at Cp = 0.4743), finite-span undershoot across all variants (lift-only
-  Cp = 0.3026, induced-drag-only Cp = 0.3463, both Cp = 0.2939 vs measured band
-  0.40-0.45), and the calibration protocol: at most one scalar (lift-loss scale
-  OR induced-drag scale), calibration/held-out split by dataset, pre-registered
-  acceptance criterion, and defaults unchanged until held-out criteria are met.
+- Finite-span calibration pre-registration in `docs/prototype_validation_plan.md`.
+- **`tests/test_calibration_parity.py`**: aerodynamic parity test verifying
+  calibration `ModelRunner` matches production `_aero_coeffs` to ≤1e-12
+  relative, with negative controls for `cm_scale` and `polar_variant`.
+- **`scripts/validate_ds_off.py`** + `scripts/validate_ds_off.json`:
+  dynamic-stall sensitivity for prescribed-pitch design point and passive
+  headline anchors, with stamped JSON output.
+- Output column contract tests in `tests/test_physics.py`
+  (`TestOutputColumnContract`).
+- Energy diagnostics tests in `tests/test_physics.py` (`TestEnergyLedger`).
+- Cm moment scaling test (`test_cm_moment_scales_with_chord_height_and_velocity`).
+- `_cm_moment()` helper in `sharp_vawt/engine.py` implementing
+  `Q_Cm = 0.5·ρ·W²·c²·H·Cm`.
+- Stricter `drivetrain_efficiency_assumption` validation in
+  `scripts/import_prototype_data.py` (numeric schema, single parse,
+  `(0, 1]` range).
+- `--verify-stored` mode on `scripts/optimize_actuator.py` for deterministic
+  re-evaluation of stored `best_params` without a new global search.
+- `optimizer_overrides.json` documented as optional input in `scripts/README.md`.
+- Output column semantics documented in `docs/derivation.md` §13.
+- Energy ledger normalisation documented in `docs/derivation.md` §10.
+
+### Changed
+- `scripts/build_readme.py`: verifies stamps when loading JSON; loads
+  `validation_ds_off.json`, `optimization_passive.json`,
+  `optimization_scaleup.json`, `tip_loss_scan.json`.
+- `scripts/check_polars.py`: clarified documentation as "sanity/quality gate,
+  not experimental validation"; added exit-code tests in `tests/test_polars.py`.
+- Prototype efficiency moved to `REQUIRED_NUMERIC` in import schema.
+- DS calibration criteria now require `fit_converged`, `identifiable`
+  (finite intervals, cond < 1e10), `not_pinned`.
+
+## [Unreleased]
 
 ## [3.4.0] - 2026-10-24
 

@@ -54,7 +54,7 @@ from .database import (
 )
 from .engine import CycloturbineSim, create_sim_from_params
 
-__version__ = "3.4.0"
+__version__ = "3.5.0"
 
 __all__ = [
     "DEEP_STALL_CD_AMP",
