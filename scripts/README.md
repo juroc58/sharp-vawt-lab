@@ -46,6 +46,8 @@
   outputs change (e.g. after a physics update), regenerate its JSON and
   commit the diff together with the README update.
 
+  `base N = 64 (quick mode); indices are qualitative`
+
 ## Actuator provenance: `scripts/optimization_actuator.json`
 
 This file is the output of `scripts/optimize_actuator.py`: a seeded

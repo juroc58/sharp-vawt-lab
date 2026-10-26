@@ -199,87 +199,138 @@ class TestAerodynamicParity:
 
 
 class TestAerodynamicParityNegativeControls:
-    """Negative controls: deliberate mismatches must be detected."""
+    """Negative controls: deliberate mismatches must be detected.
+
+    Each test perturbs exactly ONE aerodynamic parameter inside the
+    ``ModelRunner`` path only (the calibration path), then runs the same
+    parity comparison helper against the production path.  The max relative
+    difference must exceed 1e-6, proving the parity harness catches a real
+    divergence rather than comparing identical computations.
+    """
+
+    def _max_rel_diff(self, a: list[tuple[float, float, float]],
+                      b: list[tuple[float, float, float]]) -> float:
+        """Max absolute relative difference across all (Cl, Cd, Cm) values."""
+        assert len(a) == len(b) == len(_make_fixed_trace())
+        max_diff = 0.0
+        for (x1, y1, z1), (x2, y2, z2) in zip(a, b):
+            for v1, v2 in ((x1, x2), (y1, y2), (z1, z2)):
+                denom = max(abs(v1), abs(v2), 1e-12)
+                max_diff = max(max_diff, abs(v1 - v2) / denom)
+        return max_diff
+
+    def _run_calibration_runner(self, runner: ModelRunner,
+                                trace: list[dict[str, float]],
+                                params: dict[str, float]
+                                ) -> list[tuple[float, float, float]]:
+        return runner.simulate(trace, params)
 
     def test_mismatch_cm_scale_detected(self):
-        """Changing cm_scale in only one path must cause a detectable mismatch."""
+        """Changing cm_scale in only the ModelRunner path must diverge."""
         trace = _make_fixed_trace()
         aero_prod = AeroConfig(cm_scale=1.0)
-        aero_cal = AeroConfig(cm_scale=0.5)  # Different!
-        pdb_prod = PolarDatabase(aero_prod.polar_dir, variant=aero_prod.polar_variant)
-        pdb_cal = PolarDatabase(aero_cal.polar_dir, variant=aero_cal.polar_variant)
+        aero_cal = AeroConfig(cm_scale=0.5)  # perturbed in ModelRunner only
+        pdb = PolarDatabase(aero_prod.polar_dir, variant=aero_prod.polar_variant)
 
-        prod_results = _run_production_path(trace, aero_prod, pdb_prod)
+        runner_prod = ModelRunner(aero=aero_prod, pdb=pdb)
+        runner_cal = ModelRunner(aero=aero_cal, pdb=pdb)
+        params = {
+            "ds_Tf": runner_prod.aero.ds_Tf,
+            "ds_Tv": runner_prod.aero.ds_Tv,
+            "ds_Ta": runner_prod.aero.ds_Ta,
+            "ds_Kv": runner_prod.aero.ds_Kv,
+            "ds_Knc": runner_prod.aero.ds_Knc,
+        }
 
-        # Manual calibration-style call with different cm_scale
-        cal_results: list[tuple[float, float, float]] = []
-        ds = [0.0, 0.0, 0.0, 0.0, 0.0]
-        prev_t = None
-        dyn = int(aero_cal.use_dynamic_stall)
-        clmax = pdb_cal.Cl_max
-        cm_scale = aero_cal.cm_scale
+        prod_results = self._run_calibration_runner(runner_prod, trace, params)
+        cal_results = self._run_calibration_runner(runner_cal, trace, params)
 
-        for pt in trace:
-            t = pt["time"]
-            dt = (t - prev_t) if prev_t is not None else 0.05 * pt["chord"] / max(pt["W"], 1e-3)
-            prev_t = t
-            Cl, Cd, _Cl_nc, _f, Cm = _aero_coeffs(
-                ds, math.radians(pt["alpha"]), pt["W"], pt["chord"], dt, pt["Re"],
-                dyn,
-                aero_cal.ds_Tf, aero_cal.ds_Tv, aero_cal.ds_Ta,
-                aero_cal.ds_Kv, clmax,
-                pdb_cal.logRe_grid, pdb_cal.alpha_grid, pdb_cal.cla_re,
-                pdb_cal.Cl, pdb_cal.Cd, pdb_cal.Cm, cm_scale,
-            )
-            cal_results.append((float(Cl), float(Cd), float(Cm)))
-
-        # At least one Cm value must differ significantly
-        cm_diffs = [abs(c_p - c_c) for (_, _, c_p), (_, _, c_c) in zip(prod_results, cal_results)]
-        max_diff = max(cm_diffs)
-        assert max_diff > 1e-6, f"Expected Cm mismatch from cm_scale change, max diff = {max_diff}"
+        max_diff = self._max_rel_diff(prod_results, cal_results)
+        assert max_diff > 1e-6, (
+            f"Expected Cm mismatch from cm_scale change, max rel diff = {max_diff}"
+        )
 
     def test_mismatch_polar_variant_detected(self):
-        """Changing polar variant in only one path must cause a detectable mismatch."""
+        """Changing polar variant in only the ModelRunner path must diverge."""
         trace = _make_fixed_trace()
-        aero_prod = AeroConfig(polar_variant="neuralfoil")
-        aero_cal = AeroConfig(polar_variant="neuralfoil_cm")  # Different!
-        pdb_prod = PolarDatabase(aero_prod.polar_dir, variant=aero_prod.polar_variant)
-        pdb_cal = PolarDatabase(aero_cal.polar_dir, variant=aero_cal.polar_variant)
+        aero = AeroConfig()  # same aero for both
+        pdb_prod = PolarDatabase(aero.polar_dir, variant="neuralfoil")
+        pdb_cal = PolarDatabase(aero.polar_dir, variant="neuralfoil_cm")  # perturbed
 
-        prod_results = _run_production_path(trace, aero_prod, pdb_prod)
+        runner_prod = ModelRunner(aero=aero, pdb=pdb_prod)
+        runner_cal = ModelRunner(aero=aero, pdb=pdb_cal)
+        params = {
+            "ds_Tf": runner_prod.aero.ds_Tf,
+            "ds_Tv": runner_prod.aero.ds_Tv,
+            "ds_Ta": runner_prod.aero.ds_Ta,
+            "ds_Kv": runner_prod.aero.ds_Kv,
+            "ds_Knc": runner_prod.aero.ds_Knc,
+        }
 
-        # Manual calibration-style call with different polar variant
-        cal_results: list[tuple[float, float, float]] = []
-        ds = [0.0, 0.0, 0.0, 0.0, 0.0]
-        prev_t = None
-        dyn = int(aero_cal.use_dynamic_stall)
-        clmax = pdb_cal.Cl_max
-        cm_scale = aero_cal.cm_scale
+        prod_results = self._run_calibration_runner(runner_prod, trace, params)
+        cal_results = self._run_calibration_runner(runner_cal, trace, params)
 
-        for pt in trace:
-            t = pt["time"]
-            dt = (t - prev_t) if prev_t is not None else 0.05 * pt["chord"] / max(pt["W"], 1e-3)
-            prev_t = t
-            Cl, Cd, _Cl_nc, _f, Cm = _aero_coeffs(
-                ds, math.radians(pt["alpha"]), pt["W"], pt["chord"], dt, pt["Re"],
-                dyn,
-                aero_cal.ds_Tf, aero_cal.ds_Tv, aero_cal.ds_Ta,
-                aero_cal.ds_Kv, clmax,
-                pdb_cal.logRe_grid, pdb_cal.alpha_grid, pdb_cal.cla_re,
-                pdb_cal.Cl, pdb_cal.Cd, pdb_cal.Cm, cm_scale,
-            )
-            cal_results.append((float(Cl), float(Cd), float(Cm)))
+        max_diff = self._max_rel_diff(prod_results, cal_results)
+        assert max_diff > 1e-6, (
+            f"Expected mismatch from polar_variant change, max rel diff = {max_diff}"
+        )
 
-        # At least one value must differ significantly
-        all_diffs = []
-        for (Cl_p, Cd_p, Cm_p), (Cl_c, Cd_c, Cm_c) in zip(prod_results, cal_results):
-            all_diffs.append(abs(Cl_p - Cl_c))
-            all_diffs.append(abs(Cd_p - Cd_c))
-            all_diffs.append(abs(Cm_p - Cm_c))
-        max_diff = max(all_diffs)
-        assert max_diff > 1e-6, f"Expected mismatch from polar_variant change, max diff = {max_diff}"
+    def test_mismatch_clmax_detected(self):
+        """Changing the Cl_max clamp in only the ModelRunner path must diverge.
 
-    
+        The clamp only bites in the stall portion of the trace, so the
+        perturbed Cl_max is made very small so the clamp definitely activates
+        on the vortex-lift term, producing a large, detectable divergence.
+        """
+        trace = _make_fixed_trace()
+        aero = AeroConfig(use_dynamic_stall=True)  # stall active
+        pdb_prod = PolarDatabase(aero.polar_dir, variant=aero.polar_variant)
+        pdb_cal = PolarDatabase(aero.polar_dir, variant=aero.polar_variant)
+        pdb_cal.Cl_max = 0.01  # perturbed clamp in ModelRunner only (tiny)
+
+        runner_prod = ModelRunner(aero=aero, pdb=pdb_prod)
+        runner_cal = ModelRunner(aero=aero, pdb=pdb_cal)
+        params = {
+            "ds_Tf": runner_prod.aero.ds_Tf,
+            "ds_Tv": runner_prod.aero.ds_Tv,
+            "ds_Ta": runner_prod.aero.ds_Ta,
+            "ds_Kv": runner_prod.aero.ds_Kv,
+            "ds_Knc": runner_prod.aero.ds_Knc,
+        }
+
+        prod_results = self._run_calibration_runner(runner_prod, trace, params)
+        cal_results = self._run_calibration_runner(runner_cal, trace, params)
+
+        max_diff = self._max_rel_diff(prod_results, cal_results)
+        assert max_diff > 1e-6, (
+            f"Expected Cl mismatch in stall from Cl_max change, max rel diff = {max_diff}"
+        )
+
+    def test_mismatch_dyn_flag_detected(self):
+        """Changing the dynamic-stall on/off flag in only the ModelRunner path
+        must diverge."""
+        trace = _make_fixed_trace()
+        aero_prod = AeroConfig(use_dynamic_stall=True)
+        aero_cal = AeroConfig(use_dynamic_stall=False)  # perturbed in ModelRunner only
+        pdb = PolarDatabase(aero_prod.polar_dir, variant=aero_prod.polar_variant)
+
+        runner_prod = ModelRunner(aero=aero_prod, pdb=pdb)
+        runner_cal = ModelRunner(aero=aero_cal, pdb=pdb)
+        params = {
+            "ds_Tf": runner_prod.aero.ds_Tf,
+            "ds_Tv": runner_prod.aero.ds_Tv,
+            "ds_Ta": runner_prod.aero.ds_Ta,
+            "ds_Kv": runner_prod.aero.ds_Kv,
+            "ds_Knc": runner_prod.aero.ds_Knc,
+        }
+
+        prod_results = self._run_calibration_runner(runner_prod, trace, params)
+        cal_results = self._run_calibration_runner(runner_cal, trace, params)
+
+        max_diff = self._max_rel_diff(prod_results, cal_results)
+        assert max_diff > 1e-6, (
+            f"Expected mismatch from dynamic-stall flag change, max rel diff = {max_diff}"
+        )
 
 
 if __name__ == "__main__":

@@ -72,7 +72,21 @@ jobs:
 
       - name: Run fast test suite with NUMBA_DISABLE_JIT=1
         run: |
-          NUMBA_DISABLE_JIT=1 python -m pytest tests/ -q -m "not slow"
+          NUMBA_DISABLE_JIT=1 python -m pytest tests/ -q -m "not slow and not needs_jit"
+
+      - name: Verify needs_jit tests are still excluded
+        run: |
+          # Lists tests that carry the needs_jit marker and would be run by the
+          # fast suite if the marker were accidentally removed.  Fails if the
+          # count drops to zero (marker lost on all needs_jit tests).
+          N=$(NUMBA_DISABLE_JIT=1 python -m pytest tests/ --collect-only -m needs_jit -q 2>&1 \
+              | grep -oE '[0-9]+ selected' | head -1 | grep -oE '[0-9]+' || true)
+          N=${N:-0}
+          if [ "$N" -eq 0 ]; then
+            echo "::error::No needs_jit-marked tests found; the no-JIT job may run them unintentionally"
+            exit 1
+          fi
+          echo "$N needs_jit-marked test(s) correctly excluded from the no-JIT run"
 
   # Slow validation job: Ham comparison and full validation suite.
   # Marked slow so it can be run less frequently if needed.

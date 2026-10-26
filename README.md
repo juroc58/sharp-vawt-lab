@@ -86,8 +86,8 @@ the scale-up has none.
 | **Scaled-up passive (R = 2.72 m)** | **0.42** | [0.37, 0.48] | ~71 % of Betz | S |
 <!-- END GENERATED: headline_table_large -->
 
-The confidence intervals come from Saltelli sampling over thirteen
-inputs, thirteen of them active (`scripts/uncertainty.py`). All Sharp-machine numbers use the
+The confidence intervals come from the Saltelli sampling described below
+(`scripts/uncertainty.py`). All Sharp-machine numbers use the
 Helmbold (1942) finite-span correction; the Ham
 comparison is run without one and without the curvature correction, using
 double-multiple-streamtube induction and Ham's cosine pitch law. See the
@@ -97,7 +97,7 @@ double-multiple-streamtube induction and Ham's cosine pitch law. See the
 tip loss ON**. Ham is the exception: his model class has no tip loss, so
 the comparison is run without one. Deterministic design-point values
 quoted in the body text are labelled as such; the table gives the UQ mean
-over twelve active inputs. The UQ study is a scenario analysis, not a
+over the active inputs. The UQ study is a scenario analysis, not a
 calibrated error bar: the finite-span multiplier alone spans ±15 %, and
 both small-rotor distributions cross a collapse threshold (see below).
 
@@ -119,7 +119,7 @@ See `scripts/plot_ham_curve.py` for the Ham curve and the Ham comparison script.
 This design follows Sharp's **mechanism** (centrifugal-pendulum pitch
 control) but not his **geometry**. It uses a light counterweight 0.30c chords ahead of the leading edge; Sharp's published range is 0.5–1.0.
 At R = 0.6 m, with the finite-span correction on and the UQ spread
-over twelve active inputs, the anchor (c = 0.14 m, m_c = 0.002 kg,
+over the active inputs, the anchor (c = 0.14 m, m_c = 0.002 kg,
 d_cw = 0.30c) reaches the interval shown in the headline table.
 
 **The mechanism fails inside Sharp's own parameter range.** With a
@@ -151,7 +151,7 @@ T_max = 40 s, steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10�
 no stops), with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g,
 d_cw ≈ +0.066c, ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
 
-The UQ mean at the fixed anchor is **0.25 [0.11, 0.35]** over twelve active
+The UQ mean at the fixed anchor is **0.25 [0.11, 0.35]** over the active
 inputs — the deterministic optimum sits near the top of its own interval, a
 residual winner's-curse effect. Only about 1 % of samples fall on the
 collapsed branch, so this design is much less bimodal than the
@@ -202,7 +202,8 @@ one.
 ### Prescribed pitch (upper bound)
 
 For reference, running the same rotor with an ideal actuator commanding
-ψ(φ) directly reaches 0.50 -- the same class of machine as Ham's
+ψ(φ) directly reaches the prescribed-pitch upper bound quoted in the
+headline table -- the same class of machine as Ham's
 cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 ---
@@ -211,10 +212,12 @@ cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 **aep.png (left panel)** and **validation.png** show Cp(TSR) curves for **two different geometries**:
 
+<!-- BEGIN GENERATED: anchor_geometries -->
 | Panel | Geometry | R | H | c | AR | Mode |
 |-------|----------|---|---|---|-----|-------|
 | **aep.png (left)** | Scale-up passive CPPC | 2.72 m | 4.06 m | 0.386 m | 10.5 | Passive CPPC, fixed rpm |
 | **validation.png** | Model design scaled to R = 1.83 m (not Ham's rig) | 1.83 m | 1.22 m | 0.359 m | 3.4 | Prescribed pitch, no tip loss |
+<!-- END GENERATED: anchor_geometries -->
 
 The **aep.png left panel** shows our scale-up passive CPPC design (R=2.72m, AR=10.5) with free pitch.
 The **validation.png** panel is this project's prescribed-pitch design point
@@ -399,9 +402,9 @@ a few per cent at this spacing.
 
 ![uncertainty](docs/uncertainty.png)
 
-Thirteen inputs are sampled, but **`arm_cd` is inert**: every anchor sets
-`arm_d = 0`, so the support-arm drag term is identically zero and `arm_cd`
-cannot affect Cp. Only twelve inputs are active — nine model constants that
+The sampler varies the inputs listed below, but **`arm_cd` is inert**: every
+anchor sets `arm_d = 0`, so the support-arm drag term is identically zero and
+`arm_cd` cannot affect Cp. The active inputs are nine model constants that
 come from the source papers but were not fitted to this specific machine,
 plus the finite-span multiplier, the attached-flow Cm scale and the
 polar model-form variant (all model-form uncertainties, not constants).
@@ -409,8 +412,9 @@ Saltelli sampling (first-order) propagates that uncertainty through each headlin
 yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 
 <!-- BEGIN GENERATED: uq_sample_counts -->
-Method: `<!-- GEN: uq_method -->`; samples per anchor: `<!-- GEN: uq_n_samples -->`;
-total runs: `<!-- GEN: uq_total_runs -->`; `<!-- GEN: uq_active_inert -->`.
+Method: `saltelli`; runs per anchor: `1024`; total runs: `4096`; 13 active; `arm_cd` inert.
+
+base N = 64 (quick mode); indices are qualitative.
 <!-- END GENERATED: uq_sample_counts -->
 
 <!-- BEGIN GENERATED: uq_params -->
@@ -549,59 +553,46 @@ first-order) for each anchor. Runs in ~20 min on 4 cores
 (`scripts/uncertainty.py --saltelli --saltelli-n 64`).
 
 <!-- BEGIN GENERATED: uq_sobol -->
-| Anchor | Dominant S₁ parameter | S₁ (95 % CI) | Total-order Sₜ (95 % CI) |
+| Anchor | Dominant S₁ parameter | S₁ (95 % half-width) | Total-order Sₜ (95 % half-width) |
 |---|---|---|---|
-| Ham 1979 comparison | `tau_rev` | **+0.84 ± 0.26** | +0.77 ± 0.20 |
-| Sharp-inspired CPPC | `tip_loss_multiplier` | **+0.57 ± 0.34** | +0.79 ± 0.26 |
-| Optimised passive | `ind_drag_scale` | **+0.54 ± 0.22** | +0.66 ± 0.24 |
-| Scale-up R = 2.72 m | `ind_drag_scale` | **+0.63 ± 0.23** | +0.66 ± 0.19 |
+| Ham 1979 comparison | not resolved | not resolved | not resolved |
+| Sharp-inspired CPPC | not resolved | not resolved | not resolved |
+| Optimised passive | not resolved | not resolved | not resolved |
+| Scale-up R = 2.72 m | not resolved | not resolved | not resolved |
 <!-- END GENERATED: uq_sobol -->
 
-**The finite-span multiplier and separation lag drive the two small-rotor anchors.** Direct
+**Finite-span, induced-drag and separation-lag terms drive the small-rotor anchors.** Direct
 runs at the nominal parameters (`scripts/scan_tip_loss.py`):
 
+<!-- BEGIN GENERATED: tip_loss_table -->
 | Multiplier | 0.70 | 0.75 | 0.80 | 0.90 | 1.00 | 1.20 | 1.30 |
 |---|---|---|---|---|---|---|---|
-| Cp, Sharp-inspired | 0.002 | 0.003 | 0.003 | 0.005 | 0.067 | 0.111 | 0.146 |
-| Cp, scale-up | 0.296 | 0.313 | 0.330 | 0.359 | 0.384 | 0.437 | 0.438 |
+| Cp, Sharp-inspired | 0.005 | 0.006 | 0.008 | 0.014 | 0.079 | 0.124 | 0.138 |
+| Cp, scale-up | 0.344 | 0.363 | 0.380 | 0.405 | 0.422 | 0.440 | 0.440 |
 
-The Sharp-inspired branch is discontinuous between multipliers 0.955 and 0.96:
-at 0.955 Cp = 0.01740, at 0.96 Cp = 0.01823. The Helmbold central value (1.00)
-sits only about 4 % above that threshold. The scale-up is smooth because
-its Helmbold factor is already high (0.83). That is why the small-rotor
-UQ is a scenario range while the scale-up UQ behaves like a normal
-parameter interval.
+The Sharp-inspired branch jumps between multipliers 0.95 (Cp = 0.017) and 1.00 (Cp = 0.079); the Helmbold central value (1.00) sits above that threshold.  The scale-up branch is smooth.
+<!-- END GENERATED: tip_loss_table -->
 
 **Physical reading:**
 
-- **`ham_1979`**: prescribed pitch bypasses the dynamic-stall model, so
-  the surviving uncertainty is the wake/induction relaxation (`tau_rev`,
-  S₁ = 0.84 ± 0.13) plus `cd_add` (S₁ = 0.23 ± 0.13). This is the
-  cleanest single-parameter result.
-- **`sharp_cppc`**: the finite-span multiplier has the largest first-order
-  term (S₁ = 0.57 ± 0.17, total-order 0.79 ± 0.29) but its first-order CI
-  spans zero; separation lag `ds_Tf` is next (S₁ = 0.15 ± 0.17,
-  total-order 0.20 ± 0.10) and the `polar_variant` model-form input is a
-  further first-order term (S₁ = 0.02 ± 0.04). `cm_scale` is small
-  first-order (0.01 ± 0.01) but has total-order (0.04 ± 0.07).
-- **`optimised_passive`**: the multiplier dominates (S₁ = 0.27 ± 0.07,
-  total-order 0.41 ± 0.15); the remaining total-order terms are the
-  separation lag (0.02) and the polar variant (0.03), both with wide CIs.
-- **`scaleup`**: the leading terms are `tip_loss_multiplier`
-  (S₁ = 0.14 ± 0.09), `cm_scale` (0.00 ± 0.01) and `ds_Knc`
-  (0.00 ± 0.00); `c_scale_override` is interaction-heavy (total-order
-  0.06 ± 0.02). No single parameter dominates, and the old
-  `ds_Knc`-only reading is not supported.
+<!-- BEGIN GENERATED: uq_reading -->
+**Reading the table.** Values are model output from the committed Saltelli run.
+
+- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.84 ± 0.29) and `cd_add` (S1 = 0.23 ± 0.10) have overlapping 95 % intervals.
+- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.57 ± 0.33) and `ind_drag_scale` (S1 = 0.15 ± 0.15) have overlapping 95 % intervals.
+- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.54 ± 0.23) and `tip_loss_multiplier` (S1 = 0.27 ± 0.21) have overlapping 95 % intervals.
+- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.63 ± 0.25) and `tip_loss_multiplier` (S1 = 0.14 ± 0.16) have overlapping 95 % intervals.
+<!-- END GENERATED: uq_reading -->
 
 
 **Actionable conclusion.** For the small rotors the single most valuable
 measurement is a low-aspect-ratio finite-span/tip-loss calibration for the
-actual rotor geometry; it would replace the ±15 % multiplier band that
-drives those anchors' variance. At the scale-up the leading terms are the
-tip-loss multiplier, `cm_scale` and `ds_Knc`, all with wide intervals; no
-single measurement is clearly dominant. A strut-drag measurement
-(`cd_add`) and a wake-induction relaxation measurement (`tau_rev`) are the
-next most useful after a tip-loss calibration.
+actual rotor geometry; it would narrow the multiplier band that dominates
+those anchors' variance. At the scale-up the leading first-order terms are
+those listed above, all with wide intervals; no single measurement is
+clearly dominant. A strut-drag measurement (`cd_add`) and a wake-induction
+relaxation measurement (`tau_rev`) are the next most useful after a
+tip-loss calibration.
 
 ## 📚 Deep Dive Details
 
@@ -776,7 +767,7 @@ Ham 1979 published peak Cp = 0.42–0.45 at TSR 2.5–3.0. The static-only
 2D model runs at Cp ≈ `0.474` — above Ham's 3D measured band — which is
 the expected bias for a 2D solver without finite-span (tip-loss) loss.
 This is an upper-bound comparison, not a reproduction of Ham's experiment.
-The `+ curv` row drops to 0.412 because Adams fitted his coefficients at
+The `+ curv` row drops to 0.425 because Adams fitted his coefficients at
 c/R = 0.418 on a variable-pitch machine; Ham's rig uses a fixed cosine
 pitch at c/R = 0.167, so the virtual-camber shift is not absorbed by the
 pitch schedule — a documented limitation of applying Adams outside his

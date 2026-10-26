@@ -1,11 +1,10 @@
 """
 Uncertainty quantification for the Sharp cycloturbine model.
 
-Thirteen inputs are sampled: nine uncalibrated model constants, the
-finite-span multiplier, the attached-flow Cm scale, the polar model-form
-variant, and the arm-drag multiplier (13 dimensions); the arm-drag
-multiplier is inert because every anchor sets arm_d = 0, so 12 of the 13
-enter the calculation.
+Fourteen inputs are sampled: eleven model constants, the finite-span
+multiplier, the polar model-form variant, and the arm-drag multiplier
+(14 dimensions).  The arm-drag multiplier is inert because every anchor
+sets arm_d = 0, so 13 of the 14 enter the calculation.
 They are propagated with Latin hypercube sampling (default) or Saltelli
 sampling (for Sobol indices) through the four anchor cases documented in
 the README.
@@ -17,7 +16,10 @@ Outputs
 * scripts/uncertainty_results.json: raw samples + Cp values (+ Sobol indices if Saltelli used)
 * .uq_cache/: disk cache of completed runs (resume on interruption)
 
-Runtime: ~5 min on 4 cores (LHS) or ~40 min on 4 cores (Saltelli, N=1024).
+Runtime: ~5 min on 4 cores (LHS).  Saltelli runs scale as N*(D+2) per
+anchor; the committed quick-mode run uses N = 64.  A production run
+(N >= 512) is available via ``--production`` and prints its estimated
+run count and wall time before refusing to execute.
 """
 from __future__ import annotations
 
@@ -97,6 +99,15 @@ _UQ_VERSION = "2.0.0"
 # explicitly so readers do not mistake them for active uncertainty sources.
 INERT_PARAMETERS = ["arm_cd"]
 ACTIVE_PARAMETERS = [n for n in UQ_NAMES if n not in INERT_PARAMETERS]
+
+
+def _numba_installed() -> bool:
+    """Return True if numba can be imported (needed for JIT kernel speed)."""
+    try:
+        import numba  # noqa: F401
+        return True
+    except Exception:  # noqa: BLE001 - intentional: just probing importability
+        return False
 
 
 def _code_hash() -> str:
@@ -306,11 +317,37 @@ def main():
         help="Compute second-order Sobol indices. Requires N * (2D + 2) "
              "samples per anchor instead of N * (D + 2).",
     )
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="Production-grade Saltelli run: base N >= 512, first-order "
+             "Sobol indices only. Prints the estimated run count and wall "
+             "time, then refuses to run unless numba is importable and an "
+             "explicit --confirm-production flag is also given (production "
+             "runs are expensive). Without confirmation, prints the exact "
+             "command for the user to run manually.",
+    )
+    parser.add_argument(
+        "--confirm-production",
+        action="store_true",
+        help="Actually execute a --production run (expensive). Only use with "
+             "--production and when numba is installed and a multi-hour time "
+             "budget is available.",
+    )
     args = parser.parse_args()
 
     use_saltelli = args.saltelli
     saltelli_n = args.saltelli_n if args.saltelli_n is not None else N_SAMPLES
     calc_second_order = args.saltelli_second_order
+
+    # --- Production mode: base N >= 512, first-order Saltelli only ---------
+    production_requested = args.production
+    confirm = args.confirm_production
+    if production_requested:
+        use_saltelli = True
+        calc_second_order = False  # production is first-order only
+        saltelli_n = max(saltelli_n, 512)
+        args.saltelli_n = saltelli_n
 
     print("=" * 74)
     print("Uncertainty quantification — Sharp cycloturbine model")
@@ -336,6 +373,36 @@ def main():
     for name, lo, hi in UQ_SPEC:
         print(f"    {name:<26s} {lo:>8.4g}  ->  {hi:<8.4g}")
     print()
+
+    # --- Production estimate + refusal-to-run ------------------------------
+    if production_requested:
+        D = len(UQ_SPEC)
+        samples_per_anchor = saltelli_n * (D + 2)  # first-order only
+        total_runs = samples_per_anchor * len(ANCHORS)
+        # Wall-time estimate: ~0.3 s per run on 4 cores (measured locally).
+        est_seconds = total_runs * 0.3 / 4.0
+        import datetime as _dt
+        est = str(_dt.timedelta(seconds=int(est_seconds)))
+        print("=" * 74)
+        print("PRODUCTION MODE (not executed unless --confirm-production is given)")
+        print("=" * 74)
+        print(f"  base N            : {saltelli_n} (>= 512 required)")
+        print(f"  method            : first-order Saltelli (D={D})")
+        print(f"  runs per anchor   : {samples_per_anchor}")
+        print(f"  anchors           : {len(ANCHORS)}")
+        print(f"  total runs        : {total_runs}")
+        print(f"  est. wall time    : ~{est} (4 cores, ~0.3 s/run)")
+        print(f"  numba installed   : {'yes' if _numba_installed() else 'no'}")
+        print()
+        print("Exact command to run production manually:")
+        print(f"  python scripts/uncertainty.py --saltelli --saltelli-n {saltelli_n}")
+        print()
+        if not confirm:
+            print("Refusing to run: time budget not confirmed. Pass "
+                  "--confirm-production to execute.")
+            return 0
+        print("Confirmation received: executing production run ...")
+        print()
 
     # Generate samples
     if use_saltelli:
@@ -510,9 +577,13 @@ def main():
     # -------- JSON --------
     out_json = os.path.join(_HERE, "uncertainty_results.json")
     method = "saltelli" if use_saltelli else "lhs"
+    # base_n is the Saltelli base N (or LHS sample count); runs_per_anchor
+    # is base_n * (D + 2) for first-order Saltelli, or base_n for LHS.
+    base_n = saltelli_n if use_saltelli else N_SAMPLES
     uq_metadata = {
         "UQ_SPEC": UQ_SPEC,
         "method": method,
+        "base_n": base_n,
         "n_samples_per_anchor": len(samples),
         "runs_per_anchor": len(samples),
         "total_runs": len(samples) * len(ANCHORS),
@@ -536,6 +607,7 @@ def main():
         json.dump({
             "stamp": stamp,
             "method": method,
+            "base_n": base_n,
             "n_samples": len(samples),
             "samples_per_anchor": len(samples),
             "runs_per_anchor": len(samples),

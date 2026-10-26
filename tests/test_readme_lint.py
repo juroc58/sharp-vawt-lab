@@ -178,8 +178,6 @@ def test_no_hard_coded_cp(readme):
             continue
         if line.strip().startswith("<!--"):
             continue
-        if "|" in line:
-            continue  # table row
         for m in CP_PATTERN.finditer(line):
             val = m.group()
             if val in ALLOWLIST:
@@ -205,6 +203,31 @@ def test_no_hard_coded_cp(readme):
             raise AssertionError(
                 f"Line {i}: hard-coded Cp-like number '{val}' outside GEN block: "
                 f"{line.strip()[:100]}"
+            )
+
+
+def test_no_result_numbers_in_table_rows(readme):
+    """Table rows outside GEN blocks must not contain decimal result numbers.
+
+    This closes the previous table-row exemption: every numeric table that
+    reports a result must be a generated block sourced from stamped JSON.
+    """
+    text, blocks = readme
+    decimals = re.compile(r"[-+]?\d+\.\d+")
+    lines = text.split("\n")
+    for i, line in enumerate(lines, 1):
+        if _is_in_gen(i, blocks):
+            continue
+        if line.strip().startswith("<!--"):
+            continue
+        if not line.strip().startswith("|"):
+            continue
+        for m in decimals.finditer(line):
+            if m.group() in ALLOWLIST:
+                continue
+            raise AssertionError(
+                f"Line {i}: decimal result number '{m.group()}' in a table row "
+                f"outside a GEN block: {line.strip()[:100]}"
             )
 
 
@@ -246,6 +269,7 @@ def test_gen_blocks_present_and_nonempty(readme):
     required = [
         "evidence_table", "headline_table_small", "headline_table_large",
         "uq_params", "uq_bimodal", "cm_scale_scan", "uq_sobol",
+        "anchor_geometries", "tip_loss_table",
         "aep_turbulent", "aep_rigid_comparison", "aep_steady",
         "aep_branches", "branch_point_check", "counter_rotating",
         "robust_optimization", "ham_reconciliation", "ham_finite_span",

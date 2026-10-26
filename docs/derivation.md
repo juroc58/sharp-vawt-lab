@@ -779,6 +779,39 @@ the result metadata (`pitch_summary_units = "deg"`).
 
 ---
 
+## 14. Migration: renamed output columns (v3.4.0 → v3.5.0)
+
+The raw output column names in `sharp_vawt/engine.py` `OUT_COLS` changed
+between v3.4.0 and v3.5.0.  All angular columns are in radians both before
+and after; only the names changed (plus two unit-name corrections where the
+old names wrongly suggested degrees).
+
+| Old column | New column | Change type |
+|---|---|---|
+| `t` | `t` | unchanged |
+| `theta` | `theta` | unchanged |
+| `omega` | `omega` | unchanged |
+| `psi_0` | `psi_rad` | pure rename |
+| `pitch_deg` | `pitch_rad` | unit-name correction (values were radians) |
+| `aoa_deg` | `aoa_rad` | unit-name correction (values were radians) |
+| `torque_total` | `torque_total` | unchanged |
+| `Q_shaft` | `Q_shaft` | unchanged |
+| `a_ind` | `a_ind` | unchanged |
+| `Fx_total` | `Fx_total` | unchanged |
+| `P_aero` | `P_aero` | unchanged |
+| `psidot_0` | `psidot_0` | unchanged |
+
+All other columns (`t`, `theta`, `omega`, `torque_total`, `Q_shaft`,
+`a_ind`, `Fx_total`, `P_aero`, `psidot_0`) are unchanged.  Result-dict keys
+added in v3.5.0: `energy_balance_abs_J`, `energy_balance_scale_J`,
+`energy_balance_scale_basis`, `energy_balance_defined`,
+`energy_balance_throughput`, `energy_balance_throughput_defined`,
+`energy_balance_throughput_basis`, `column_units`, `column_descriptions`,
+`pitch_summary_units`, `pitch_summary_convention`.  The `history` dict is
+keyed by the new column names.
+
+---
+
 ## References
 
 - Ham, N.D., Soohoo, P., Noll, R.B., Drees, H.M. (1979). *Analytical and

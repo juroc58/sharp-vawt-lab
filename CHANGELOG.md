@@ -5,19 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [3.5.0] - 2026-10-25
 
 ### Breaking
-- **Raw output column names renamed** in `sharp_vawt/engine.py` `OUT_COLS`:
-  `psi_0` → `psi_rad`, `pitch_deg` → `pitch_rad`, `aoa_deg` → `aoa_rad`.
-  All angular columns are in radians; summary statistics convert to degrees.
-  Added `column_units` and `column_descriptions` to result metadata.
-- **Energy diagnostics extended**: `energy_balance_abs_J` (absolute closure
-  error in joules), `energy_balance_scale_J`, `energy_balance_scale_basis`,
-  `energy_balance_defined`, `energy_balance_throughput`,
-  `energy_balance_throughput_defined`, `energy_balance_throughput_basis`.
-  Near-zero scales (< 1e-9 J) yield undefined (NaN) ratios instead of
-  division by epsilon.
+- **Raw output column names renamed** in `sharp_vawt/engine.py` `OUT_COLS`
+  (old names derived from `git log -p -S OUT_COLS -- sharp_vawt/engine.py`):
+
+  | Old column | New column | Change type |
+  |---|---|---|
+  | `t` | `t` | unchanged |
+  | `theta` | `theta` | unchanged |
+  | `omega` | `omega` | unchanged |
+  | `psi_0` | `psi_rad` | pure rename (values were already radians) |
+  | `pitch_deg` | `pitch_rad` | unit-name correction: values were radians despite the `_deg` name |
+  | `aoa_deg` | `aoa_rad` | unit-name correction: values were radians despite the `_deg` name |
+  | `torque_total` | `torque_total` | unchanged |
+  | `Q_shaft` | `Q_shaft` | unchanged |
+  | `a_ind` | `a_ind` | unchanged |
+  | `Fx_total` | `Fx_total` | unchanged |
+  | `P_aero` | `P_aero` | unchanged |
+  | `psidot_0` | `psidot_0` | unchanged |
+
+  All angular columns are in radians; summary statistics (`pitch_min/max/rms`,
+  `aoa_max`) convert to degrees and document that conversion.
+- **Result-dict keys changed/added**:
+
+  | Old key | New key | Change type |
+  |---|---|---|
+  | `energy_balance` (absolute residual, J) | `energy_balance` (normalised ratio) | semantic change; use `energy_balance_abs_J` for the old absolute value |
+  | — | `energy_balance_abs_J` | added (absolute closure error, J) |
+  | — | `energy_balance_scale_J` | added |
+  | — | `energy_balance_scale_basis` | added |
+  | — | `energy_balance_defined` | added |
+  | — | `energy_balance_throughput` | added |
+  | — | `energy_balance_throughput_defined` | added |
+  | — | `energy_balance_throughput_basis` | added |
+  | — | `column_units` | added |
+  | — | `column_descriptions` | added |
+  | — | `pitch_summary_units` | added |
+  | — | `pitch_summary_convention` | added |
+  | `history["psi_0"]` | `history["psi_rad"]` | rename (raw column) |
+  | `history["pitch_deg"]` | `history["pitch_rad"]` | rename (raw column) |
+  | `history["aoa_deg"]` | `history["aoa_rad"]` | rename (raw column) |
+
+  `energy_balance_valid` is retained.  Near-zero scales (< 1e-9 J) yield
+  undefined (NaN) ratios instead of division by epsilon.
 - **Frozen-settings schema v1** in `scripts/compare_prototype.py`:
   `resolve_settings()` validates all model/numerical/experimental/acceptance/
   provenance fields; rejects unknown or contradictory keys; checks polar
@@ -31,7 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Finite-span calibration pre-registration in `docs/prototype_validation_plan.md`.
 - **`tests/test_calibration_parity.py`**: aerodynamic parity test verifying
   calibration `ModelRunner` matches production `_aero_coeffs` to ≤1e-12
-  relative, with negative controls for `cm_scale` and `polar_variant`.
+  relative, with negative controls for `cm_scale`, `polar_variant`, the
+  `Cl_max` clamp and the dynamic-stall flag (each perturbed inside the
+  `ModelRunner` path only).
 - **`scripts/validate_ds_off.py`** + `scripts/validate_ds_off.json`:
   dynamic-stall sensitivity for prescribed-pitch design point and passive
   headline anchors, with stamped JSON output.
@@ -49,18 +85,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `optimizer_overrides.json` documented as optional input in `scripts/README.md`.
 - Output column semantics documented in `docs/derivation.md` §13.
 - Energy ledger normalisation documented in `docs/derivation.md` §10.
+- **Migration table** in `docs/derivation.md` §14 covering every `OUT_COLS`
+  column; `tests/test_version_consistency.py` parses it and fails if a column
+  is missing.
+- **Generated README result tables**: anchor geometries and the finite-span
+  multiplier table are now generated blocks; `tests/test_readme_generated.py`
+  checks idempotency, Sobol labelling and named-quantity consistency.
 
 ### Changed
 - `scripts/build_readme.py`: verifies stamps when loading JSON; loads
   `validation_ds_off.json`, `optimization_passive.json`,
-  `optimization_scaleup.json`, `tip_loss_scan.json`.
+  `optimization_scaleup.json`, `tip_loss_scan.json`; also regenerates the
+  quick-mode sentence in `scripts/README.md`.
+- **README lint**: table rows are no longer exempt from the hard-coded-number
+  checks; every numeric result table must be a generated block.
+- **CI**: the `NUMBA_DISABLE_JIT=1` job runs `-m "not slow and not needs_jit"`
+  and fails if no `needs_jit` tests are collected (marker-removal guard).
 - `scripts/check_polars.py`: clarified documentation as "sanity/quality gate,
   not experimental validation"; added exit-code tests in `tests/test_polars.py`.
 - Prototype efficiency moved to `REQUIRED_NUMERIC` in import schema.
 - DS calibration criteria now require `fit_converged`, `identifiable`
   (finite intervals, cond < 1e10), `not_pinned`.
-
-## [Unreleased]
 
 ## [3.4.0] - 2026-10-24
 

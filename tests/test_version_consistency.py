@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = ROOT / "pyproject.toml"
 CITATION = ROOT / "CITATION.cff"
 CHANGELOG = ROOT / "CHANGELOG.md"
+DERIVATION = ROOT / "docs" / "derivation.md"
 
 
 def _pyproject_version() -> str:
@@ -103,3 +104,64 @@ def test_subprocess_full_rotor_tests_have_marker():
     assert not missing, (
         f"Tests using subprocess + full-rotor scripts must have 'slow' or 'needs_jit' marker: {missing}"
     )
+
+
+def _migration_new_columns() -> list[str]:
+    """Parse the Migration table in docs/derivation.md and return its 'new'
+    column names."""
+    text = DERIVATION.read_text(encoding="utf-8")
+    m = re.search(
+        r"## 14\. Migration.*?(?=\n## |\Z)", text, re.DOTALL
+    )
+    assert m, "Migration section not found in docs/derivation.md"
+    section = m.group(0)
+    new_cols = []
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith("|") or line.startswith("|---"):
+            continue
+        cells = [c.strip().strip("`") for c in line.strip("|").split("|")]
+        if len(cells) >= 2:
+            new_cols.append(cells[1])
+    # Drop the header row ("New column").
+    if new_cols and new_cols[0].lower() == "new column":
+        new_cols = new_cols[1:]
+    return new_cols
+
+
+def test_migration_table_covers_all_out_cols():
+    """Every column in engine.OUT_COLS must appear in the Migration table's
+    'new' column."""
+    from sharp_vawt.engine import OUT_COLS
+    new_cols = _migration_new_columns()
+    assert new_cols, "Migration table has no new columns"
+    for col in OUT_COLS:
+        assert col in new_cols, (
+            f"OUT_COLS column {col!r} missing from Migration table new column: {new_cols}"
+        )
+
+
+def test_ci_no_jit_job_excludes_needs_jit():
+    """The NUMBA_DISABLE_JIT test run must deselect needs_jit tests."""
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert 'NUMBA_DISABLE_JIT=1 python -m pytest tests/ -q -m "not slow and not needs_jit"' in ci
+
+
+def test_needs_jit_marker_is_still_used():
+    """At least one test must carry @pytest.mark.needs_jit.
+
+    Guards against silently removing the marker, which would make the CI
+    deselection meaningless.
+    """
+    import ast
+
+    count = 0
+    for tf in (ROOT / "tests").glob("test_*.py"):
+        tree = ast.parse(tf.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            for dec in node.decorator_list:
+                if isinstance(dec, ast.Attribute) and dec.attr == "needs_jit":
+                    count += 1
+    assert count >= 1, "no @pytest.mark.needs_jit tests found"

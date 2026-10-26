@@ -26,6 +26,7 @@ if str(_ROOT) not in sys.path:
 
 import sharp_vawt.config as cfg
 from scripts.stamp import make_stamp
+from sharp_vawt.config import AeroConfig
 from sharp_vawt.database import PolarDatabase
 from sharp_vawt.engine import _aero_coeffs
 
@@ -162,9 +163,14 @@ class ModelRunner:
     an externally imposed airfoil trace, not a rotating-blade element.
     """
 
-    def __init__(self):
-        self.aero = cfg.AeroConfig()
-        self.pdb = PolarDatabase(self.aero.polar_dir, variant=self.aero.polar_variant)
+    def __init__(self, aero: AeroConfig | None = None,
+                 pdb: PolarDatabase | None = None):
+        if aero is None:
+            aero = cfg.AeroConfig()
+        if pdb is None:
+            pdb = PolarDatabase(aero.polar_dir, variant=aero.polar_variant)
+        self.aero = aero
+        self.pdb = pdb
         self.clmax = self.pdb.Cl_max
         self.cm_scale = self.aero.cm_scale
         self.dyn = int(self.aero.use_dynamic_stall)

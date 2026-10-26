@@ -14,10 +14,14 @@ import sys
 ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "scripts")
 README  = os.path.join(ROOT, "README.md")
+SCRIPTS_README = os.path.join(SCRIPTS, "README.md")
 
 # Add scripts to path for stamp module
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
+sys.path.insert(0, ROOT)
 from stamp import verify_stamp
+
+from vawt_presets import PRESETS
 
 STAMP_CHECK_MAP = {
     "uncertainty_results.json": "scripts/uncertainty.py",
@@ -435,9 +439,24 @@ def iv_ham_case_ds_curv_cd002_cp():
 
 # AEP passive vs rigid fair
 
+def iv_uq_base_n_mode():
+    """'base N = <N> (quick mode); indices are qualitative' sentence.
+
+    Generated from the committed base_n in uncertainty_results.json.  When
+    base_n < 512 the study is quick mode (qualitative indices only).
+    """
+    base_n = DATA["uq"].get("base_n")
+    if base_n is None:
+        return "base N = unknown; indices are qualitative"
+    if base_n < 512:
+        return f"base N = {base_n} (quick mode); indices are qualitative"
+    return f"base N = {base_n}; indices are qualitative"
+
+
 INLINE_FUNCS = {
     'sharp_cppc_cp': iv_sharp_cppc_cp,
     'sharp_cppc_ci': iv_sharp_cppc_ci,
+    'uq_base_n_mode': iv_uq_base_n_mode,
     'optimised_passive_cp': iv_optimised_passive_cp,
     'optimised_passive_stored_cp': iv_optimised_passive_stored_cp,
     'scaleup_stored_cp': iv_scaleup_stored_cp,
@@ -646,7 +665,14 @@ def block_uq_params_table():
 
 
 def block_uq_sobol():
-    """Sobol sensitivity table from uncertainty_results.json."""
+    """Sobol sensitivity table from uncertainty_results.json.
+
+    Each quoted index shows its 95 % half-width (rho +/- half_width).  If any
+    two indices' 95 % intervals overlap for an anchor, the ranking is not
+    statistically resolvable and the cell reads "not resolved" instead of
+    naming a dominant parameter.  No value is printed with more than two
+    decimals.
+    """
     sobol = DATA["uq"].get("sobol", {})
     labels = {
         "ham_1979":          "Ham 1979 comparison",
@@ -654,27 +680,162 @@ def block_uq_sobol():
         "optimised_passive": "Optimised passive",
         "scaleup":           "Scale-up R = 2.72 m",
     }
-    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 (95 % CI) | "
-           + "Total-order S\u209c (95 % CI) |",
+    out = ["| Anchor | Dominant S\u2081 parameter | S\u2081 (95 % half-width) | "
+           + "Total-order S\u209c (95 % half-width) |",
            "|---|---|---|---|"]
     for a in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
         res = sobol.get(a, {})
-        s1 = res.get("S1", {})
         st = res.get("ST", {})
-        if not s1:
+        st_conf = res.get("ST_conf", {})
+        entries = _sobol_entries(res)
+        if not entries:
             out.append(f"| {labels[a]} | — | — | — |")
             continue
-        dom = max(s1, key=lambda k: abs(s1[k]))
-        rho = s1[dom]
-        st_val = st.get(dom, 0.0)
-        rho_ci = res.get("S1_conf", {}).get(dom, float("nan"))
-        st_ci = res.get("ST_conf", {}).get(dom, float("nan"))
+
+        if not _sobol_resolved(entries):
+            out.append(f"| {labels[a]} | not resolved | not resolved | not resolved |")
+            continue
+
+        dom = entries[0]
+        rho, rho_hw = dom[1], dom[2]
+        st_val = st.get(dom[0], 0.0)
+        st_hw = st_conf.get(dom[0], 0.0)
         sign = "+" if rho >= 0 else ""
         st_sign = "+" if st_val >= 0 else ""
         out.append(
-            f"| {labels[a]} | `{dom}` | **{sign}{rho:.2f} \u00b1 {rho_ci:.2f}** | "
-            f"{st_sign}{st_val:.2f} \u00b1 {st_ci:.2f} |"
+            f"| {labels[a]} | `{dom[0]}` | **{sign}{rho:.2f} \u00b1 {rho_hw:.2f}** | "
+            f"{st_sign}{st_val:.2f} \u00b1 {st_hw:.2f} |"
         )
+    return "\n".join(out)
+
+
+def _sobol_entries(res):
+    """Return (name, S1, S1_half_width) sorted by |S1| descending."""
+    s1 = res.get("S1", {})
+    conf = res.get("S1_conf", {})
+    entries = [(n, float(s1[n]), float(conf.get(n, 0.0))) for n in s1]
+    entries.sort(key=lambda e: abs(e[1]), reverse=True)
+    return entries
+
+
+def _sobol_resolved(entries):
+    """True when no two S1 95 % intervals overlap."""
+    for i in range(len(entries)):
+        lo1, hi1 = entries[i][1] - entries[i][2], entries[i][1] + entries[i][2]
+        for j in range(i + 1, len(entries)):
+            lo2, hi2 = entries[j][1] - entries[j][2], entries[j][1] + entries[j][2]
+            if not (hi1 < lo2 or hi2 < lo1):
+                return False
+    return True
+
+
+def block_uq_sample_counts():
+    """Sampling method / run counts, generated from uncertainty_results.json."""
+    uq = DATA["uq"]
+    base_n = uq.get("base_n")
+    runs = uq.get("runs_per_anchor")
+    total = uq.get("total_runs")
+    method = uq.get("method", "unknown")
+    active = uq.get("active_parameters", [])
+    inert = uq.get("inert_parameters", [])
+    inert_txt = ", ".join(f"`{p}`" for p in inert) or "none"
+    active_txt = f"{len(active)} active; {inert_txt} inert"
+    if base_n is None:
+        mode = "base N = unknown; indices are qualitative"
+    elif base_n < 512:
+        mode = f"base N = {base_n} (quick mode); indices are qualitative"
+    else:
+        mode = f"base N = {base_n}; indices are qualitative"
+    return (
+        f"Method: `{method}`; runs per anchor: `{runs}`; total runs: `{total}`; "
+        f"{active_txt}.\n\n{mode}."
+    )
+
+
+def block_anchor_geometries():
+    """The two geometries compared in aep.png and validation.png.
+
+    Scale-up values come from ``vawt_presets.PRESETS['scaleup']``.  The
+    validation.png geometry is the model design rigidly scaled to Ham's radius
+    by ``scripts/plot_validation.py`` (R_DESIGN = 0.60 m, c = 0.117607 m,
+    H = 0.40 m, scaled by 1.83/0.60).
+    """
+    s = PRESETS["scaleup"]
+    r_ar = s["H"] / s["c"]
+    rv = 1.83
+    scale = rv / 0.60
+    cv = 0.117607 * scale
+    hv = 0.40 * scale
+    arv = hv / cv
+    out = [
+        "| Panel | Geometry | R | H | c | AR | Mode |",
+        "|-------|----------|---|---|---|-----|-------|",
+        (f"| **aep.png (left)** | Scale-up passive CPPC | {s['R']:.2f} m | "
+         f"{s['H']:.2f} m | {s['c']:.3f} m | {r_ar:.1f} | Passive CPPC, fixed rpm |"),
+        (f"| **validation.png** | Model design scaled to R = {rv:.2f} m "
+         f"(not Ham's rig) | {rv:.2f} m | {hv:.2f} m | {cv:.3f} m | {arv:.1f} | "
+         f"Prescribed pitch, no tip loss |"),
+    ]
+    return "\n".join(out)
+
+
+def block_tip_loss_table():
+    """Cp vs finite-span multiplier for the two CPPC anchors (stored scan)."""
+    tl = DATA["tl"]
+    mults = tl["multipliers"]
+    want = [0.70, 0.75, 0.80, 0.90, 1.00, 1.20, 1.30]
+    idx = [min(range(len(mults)), key=lambda i: abs(mults[i] - m)) for m in want]
+    sharp = tl["anchors"]["sharp_cppc"]
+    scale = tl["anchors"]["scaleup"]
+    out = [
+        "| Multiplier | " + " | ".join(f"{mults[i]:.2f}" for i in idx) + " |",
+        "|---|" + "---|" * len(idx),
+    ]
+    out.append("| Cp, Sharp-inspired | "
+               + " | ".join(f"{sharp[i]['cp']:.3f}" for i in idx) + " |")
+    out.append("| Cp, scale-up | "
+               + " | ".join(f"{scale[i]['cp']:.3f}" for i in idx) + " |")
+    cp = [e["cp"] for e in sharp]
+    jump = max(range(len(cp) - 1), key=lambda i: cp[i + 1] - cp[i])
+    out.append("")
+    out.append(
+        f"The Sharp-inspired branch jumps between multipliers {mults[jump]:.2f} "
+        f"(Cp = {cp[jump]:.3f}) and {mults[jump + 1]:.2f} "
+        f"(Cp = {cp[jump + 1]:.3f}); the Helmbold central value (1.00) sits "
+        f"above that threshold.  The scale-up branch is smooth."
+    )
+    return "\n".join(out)
+
+
+def block_uq_reading():
+    """Per-anchor Sobol reading; emits 'not resolved' for overlapping intervals."""
+    sobol = DATA["uq"].get("sobol", {})
+    base_n = DATA["uq"].get("base_n")
+    out = [("**Reading the table.** Values are model output from the committed "
+            "Saltelli run."), ""]
+    for a in ["ham_1979", "sharp_cppc", "optimised_passive", "scaleup"]:
+        res = sobol.get(a, {})
+        entries = _sobol_entries(res)
+        if not entries:
+            out.append(f"- **`{a}`**: no Sobol indices stored.")
+            continue
+        st = res.get("ST", {})
+        stc = res.get("ST_conf", {})
+        if not _sobol_resolved(entries):
+            a1, a2 = entries[0], entries[1]
+            out.append(
+                f"- **`{a}`**: not resolved at base N = {base_n}. "
+                f"`{a1[0]}` (S1 = {a1[1]:.2f} ± {a1[2]:.2f}) and "
+                f"`{a2[0]}` (S1 = {a2[1]:.2f} ± {a2[2]:.2f}) have "
+                f"overlapping 95 % intervals."
+            )
+        else:
+            top = entries[0]
+            out.append(
+                f"- **`{a}`**: `{top[0]}` dominates (S1 = {top[1]:.2f} ± "
+                f"{top[2]:.2f}; total-order {st.get(top[0], 0.0):.2f} ± "
+                f"{stc.get(top[0], 0.0):.2f})."
+            )
     return "\n".join(out)
 
 
@@ -849,6 +1010,10 @@ BLOCKS = {
     "ham_reconciliation": block_ham_reconciliation,
     "ham_finite_span": block_ham_finite_span,
     "uq_sobol": block_uq_sobol,
+    "uq_sample_counts": block_uq_sample_counts,
+    "uq_reading": block_uq_reading,
+    "anchor_geometries": block_anchor_geometries,
+    "tip_loss_table": block_tip_loss_table,
 }
 
 
@@ -886,41 +1051,27 @@ def main():
     args = ap.parse_args()
     with open(README) as fh:
         current = fh.read()
+    with open(SCRIPTS_README) as fh:
+        current_sr = fh.read()
     try:
         desired = regenerate(current)
     except RuntimeError as exc:
         print(f"[FAIL] {exc}", file=sys.stderr)
         return 2
+    desired_sr = replace_inline(current_sr)
     if args.check:
-        if current == desired:
+        if current == desired and current_sr == desired_sr:
             print("[OK] README matches scripts/*.json")
             return 0
         print("[FAIL] README out of sync; run: python3 scripts/build_readme.py", file=sys.stderr)
         return 1
     with open(README, "w") as fh:
         fh.write(desired)
+    with open(SCRIPTS_README, "w") as fh:
+        fh.write(desired_sr)
     print("[OK] rewrote README.md")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
-BLOCKS = {
-    'evidence_table': block_evidence_table,
-    'robust_optimization': block_robust_optimization,
-    'headline_table_small': block_headline_table_small,
-    'headline_table_large': block_headline_table_large,
-    'aep_steady': block_aep_steady_table,
-    'aep_turbulent': block_aep_turbulent_table,
-    'uq_params': block_uq_params_table,
-    'uq_bimodal': block_uq_bimodal,
-    'cm_scale_scan': block_cm_scale_scan,
-    'aep_rigid_comparison': block_aep_rigid_comparison,
-    'counter_rotating': block_counter_rotating,
-    'aep_branches': block_aep_branches,
-    'branch_point_check': block_branch_point_check,
-    'ham_reconciliation': block_ham_reconciliation,
-    'ham_finite_span': block_ham_finite_span,
-    'uq_sobol': block_uq_sobol,
-}
