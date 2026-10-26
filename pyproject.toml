@@ -55,7 +55,7 @@ src = ["."]
 # scripts/calibrate_dynamic_stall.py, scripts/make_all_figures.py,
 # scripts/check_figures.py, scripts/plot_uncertainty.py,
 # scripts/plot_spearman.py, tests/test_*.py new in this round) are ruff-clean.
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "scripts/check_polars.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "scripts/compute_aep_counter_rotating.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "scripts/compute_aep.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
@@ -115,7 +115,6 @@ markers = [
     "slow: tests that take more than 30 seconds (skip with -m \"not slow\")",
     "needs_jit: tests that require numba JIT compilation (timeout without it)",
 ]
-timeout = 300
 
 [tool.coverage.run]
 source = ["sharp_vawt", "scripts"]

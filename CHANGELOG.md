@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Qa sign convention derivation** in `docs/derivation.md` §2.1: explicit sign table
+  for stabilising aerodynamic pitch torque (nose-in at positive α, nose-out at
+  negative α; $Q_a \cdot \alpha < 0$).
+- **Non-vacuous Qa diagnostic** (`scripts/diag_qa.py`): thresholds now use the
+  *achieved* |α|_max instead of the stall angle; added `--check` mode for CI
+  (exit code 0/1); figure generation separated from verification; new tests
+  `tests/test_diag_qa.py` covering pass/fail/insufficient-samples cases.
+- **Selectable finite-span models** in `AeroConfig.finite_span_model`:
+  `helmbold` (default), `prandtl_k2`, `prandtl_k18`, `prandtl_k15`.
+  Added as categorical UQ input with widened `tip_loss_multiplier` range
+  (0.85–1.40) to cover the model-form spread.
+- **Finite-span ablation study** (`scripts/finite_span_ablation.py` v3.0.0):
+  runs all four models against Ham 1979 geometry; generated table in README
+  shows all corrections undershoot the measured band (0.42–0.45).
+- **Validation script clarification**: `scripts/validate_finite_span.py` header
+  now states the "Experimental" column is an illustrative reference curve from
+  Du & Selig (1998) stall-delay model, NOT measured finite-span lift-slope data.
+
+### Changed
+- **diag_qa.py** thresholds use achieved |α|_max (EXTREME_MARGIN=0.75,
+  FRACTION_BAND=0.50, MIN_SAMPLES=5); `--check` mode added for CI gate;
+  figure generation decoupled from verification.
+- **UQ spec**: added `finite_span_model` categorical input; widened
+  `tip_loss_multiplier` to 0.85–1.40.
+- **README finite-span language**: explicitly states no tested correction
+  reproduces the Ham band; absolute Cp values are scenarios with model-form
+  uncertainty.
+- **pytest timeout removed** (not installable in system Python); CI timeout
+  handled by GitHub Actions job timeout.
+- **Ruff config**: moved `per-file-ignores` to `[tool.ruff.lint.per-file-ignores]`.
+
+### Fixed
+- **diag_qa vacuous check**: old 60 % of stall threshold never evaluated
+  because cycle only reached 56 % of stall; now uses cycle extremes.
+- **diag_qa figure regeneration**: `make_all_figures.py` now runs `--check`
+  first and fails on non-zero exit code before producing figure.
+
 ## [3.5.0] - 2026-10-25
 
 ### Breaking

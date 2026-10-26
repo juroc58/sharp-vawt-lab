@@ -11,6 +11,8 @@ import os
 import re
 import sys
 
+import numpy as np
+
 ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "scripts")
 README  = os.path.join(ROOT, "README.md")
@@ -84,6 +86,7 @@ def _load_all():
         "cm": _j("cm_scale_scan.json"),
         "tl": _j("tip_loss_scan.json"),
         "ham": _j("ham_finite_span_check.json"),
+        "fsa": _j("finite_span_ablation.json"),
         "branch_check": _j("branch_point_checks.json"),
         "rob": _j("robust_optimization.json"),
         "cr": _j("aep_counter_rotating.json"),
@@ -648,7 +651,8 @@ def block_uq_params_table():
         "tau_rev":                 ("0.05",  "0.20",  "induction lag (default 0.10 rev)"),
         "e_osw":                   ("0.85",  "0.95",  "Oswald efficiency for induced drag"),
         "c_scale_override":        ("0.30",  "0.60",  "Adams shift strength"),
-        "tip_loss_multiplier":     ("0.85",  "1.15",  "residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)"),
+        "tip_loss_multiplier":     ("0.85",  "1.40",  "residual multiplier on f_ar; widened to cover Prandtl/Helmbold spread"),
+        "finite_span_model":       ("0",     "3",     "categorical: 0=helmbold, 1=prandtl_k2, 2=prandtl_k18, 3=prandtl_k15"),
         "ind_drag_scale":          ("0.0",   "1.5",   "multiplier on induced drag term (0 = no induced drag, 1 = baseline)"),
         "cm_scale":                ("0.0",   "1.0",   "scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)"),
         "ds_Knc":                  ("0.5",   "1.5",   "apparent-mass lift multiplier (k_nc)"),
@@ -950,6 +954,55 @@ def block_ham_finite_span():
     return "\n".join(out)
 
 
+def block_finite_span_ablation():
+    """Finite-span model ablation table (finite_span_ablation.json)."""
+    fsa = DATA.get("fsa")
+    if not fsa:
+        return "| No finite_span_ablation.json loaded |"
+    cases = fsa.get("model_cases", {})
+    neither = fsa.get("cases", {}).get("neither", [])
+    models = ["helmbold", "prandtl_k2", "prandtl_k18", "prandtl_k15"]
+    labels = {
+        "helmbold": "Helmbold (default)",
+        "prandtl_k2": "Prandtl k=2.0",
+        "prandtl_k18": "Prandtl k=1.8 (prev. default)",
+        "prandtl_k15": "Prandtl k=1.5",
+    }
+    out = [
+        "| Model | Cp at TSR=2.5 | Bias vs Ham band mid | Status |",
+        "|---|---|---|---|",
+    ]
+    def cp_at_25(case_data):
+        cp_at_25 = None
+        for d in case_data:
+            if abs(d["tsr"] - 2.5) < 0.06:
+                cp_at_25 = d["cp"]
+                break
+        if cp_at_25 is None:
+            tsrs = [d["tsr"] for d in case_data]
+            cps = [d["cp"] for d in case_data]
+            cp_at_25 = float(np.interp(2.5, tsrs, cps))
+        return cp_at_25
+
+    # Neither
+    cp_n = cp_at_25(neither)
+    pct_n = (cp_n - 0.435) / 0.435 * 100
+    status_n = "INSIDE" if 0.42 <= cp_n <= 0.45 else ("ABOVE" if cp_n > 0.45 else "BELOW")
+    out.append(f"| Neither (2D) | {cp_n:.4f} | {pct_n:+.1f}% | {status_n} |")
+
+    for m in models:
+        cp_m = cp_at_25(cases.get(m, []))
+        pct_m = (cp_m - 0.435) / 0.435 * 100
+        status_m = "INSIDE" if 0.42 <= cp_m <= 0.45 else ("ABOVE" if cp_m > 0.45 else "BELOW")
+        out.append(f"| {labels[m]} | {cp_m:.4f} | {pct_m:+.1f}% | {status_m} |")
+
+    out.append("")
+    out.append("No tested finite-span variant reproduces the Ham band (0.42\u20130.45). "
+               "The 2D model overshoots; all corrections undershoot. "
+               "Finite-span results are scenarios, not predictions.")
+    return "\n".join(out)
+
+
 def block_cm_scale_scan():
     """Deterministic cm_scale / tip-loss scans (cm_scale_scan.json)."""
     scans = DATA["cm"]["anchors"]
@@ -1009,6 +1062,7 @@ BLOCKS = {
     "branch_point_check": block_branch_point_check,
     "ham_reconciliation": block_ham_reconciliation,
     "ham_finite_span": block_ham_finite_span,
+    "finite_span_ablation": block_finite_span_ablation,
     "uq_sobol": block_uq_sobol,
     "uq_sample_counts": block_uq_sample_counts,
     "uq_reading": block_uq_reading,

@@ -68,7 +68,8 @@ UQ_SPEC = [
     ("tau_rev",                  0.05,  0.20),    # induction lag   (default 0.10)
     ("e_osw",                    0.85,  0.95),    # Oswald efficiency for finite-span
     ("c_scale_override",         0.30,  0.60),    # Adams shift strength
-    ("tip_loss_multiplier",       0.85,  1.15),    # residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker)
+    ("tip_loss_multiplier",       0.85,  1.40),    # residual multiplier on f_ar; widened to cover Prandtl/Helmbold spread
+    ("finite_span_model",         0.0,   3.0),     # categorical: 0=helmbold, 1=prandtl_k2, 2=prandtl_k18, 3=prandtl_k15
     ("ind_drag_scale",            0.0,   1.5),     # multiplier on induced drag term (0 = no induced drag, 1 = baseline)
     ("cm_scale",                  0.0,   1.0),     # scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value)
     ("ds_Knc",                   0.5,   1.5),     # apparent-mass lift multiplier (k_nc)
@@ -276,6 +277,17 @@ def run_one_task(args):
             params["polar_variant"] = ("smoothed_lowRe"
                                        if float(params["polar_variant"]) >= 0.5
                                        else "neuralfoil")
+        # Categorical finite-span model: 0=helmbold, 1=prandtl_k2, 2=prandtl_k18, 3=prandtl_k15
+        if "finite_span_model" in params:
+            v = float(params["finite_span_model"])
+            if v < 1.0:
+                params["finite_span_model"] = "helmbold"
+            elif v < 2.0:
+                params["finite_span_model"] = "prandtl_k2"
+            elif v < 3.0:
+                params["finite_span_model"] = "prandtl_k18"
+            else:
+                params["finite_span_model"] = "prandtl_k15"
         r = create_sim_from_params(params).run()
         cp = float(r["cp"])
         if not np.isfinite(cp) or cp <= 0.0:

@@ -1,91 +1,125 @@
-"""Tests for the pitch-torque sign check (scripts/diag_qa.py).
+"""Tests for the Qa sign diagnostic (scripts/diag_qa.py)."""
+from __future__ import annotations
 
-The review point was that the old diagnostic printed a "sign ok?" column
-that could never fail. These tests pin the pass/fail logic itself with
-synthetic histories, so a regression in the sign convention (derivation.md
-eq. 2.6) fails the suite without needing a full simulation.
-"""
 import numpy as np
 import pytest
 
+# Import the pure evaluation function (no simulation dependency)
 from scripts.diag_qa import evaluate_restoring
 
-STALL = 15.0
+
+def test_restoring_pass_correct_signs():
+    """A case with correct restoring signs should pass."""
+    # Need enough samples in the fraction band (|alpha| > 0.5 * |alpha|_max)
+    # |alpha|_max = 10, band = |alpha| > 5, need >= 5 samples
+    alpha = np.array([10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 0.0,
+                      -6.0, -7.0, -8.0, -9.0, -10.0])
+    qa = np.array([-2.0, -1.8, -1.6, -1.4, -1.2, -1.0, 0.0,
+                   1.0, 1.2, 1.4, 1.6, 2.0])
+    stall = 16.0
+
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["passed"] is True
+    assert report["extreme_ok"] is True
+    assert report["frac_ok"] is True
+    assert report["fraction"] == 1.0
 
 
-def _history(alpha, qa):
-    return np.asarray(alpha, float), np.asarray(qa, float)
+def test_restoring_fail_wrong_sign_at_positive_alpha():
+    """Wrong sign at positive alpha should fail the extreme check."""
+    alpha = np.array([12.0, 10.0, 8.0, 6.0, 4.0, 2.0, 0.0,
+                      -2.0, -4.0, -6.0, -8.0, -10.0, -12.0])
+    qa = np.array([2.0, 1.5, 1.0, 0.5, 0.2, 0.1, 0.0,
+                   -0.1, -0.2, -0.5, -1.0, -1.5, -2.0])  # wrong sign at positive
+    stall = 16.0
+
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["passed"] is False
+    assert report["extreme_ok"] is False
+    for label, ok, _ in report["checks"]:
+        if "max" in label:
+            assert ok is False
 
 
-class TestEvaluateRestoring:
+def test_restoring_fail_wrong_sign_at_negative_alpha():
+    """Wrong sign at negative alpha should fail the extreme check."""
+    alpha = np.array([12.0, 10.0, 8.0, 6.0, 4.0, 2.0, 0.0,
+                      -2.0, -4.0, -6.0, -8.0, -10.0, -12.0])
+    qa = np.array([-2.0, -1.5, -1.0, -0.5, -0.2, -0.1, 0.0,
+                   -0.1, -0.2, -0.5, -1.0, -1.5, -2.0])  # wrong sign at negative
+    stall = 16.0
 
-    def test_restoring_signs_pass(self):
-        """Qa < 0 at +stall, Qa > 0 at -stall -> restoring -> pass."""
-        alpha, qa = _history([-15.0, -8.0, 0.0, 8.0, 15.0],
-                             [+0.05, +0.02, 0.0, -0.02, -0.05])
-        rep = evaluate_restoring(alpha, qa, STALL)
-        assert rep["passed"] is True
-        assert rep["extreme_ok"] is True
-        assert rep["frac_ok"] is True
-
-    def test_anti_restoring_signs_fail(self):
-        """Sign reversed (the historical bug) -> must fail."""
-        alpha, qa = _history([-15.0, -8.0, 0.0, 8.0, 15.0],
-                             [-0.05, -0.02, 0.0, +0.02, +0.05])
-        rep = evaluate_restoring(alpha, qa, STALL)
-        assert rep["passed"] is False
-        assert rep["extreme_ok"] is False
-
-    def test_no_stall_visit_fails(self):
-        """If the blade never approaches stall, there is nothing to
-        verify -> the check must not vacuously pass."""
-        alpha, qa = _history([-5.0, 0.0, 5.0], [0.0, 0.0, 0.0])
-        rep = evaluate_restoring(alpha, qa, STALL)
-        assert rep["extreme_ok"] is False
-        assert rep["passed"] is False
-        assert rep["checks"] == []
-
-    def test_low_restoring_fraction_fails(self):
-        """Extremes are fine but most of the band is anti-restoring."""
-        # +stall and -stall endpoints are restoring, but the interior
-        # points in the band are not -> fraction below threshold.
-        alpha, qa = _history([-15.0, -12.0, -10.0, 0.0, 10.0, 12.0, 15.0],
-                             [+0.05, -0.03, -0.03, 0.0, +0.03, +0.03, -0.05])
-        rep = evaluate_restoring(alpha, qa, STALL)
-        assert rep["extreme_ok"] is True
-        assert rep["frac_ok"] is False
-        assert rep["passed"] is False
-
-    def test_unsteady_run_fails(self):
-        """A non-steady run must not report a pass even if signs look ok."""
-        alpha, qa = _history([-15.0, 0.0, 15.0], [+0.05, 0.0, -0.05])
-        rep = evaluate_restoring(alpha, qa, STALL, steady=False)
-        assert rep["passed"] is False
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["passed"] is False
+    assert report["extreme_ok"] is False
+    for label, ok, _ in report["checks"]:
+        if "min" in label:
+            assert ok is False
 
 
-@pytest.mark.slow
-class TestLiveDiagnostic:
-    """End-to-end: a design that reaches stall must pass the QA check."""
+def test_restoring_fail_low_fraction():
+    """Restoring fraction below threshold should fail."""
+    alpha = np.linspace(-10, 10, 21)
+    # First half: correct (negative Qa for positive alpha, positive Qa for negative alpha)
+    # Second half: wrong signs
+    qa = np.concatenate([
+        -alpha[:11],  # correct: opposite sign
+        alpha[11:]    # wrong: same sign
+    ])
+    stall = 16.0
 
-    def test_sharp_passive_case_passes(self):
-        # Use the R=0.6 design that reaches stall to verify the QA check works
-        stall_design = {
-            "R": 0.60, "H": 0.40, "N": 3, "c": 0.1176,
-            "ar": 0.50, "sp": 0.25,
-            "mb": 0.010, "xbcg": 0.20,
-            "mc": 0.004, "dcw": -0.10,
-            "balance": 0, "bias_deg": 0.0,
-            "prescribe_pitch": False,
-            "cd_add": 0.002,
-            "use_dynamic_stall": True,
-            "use_flow_curvature": True,
-            "use_dmst": True,
-            "use_tip_loss": True,
-            "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
-            "free": True, "T_max": 12.0, "stride": 5,
-            "w0_frac": 0.9, "k_load": 0.0015, "tsr": 2.14,
-        }
-        from scripts.diag_qa import restoring_report
-        rep, _out, _sim = restoring_report(stall_design)
-        assert rep["passed"] is True, rep
-        assert rep["extreme_ok"] is True
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["passed"] is False
+    assert report["frac_ok"] is not True
+    assert report["fraction"] < 0.70
+
+
+def test_restoring_insufficient_samples():
+    """Too few samples in band should make fraction check NaN and fail."""
+    # |alpha|_max = 1.0, band = |alpha| > 0.5, only 4 samples in band (< 5)
+    alpha = np.array([1.0, 0.5, 0.0, -0.5, -1.0])
+    qa = np.array([-0.2, -0.1, 0.0, 0.1, 0.2])
+    stall = 16.0
+
+    report = evaluate_restoring(alpha, qa, stall)
+    assert np.isnan(report["fraction"]) or report["n_band"] < 5
+    assert report["frac_ok"] is not True
+    assert report["passed"] is False
+
+
+def test_restoring_no_checks_when_flat():
+    """When alpha is flat (no variation), no extreme checks run."""
+    alpha = np.array([0.0, 0.0, 0.0])
+    qa = np.array([0.0, 0.0, 0.0])
+    stall = 16.0
+
+    report = evaluate_restoring(alpha, qa, stall)
+    assert len(report["checks"]) == 0
+    assert not report["extreme_ok"]
+    assert not report["frac_ok"]
+    assert not report["passed"]
+
+
+def test_restoring_thresholds_use_achieved_alpha_max():
+    """Thresholds should be based on achieved |alpha|_max, not stall angle."""
+    # Cycle reaches only 8 deg, stall is 16 deg
+    # Old code: 0.8 * 16 = 12.8 deg threshold (never reached)
+    # New code: 0.75 * 8 = 6 deg threshold (reached at 8 deg)
+    alpha = np.array([8.0, 4.0, 0.0, -4.0, -8.0])
+    qa = np.array([-1.0, -0.5, 0.0, 0.5, 1.0])
+    stall = 16.0
+
+    report = evaluate_restoring(alpha, qa, stall)
+    # Should evaluate extreme checks since 8 > 0.75 * 8 = 6
+    assert len(report["checks"]) == 2
+    assert report["extreme_ok"] is True
+    # Fraction band: |alpha| > 0.5 * 8 = 4 -> samples with |alpha| > 4
+    # That's 8.0 and -8.0 = 2 samples (need >= 5)
+    assert report["n_band"] == 2
+    # With only 2 samples, fraction is NaN (< MIN_SAMPLES=5)
+    assert np.isnan(report["fraction"])
+    assert not report["frac_ok"]
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

@@ -152,6 +152,9 @@ def test_no_hard_coded_sample_counts(readme):
             # Skip GEN-block instructions (e.g. "--saltelli-n 64" in a code block)
             if "```" in line or "saltelli-n" in line:
                 continue
+            # Allow documented MIN_SAMPLES threshold in diag_qa description
+            if "minimum" in line.lower() and "sample" in line.lower():
+                continue
             raise AssertionError(
                 f"Line {i}: hard-coded uncertainty sample/run count '{val}' outside GEN block: "
                 f"{line.strip()[:100]}"

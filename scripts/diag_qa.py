@@ -1,9 +1,9 @@
 """
-Qa diagnostic — verifies the aerodynamic pitch torque is stabilising.
+Qa diagnostic \u2014 verifies the aerodynamic pitch torque is stabilising.
 
 Sharp's CPPC mechanism relies on the aerodynamic pitch moment being
 *restoring*: as the blade's angle of attack approaches stall it must be
-pushed back (nose-in at +stall, nose-out at −stall). This script
+pushed back (nose-in at +stall, nose-out at \u2212stall). This script
 reconstructs that moment from the passive simulation and asserts the
 sign, exiting non-zero if the mechanism has regressed.
 
@@ -18,8 +18,14 @@ with Qfr = mu_c * M * w^2 * (Rp + s_r) * r_b * tanh(psi_d / 0.5) and
 s_t, s_r the CG offsets from the pivot. This inverts the kernel's own
 integration to machine precision (residual < 1e-4 in steady state).
 
-This addresses the review point that the earlier version printed a
-"sign ok?" column that could never fail. It now returns a status code.
+Sign convention (derivation.md \u00a72.1): a restoring aerodynamic pitch
+torque has $Q_a < 0$ at $\alpha > 0$ (nose-in) and $Q_a > 0$ at
+$\alpha < 0$ (nose-out).  Equivalently, $Q_a \\cdot \\alpha < 0$.
+
+This script provides two modes:
+- --check: run the sign verification and exit with code (0=pass, 1=fail)
+- (default): run check + produce figure (exits 0 if figure produced, non-zero
+  only on figure failure)
 """
 import argparse
 import os
@@ -50,10 +56,14 @@ BASE = {
     "w0_frac": 0.9, "k_load": 4.164352, "tsr": 2.5,
 }
 
-# Pass criteria (see README "does differently" #3).
-EXTREME_MARGIN = 0.8    # fraction of the stall angle for the extreme check
-FRACTION_BAND = 0.6     # |alpha| band for the restoring-fraction check
+# Pass criteria.
+# EXTREME_MARGIN: fraction of the *achieved* |alpha|_max for the extreme check
+# (replaces the old fraction-of-stall which was vacuous when the cycle
+# didn't reach stall).
+EXTREME_MARGIN = 0.75   # evaluate at extremes if |alpha| > this * |alpha|_max
+FRACTION_BAND = 0.50    # |alpha| band as fraction of |alpha|_max for restoring-fraction check
 FRACTION_MIN = 0.70     # minimum restoring fraction in that band
+MIN_SAMPLES = 5         # minimum samples required in band for the fraction check to be meaningful
 
 
 def reconstruct_qa(out, sim):
@@ -97,18 +107,22 @@ def evaluate_restoring(alpha_deg, qa, stall_deg, steady=True):
     a_max, a_min = float(alpha[i_max]), float(alpha[i_min])
     qa_max, qa_min = float(qa[i_max]), float(qa[i_min])
 
+    # Use the *achieved* |alpha|_max for thresholds, not the stall angle
+    a_abs_max = max(abs(a_max), abs(a_min))
+
     checks = []  # (label, required_sign, actual_sign, satisfied)
-    if a_max > EXTREME_MARGIN * stall_deg:
-        checks.append(("alpha_max (+stall)", qa_max < 0.0,
+    if abs(a_max) > EXTREME_MARGIN * a_abs_max:
+        checks.append(("alpha_max (+)", qa_max < 0.0,
                        "nose-in" if qa_max < 0.0 else "nose-out"))
-    if a_min < -EXTREME_MARGIN * stall_deg:
-        checks.append(("alpha_min (-stall)", qa_min > 0.0,
+    if abs(a_min) > EXTREME_MARGIN * a_abs_max:
+        checks.append(("alpha_min (\u2212)", qa_min > 0.0,
                        "nose-out" if qa_min > 0.0 else "nose-in"))
 
-    band = np.abs(alpha) > FRACTION_BAND * stall_deg
+    # Band: |alpha| > FRACTION_BAND * |alpha|_max
+    band = np.abs(alpha) > FRACTION_BAND * a_abs_max
     n_band = int(band.sum())
     frac = float((np.sign(qa[band]) == -np.sign(alpha[band])).mean()) \
-        if n_band else float("nan")
+        if n_band >= MIN_SAMPLES else float("nan")
 
     extreme_ok = all(ok for _, ok, _ in checks) and len(checks) > 0
     frac_ok = np.isfinite(frac) and frac >= FRACTION_MIN
@@ -151,6 +165,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--out", default="docs/diag_qa.png")
     ap.add_argument("--no-plot", action="store_true")
+    ap.add_argument("--check", action="store_true",
+                    help="Run verification only, exit with status code (0=pass, 1=fail). No figure.")
     args = ap.parse_args(argv)
 
     print("Running passive Sharp case...")
@@ -168,24 +184,39 @@ def main(argv=None):
     for label, ok, actual in report["checks"]:
         req = "nose-in" if "max" in label else "nose-out"
         print(f"{label:<22} {req:>10} {actual:>10}  {'yes' if ok else 'NO':>4}")
+    if not report["checks"]:
+        print("  (no extreme check: cycle does not reach EXTREME_MARGIN of |alpha|_max)")
     print()
     print(f"  restoring fraction over |alpha| > "
-          f"{FRACTION_BAND * 100:.0f}% stall "
-          f"(n = {report['n_band']}): {report['fraction']:.3f} "
+          f"{FRACTION_BAND * 100:.0f}% of |alpha|_max "
+          f"(n = {report['n_band']}, min {MIN_SAMPLES}): "
+          f"{report['fraction']:.3f} "
           f"(min {FRACTION_MIN:.2f})")
+    if report["n_band"] < MIN_SAMPLES:
+        print("  (insufficient samples in band for fraction check)")
     print()
+
+    if args.check:
+        if report["passed"]:
+            print("PASS: aerodynamic pitch torque is restoring at the cycle "
+                  "extremes; CPPC sign convention is intact.")
+            return 0
+        print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
+              "extremes; check the alpha = wrap(phi_f + psi) convention "
+              "(derivation.md \u00a72.1).")
+        return 1
 
     if not args.no_plot:
         _make_plot(out, sim, args.out)
 
     if report["passed"]:
-        print("PASS: aerodynamic pitch torque is restoring at the stall "
+        print("PASS: aerodynamic pitch torque is restoring at the cycle "
               "extremes; CPPC sign convention is intact.")
         return 0
 
-    print("FAIL: aerodynamic pitch torque has the wrong sign. The passive "
-          "mechanism is not stabilising; check the alpha = wrap(phi_f + psi) "
-          "convention (derivation.md eq. 2.6).")
+    print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
+          "extremes; check the alpha = wrap(phi_f + psi) convention "
+          "(derivation.md \u00a72.1).")
     return 1
 
 

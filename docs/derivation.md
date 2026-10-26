@@ -142,6 +142,34 @@ sign wrong changes the direction of the aerodynamic pitch moment by 180°
 and destroys the passive mechanism. This bug was present in early versions
 of the code and cost significant debugging time (see Section 12).
 
+### 2.1 Stabilising aerodynamic pitch torque sign convention
+
+For the passive CPPC mechanism to be self-stabilising, the aerodynamic
+pitch torque $Q_a$ must act to *reduce* the magnitude of the angle of
+attack when it approaches stall.  With the convention $\alpha =
+\mathrm{wrap}(\varphi_f + \psi)$ and $\psi > 0$ = nose-out (leading edge
+rotated away from the rotor radial line), the required signs are:
+
+| $\alpha$ sign | Physical situation | Required $Q_a$ sign | Effect on $\psi$ | Description |
+|---|---|---|---|---|
+| $\alpha > 0$ (positive) | Blade approaching $+$stall | $Q_a < 0$ (negative) | $\psi \downarrow$ (nose-in) | Pushes blade nose-in, reducing $\alpha$ |
+| $\alpha < 0$ (negative) | Blade approaching $-$stall | $Q_a > 0$ (positive) | $\psi \uparrow$ (nose-out) | Pushes blade nose-out, reducing $|\alpha|$ |
+
+In words: **a restoring aerodynamic moment is nose-in at positive $\alpha$
+and nose-out at negative $\alpha$**.  This is equivalent to saying
+$Q_a$ and $\alpha$ must have *opposite* signs: $Q_a \cdot \alpha < 0$ for
+a stabilising torque.
+
+The pitch equation of motion (from the kinetic energy, Section 8) is
+
+$$ I_p \ddot\psi + M R_p s_r \dot\omega = M R_p s_t \omega^2 + Q_a - c_b \dot\psi - Q_{\text{fr}} $$
+
+so a negative $Q_a$ produces a negative $\ddot\psi$ (nose-in
+acceleration) and vice versa.  The diagnostic script
+``scripts/diag_qa.py`` reconstructs $Q_a$ by inverting this equation and
+verifies the sign convention at the cycle extremes and over the
+high-$|\alpha|$ portion of the cycle.
+
 ---
 
 ## 3. Static polar database

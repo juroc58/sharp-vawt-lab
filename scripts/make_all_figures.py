@@ -45,6 +45,7 @@ FIGURES = [
     ("validation.png", ["scripts/plot_validation.py"], []),
     ("uncertainty.png", ["scripts/plot_uncertainty.py"], ["scripts/uncertainty_results.json"]),
     ("spearman.png", ["scripts/plot_spearman.py"], ["scripts/spearman_results.json"]),
+    ("diag_qa.png", ["scripts/diag_qa.py", "--check"], []),
     ("diag_qa.png", ["scripts/diag_qa.py", "--out", "docs/diag_qa.png"], []),
     ("finite_span_ablation.png", ["scripts/finite_span_ablation.py"],
      ["scripts/finite_span_ablation.json"]),

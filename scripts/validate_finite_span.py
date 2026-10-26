@@ -1,14 +1,26 @@
 """
-Validate finite-span correction against wind-tunnel data for AR 3-10.
+Validate finite-span correction against an illustrative reference curve for AR 3-10.
 
 Compares the Helmbold (1942) correction used by the simulator, the
 generalized Prandtl correction (k=1.8, the previous default) and Prandtl
-(k=2.0) against low-aspect-ratio lift-slope data.
+(k=2.0) against a reference lift-slope curve.
 
 References:
-- Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics" — rotating-blade stall-delay model, NOT a finite-wing lift-slope correction
-- NASA TM 4075 (low-AR wind-tunnel data)
-- Abbott & von Doenhoff (airfoil theory)
+- Du & Selig (1998) "Effect of Aspect Ratio on Airfoil Characteristics" —
+  rotating-blade stall-delay model, NOT a finite-wing lift-slope correction.
+  The Cl_alpha values below are taken from their Fig. 9 stall-delay model
+  and are used here as an ILLUSTRATIVE REFERENCE CURVE, not as measured
+  finite-span lift-slope data.  No published finite-span Cl_alpha dataset for
+  NACA 0012 at low Re was found; the Helmbold form remains the default
+  because it is the standard low-AR lift-slope correction in wind-energy
+  literature, not because it was fitted to a dataset.
+- NASA TM 4075 (low-AR wind-tunnel data) — cited in literature but exact
+  Cl_alpha values not reproduced here.
+- Abbott & von Doenhoff (airfoil theory) — 2D theory reference.
+
+The RMSE values below are INDICATIVE ONLY and must not be treated as
+evidence for or against any correction.  The tabulated "Experimental"
+column is an illustrative reference curve, not measured data.
 """
 from __future__ import annotations
 
@@ -18,7 +30,8 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# Experimental data from Du & Selig (1998) and NASA TM 4075
+# Illustrative reference curve from Du & Selig (1998) stall-delay model
+# (Fig. 9), NOT measured finite-span lift-slope data.
 EXPERIMENTAL_CL_ALPHA = {
     1.0: 2.0,
     1.5: 2.8,
@@ -102,7 +115,7 @@ def main():
     def rmse(pred, actual):
         return np.sqrt(np.mean((pred - actual)**2))
 
-    print("\nRMSE vs Experimental Data (AR 1-15):")
+    print("\nRMSE vs Illustrative Reference Curve (AR 1-15):")
     print(f"  Prandtl (k=2.0):        {rmse(cla_prandtl_exp, cla_exp):.3f}")
     print(f"  Modified k=1.5:         {rmse(CLA_2D * k15_exp, cla_exp):.3f}")
     print(f"  Gen. Prandtl (k=1.8):   {rmse(cla_gen_prandtl_exp, cla_exp):.3f}")
@@ -110,8 +123,8 @@ def main():
     print(f"  Modified k=2.2:         {rmse(cla_k22_exp, cla_exp):.3f}")
     print(f"  Helmbold (default):     {rmse(cla_helmbold_exp, cla_exp):.3f}")
 
-    print("\nPredicted vs Experimental Cl_alpha (per rad):")
-    print(f"{'AR':>6} {'Exp':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} "
+    print("\nPredicted vs Illustrative Reference Cl_alpha (per rad):")
+    print(f"{'AR':>6} {'Ref':>8} {'P(k=2)':>8} {'Gen(k=1.8)':>10} "
           f"{'Helmbold':>9} {'k=1.5':>8} {'k=2.2':>8}")
     for ar, exp in zip(ARs_exp, cla_exp):
         p2 = CLA_2D * f_ar(ar, k=2.0)
@@ -130,7 +143,7 @@ def main():
     ax1.plot(ARs_fine, cla_k15, 'g--', lw=1.5, label='k=1.5')
     ax1.plot(ARs_fine, cla_helmbold, 'r-', lw=2.5, label='Helmbold (our default)')
     ax1.plot(ARs_fine, cla_k22, 'm--', lw=1.5, label='k=2.2')
-    ax1.scatter(ARs_exp, cla_exp, color='black', s=60, zorder=5, label='Experimental')
+    ax1.scatter(ARs_exp, cla_exp, color='black', s=60, zorder=5, label='Illustrative reference')
     ax1.axhline(CLA_2D, color='gray', ls=':', lw=1, label='2D limit (2π)')
     ax1.set_xlabel('Aspect Ratio (AR)')
     ax1.set_ylabel('Lift Curve Slope Cl_α (per rad)')

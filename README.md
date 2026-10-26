@@ -15,9 +15,9 @@ This is a solo research lab, not a library. See CONTRIBUTING.md for scope.
 | Metric | Value | Evidence Category |
 | :--- | :--- | :--- |
 | **Ham 1979 Peak Cp** | 0.49 | Literature comparison (2D upper bound) |
-| **Sharp-inspired Passive Cp** | 0.061 all-sample; 0.10 working branch | **Model result** (uncalibrated DS; bimodal) |
-| **Optimised Passive Cp** | 0.25 [0.11, 0.35] | **Model result** (uncalibrated DS) |
-| **Scale-up Passive Cp** | 0.42 [0.37, 0.48] | **Model result** (robust) |
+| **Sharp-inspired Passive Cp** | 0.121 all-sample; 0.14 working branch | **Model result** (uncalibrated DS; bimodal) |
+| **Optimised Passive Cp** | 0.27 [0.19, 0.36] | **Model result** (uncalibrated DS) |
+| **Scale-up Passive Cp** | 0.43 [0.37, 0.49] | **Model result** (robust) |
 | **Prescribed-pitch Upper Bound** | 0.50 | Ideal actuator (no physical limit) |
 | **AEP Gain vs Rigid** | +25.5% | **Model comparison** (unproven machine) |
 <!-- END GENERATED: evidence_table -->
@@ -54,8 +54,8 @@ vendored in this archive, so no agreement figure is reproduced here.
 <!-- BEGIN GENERATED: headline_table_small -->
 | Configuration | Cp | 90 % CI | Reference | Evidence |
 |---|---|---|---|---|
-| **Sharp-inspired CPPC** | **0.06** | [0.004, 0.15] | scenario range (UQ) | S |
-| Optimised passive (mass-balanced) | **0.25** | [0.11, 0.35] | stored design point (UQ) | S |
+| **Sharp-inspired CPPC** | **0.12** | [0.007, 0.22] | scenario range (UQ) | S |
+| Optimised passive (mass-balanced) | **0.27** | [0.19, 0.36] | stored design point (UQ) | S |
 | Prescribed pitch (ideal actuator) | 0.50 | — | ideal-actuator upper bound (model) | U |
 | Ham 1979 comparison | **0.49** | [0.46, 0.51] | fixed design point (2D upper-bound comparison) | V |
 <!-- END GENERATED: headline_table_small -->
@@ -83,7 +83,7 @@ the scale-up has none.
 <!-- BEGIN GENERATED: headline_table_large -->
 | Configuration | Cp | 90 % CI | Reference | Evidence |
 |---|---|---|---|---|
-| **Scaled-up passive (R = 2.72 m)** | **0.42** | [0.37, 0.48] | ~71 % of Betz | S |
+| **Scaled-up passive (R = 2.72 m)** | **0.43** | [0.37, 0.49] | ~72 % of Betz | S |
 <!-- END GENERATED: headline_table_large -->
 
 The confidence intervals come from the Saltelli sampling described below
@@ -412,7 +412,7 @@ Saltelli sampling (first-order) propagates that uncertainty through each headlin
 yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 
 <!-- BEGIN GENERATED: uq_sample_counts -->
-Method: `saltelli`; runs per anchor: `1024`; total runs: `4096`; 13 active; `arm_cd` inert.
+Method: `saltelli`; runs per anchor: `1088`; total runs: `4352`; 14 active; `arm_cd` inert.
 
 base N = 64 (quick mode); indices are qualitative.
 <!-- END GENERATED: uq_sample_counts -->
@@ -428,7 +428,8 @@ base N = 64 (quick mode); indices are qualitative.
 | `tau_rev` | 0.05 | 0.20 | induction lag (default 0.10 rev) |
 | `e_osw` | 0.85 | 0.95 | Oswald efficiency for induced drag |
 | `c_scale_override` | 0.30 | 0.60 | Adams shift strength |
-| `tip_loss_multiplier` | 0.85 | 1.15 | residual multiplier on the Helmbold finite-span f_ar (<1 = stronger tip loss, >1 = weaker) |
+| `tip_loss_multiplier` | 0.85 | 1.40 | residual multiplier on f_ar; widened to cover Prandtl/Helmbold spread |
+| `finite_span_model` | 0 | 3 | categorical: 0=helmbold, 1=prandtl_k2, 2=prandtl_k18, 3=prandtl_k15 |
 | `ind_drag_scale` | 0.0 | 1.5 | multiplier on induced drag term (0 = no induced drag, 1 = baseline) |
 | `cm_scale` | 0.0 | 1.0 | scale on attached-flow Cm from the surrogate (0 = none, 1 = full NeuralFoil value) |
 | `ds_Knc` | 0.5 | 1.5 | apparent-mass lift multiplier (k_nc) |
@@ -463,9 +464,9 @@ share of samples with Cp below 0.02.
 | Anchor | Base Cp, Cm = 0 | All-sample mean | Working-branch mean | Collapsed fraction (Cp < 0.02) |
 |---|---|---|---|---|
 | Ham 1979 comparison | 0.49 | 0.49 | 0.49 | 0.0 % |
-| Sharp-inspired CPPC | 0.005 | 0.061 | 0.10 | 45.2 % |
-| Optimised passive | 0.27 | 0.25 | 0.25 | 0.0 % |
-| Scale-up R = 2.72 m | 0.42 | 0.42 | 0.42 | 0.0 % |
+| Sharp-inspired CPPC | 0.005 | 0.12 | 0.14 | 13.8 % |
+| Optimised passive | 0.27 | 0.27 | 0.27 | 0.0 % |
+| Scale-up R = 2.72 m | 0.42 | 0.43 | 0.43 | 0.0 % |
 <!-- END GENERATED: uq_bimodal -->
 
 `scripts/scan_cm_scale.py` (output `scripts/cm_scale_scan.json`) makes the
@@ -573,15 +574,27 @@ runs at the nominal parameters (`scripts/scan_tip_loss.py`):
 The Sharp-inspired branch jumps between multipliers 0.95 (Cp = 0.017) and 1.00 (Cp = 0.079); the Helmbold central value (1.00) sits above that threshold.  The scale-up branch is smooth.
 <!-- END GENERATED: tip_loss_table -->
 
+<!-- BEGIN GENERATED: finite_span_ablation -->
+| Model | Cp at TSR=2.5 | Bias vs Ham band mid | Status |
+|---|---|---|---|
+| Neither (2D) | 0.4743 | +9.0% | ABOVE |
+| Helmbold (default) | 0.2939 | -32.4% | BELOW |
+| Prandtl k=2.0 | 0.2990 | -31.3% | BELOW |
+| Prandtl k=1.8 (prev. default) | 0.3046 | -30.0% | BELOW |
+| Prandtl k=1.5 | 0.3129 | -28.1% | BELOW |
+
+No tested finite-span variant reproduces the Ham band (0.42–0.45). The 2D model overshoots; all corrections undershoot. Finite-span results are scenarios, not predictions.
+<!-- END GENERATED: finite_span_ablation -->
+
 **Physical reading:**
 
 <!-- BEGIN GENERATED: uq_reading -->
 **Reading the table.** Values are model output from the committed Saltelli run.
 
-- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.84 ± 0.29) and `cd_add` (S1 = 0.23 ± 0.10) have overlapping 95 % intervals.
-- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.57 ± 0.33) and `ind_drag_scale` (S1 = 0.15 ± 0.15) have overlapping 95 % intervals.
-- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.54 ± 0.23) and `tip_loss_multiplier` (S1 = 0.27 ± 0.21) have overlapping 95 % intervals.
-- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.63 ± 0.25) and `tip_loss_multiplier` (S1 = 0.14 ± 0.16) have overlapping 95 % intervals.
+- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.26) and `cd_add` (S1 = 0.20 ± 0.11) have overlapping 95 % intervals.
+- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.24) and `ind_drag_scale` (S1 = 0.30 ± 0.21) have overlapping 95 % intervals.
+- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.23) and `tip_loss_multiplier` (S1 = 0.41 ± 0.39) have overlapping 95 % intervals.
+- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.38) and `cd_add` (S1 = 0.09 ± 0.06) have overlapping 95 % intervals.
 <!-- END GENERATED: uq_reading -->
 
 
@@ -670,10 +683,11 @@ literature:
    correction.
 3. **Pitch-torque sign check.** `scripts/diag_qa.py` reconstructs the aero
    pitch torque from the pitch equation and **exits non-zero** if it is not
-   restoring at the stall extremes — the physical requirement for Sharp's
-   "blades do not stall" claim. The pass/fail logic is pinned by
-   `tests/test_diag_qa.py` with synthetic histories, so a sign regression
-   fails the suite.
+   restoring at the cycle extremes (where |α| > 75 % of the achieved |α|_max)
+   and over the high-|α| band (|α| > 50 % of |α|_max, minimum 5 samples) —
+   the physical requirement for Sharp's "blades do not stall" claim. The
+   pass/fail logic is pinned by `tests/test_diag_qa.py` with synthetic
+   histories, so a sign regression fails the suite.
 4. **Sharp-inspired parameter sweep.** The counterweight mass and offset
    are swept through Sharp's design range, showing where his mechanism works
    and where the mass ratio becomes unstable.

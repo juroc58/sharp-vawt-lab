@@ -150,7 +150,8 @@ class AeroConfig:
     ds_Knc: float = 1.0                  # apparent-mass lift multiplier
     c_scale_override: float = 0.0        # 0 = geometry-derived
     tip_loss_floor_override: float = 0.0  # 0 = use Helmbold formula
-    tip_loss_multiplier: float = 1.0     # residual multiplier on Helmbold f_ar
+    tip_loss_multiplier: float = 1.0     # residual multiplier on f_ar
+    finite_span_model: str = "helmbold"   # "helmbold" | "prandtl_k2" | "prandtl_k18" | "prandtl_k15"
     ind_drag_scale: float = 1.0          # multiplier on induced drag term
     cm_scale: float = 1.0                # scale on polar Cm (0 = no moment)
 
@@ -159,6 +160,11 @@ class AeroConfig:
             raise ValueError(
                 f"AeroConfig: unknown polar_variant {self.polar_variant!r}; "
                 f"choose one of {POLAR_VARIANTS}"
+            )
+        if self.finite_span_model not in ("helmbold", "prandtl_k2", "prandtl_k18", "prandtl_k15"):
+            raise ValueError(
+                f"AeroConfig: unknown finite_span_model {self.finite_span_model!r}; "
+                f"choose one of helmbold, prandtl_k2, prandtl_k18, prandtl_k15"
             )
         if self.ds_Tf <= 0.0 or self.ds_Tv <= 0.0 or self.ds_Ta <= 0.0:
             raise ValueError("dynamic-stall time constants must be positive")

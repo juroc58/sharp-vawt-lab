@@ -476,18 +476,24 @@ class CycloturbineSim:
         self.arm_k = (geo.N * geo.n_arm * sim.rho * geo.arm_cd * geo.arm_d * geo.R ** 4 / 8.0)
         AR = geo.H / geo.c
         self.AR = AR
-        # Finite-span lift-slope correction: Helmbold (1942).
-        #   a   = a0 / (sqrt(1 + (a0/(pi*AR))^2) + a0/(pi*AR)),  a0 = 2*pi
-        #   f_ar = a/a0 = 1 / (sqrt(1 + (2/AR)^2) + 2/AR)
-        # The previous generalized-Prandtl form 1/(1 + 1.8/(e*AR)) matched
-        # Helmbold at high AR but was ~12 % too generous at the Sharp AR of
-        # 2.86: it gave f_ar = 0.588 (lift slope 3.70/rad) where Helmbold
-        # gives 0.520 (3.27/rad).  The empirical Oswald factor now enters only
-        # the induced-drag term, where it belongs.
-        # tip_loss_multiplier is a residual model-form multiplier around the
-        # Helmbold central estimate; tip_loss_floor_override is retained for
-        # back-compat and applied last.
-        f_ar_raw  = 1.0 / (math.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
+
+        # Finite-span lift-slope correction (selectable model).
+        # helmbold:    f_ar = 1 / (sqrt(1 + (2/AR)^2) + 2/AR)  [default, standard]
+        # prandtl_k2:  f_ar = 1 / (1 + 2.0/(e_osw*AR))          [Prandtl k=2.0]
+        # prandtl_k18: f_ar = 1 / (1 + 1.8/(e_osw*AR))         [Gen. Prandtl k=1.8]
+        # prandtl_k15: f_ar = 1 / (1 + 1.5/(e_osw*AR))         [Prandtl k=1.5]
+        model = aero.finite_span_model
+        if model == "helmbold":
+            f_ar_raw = 1.0 / (math.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
+        elif model == "prandtl_k2":
+            f_ar_raw = 1.0 / (1.0 + 2.0 / (aero.e_osw * AR))
+        elif model == "prandtl_k18":
+            f_ar_raw = 1.0 / (1.0 + 1.8 / (aero.e_osw * AR))
+        elif model == "prandtl_k15":
+            f_ar_raw = 1.0 / (1.0 + 1.5 / (aero.e_osw * AR))
+        else:
+            raise ValueError(f"Unknown finite_span_model: {model}")
+
         ind_k_raw = 1.0 / (math.pi * aero.e_osw * AR)
         f_ar_scaled = min(1.0, max(0.0, f_ar_raw * aero.tip_loss_multiplier))
         self.f_ar  = max(aero.tip_loss_floor_override, f_ar_scaled)
