@@ -128,6 +128,18 @@ def evaluate_restoring(alpha_deg, qa, stall_deg, steady=True):
     frac_ok = np.isfinite(frac) and frac >= FRACTION_MIN
     passed = bool(extreme_ok and frac_ok and steady)
 
+    # Determine status: PASS, FAIL (wrong sign), or INCONCLUSIVE (insufficient data)
+    if not extreme_ok and len(checks) > 0:
+        status = "FAIL_WRONG_SIGN"
+    elif len(checks) == 0:
+        status = "INCONCLUSIVE_NO_EXTREMES"
+    elif not np.isfinite(frac) or n_band < MIN_SAMPLES:
+        status = "INCONCLUSIVE_INSUFFICIENT_SAMPLES"
+    elif not frac_ok:
+        status = "FAIL_LOW_FRACTION"
+    else:
+        status = "PASS"
+
     return {
         "alpha_max": a_max, "alpha_min": a_min,
         "qa_max": qa_max, "qa_min": qa_min,
@@ -136,6 +148,7 @@ def evaluate_restoring(alpha_deg, qa, stall_deg, steady=True):
         "fraction": frac, "n_band": n_band,
         "extreme_ok": extreme_ok, "frac_ok": frac_ok,
         "passed": passed,
+        "status": status,
     }
 
 
@@ -197,14 +210,33 @@ def main(argv=None):
     print()
 
     if args.check:
-        if report["passed"]:
+        status = report.get("status", "UNKNOWN")
+        if status == "PASS":
             print("PASS: aerodynamic pitch torque is restoring at the cycle "
                   "extremes; CPPC sign convention is intact.")
             return 0
-        print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
-              "extremes; check the alpha = wrap(phi_f + psi) convention "
-              "(derivation.md \u00a72.1).")
-        return 1
+        elif status == "FAIL_WRONG_SIGN":
+            print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
+                  "extremes; check the alpha = wrap(phi_f + psi) convention "
+                  "(derivation.md \u00a72.1).")
+            return 1
+        elif status == "FAIL_LOW_FRACTION":
+            print("FAIL: restoring fraction below threshold at the cycle "
+                  "extremes; check the alpha = wrap(phi_f + psi) convention "
+                  "(derivation.md \u00a72.1).")
+            return 1
+        elif status == "INCONCLUSIVE_INSUFFICIENT_SAMPLES":
+            print("INCONCLUSIVE: insufficient samples in the restoring band "
+                  f"(n = {report['n_band']} < {MIN_SAMPLES}) to verify "
+                  "the sign of the aerodynamic pitch torque.")
+            return 1
+        elif status == "INCONCLUSIVE_NO_EXTREMES":
+            print("INCONCLUSIVE: cycle does not reach EXTREME_MARGIN of |alpha|_max; "
+                  "cannot verify the sign of the aerodynamic pitch torque.")
+            return 1
+        else:
+            print(f"UNKNOWN STATUS: {status}")
+            return 1
 
     if not args.no_plot:
         _make_plot(out, sim, args.out)
@@ -214,10 +246,29 @@ def main(argv=None):
               "extremes; CPPC sign convention is intact.")
         return 0
 
-    print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
-          "extremes; check the alpha = wrap(phi_f + psi) convention "
-          "(derivation.md \u00a72.1).")
-    return 1
+    status = report.get("status", "UNKNOWN")
+    if status == "FAIL_WRONG_SIGN":
+        print("FAIL: aerodynamic pitch torque has the wrong sign at the cycle "
+              "extremes; check the alpha = wrap(phi_f + psi) convention "
+              "(derivation.md \u00a72.1).")
+        return 1
+    elif status == "FAIL_LOW_FRACTION":
+        print("FAIL: restoring fraction below threshold at the cycle "
+              "extremes; check the alpha = wrap(phi_f + psi) convention "
+              "(derivation.md \u00a72.1).")
+        return 1
+    elif status == "INCONCLUSIVE_INSUFFICIENT_SAMPLES":
+        print("INCONCLUSIVE: insufficient samples in the restoring band "
+              f"(n = {report['n_band']} < {MIN_SAMPLES}) to verify "
+              "the sign of the aerodynamic pitch torque.")
+        return 1
+    elif status == "INCONCLUSIVE_NO_EXTREMES":
+        print("INCONCLUSIVE: cycle does not reach EXTREME_MARGIN of |alpha|_max; "
+              "cannot verify the sign of the aerodynamic pitch torque.")
+        return 1
+    else:
+        print(f"UNKNOWN STATUS: {status}")
+        return 1
 
 
 def _make_plot(out, sim, out_path="docs/diag_qa.png"):

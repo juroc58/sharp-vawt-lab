@@ -1,0 +1,716 @@
+{
+  "stamp": {
+    "schema_version": "2",
+    "code_hash": "36bf8a052a2e7ee3b89d87348707541ee170b5a324a7e7bac2b48efe1573df18",
+    "script": "scripts/compute_aep_small.py",
+    "script_version": "1.0.1",
+    "created_utc": "2026-10-27T05:45:12.309972+00:00",
+    "python_version": "3.14.4",
+    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
+    "seed": 0,
+    "n": 28,
+    "script_args": [],
+    "extra_files": [
+      "vawt_presets.py"
+    ],
+    "extra_data": {
+      "U_MEAN": 6.0,
+      "K_WEIBULL": 2.0,
+      "CUT_IN": 3.0,
+      "CUT_OUT": 25.0,
+      "U_RATED": 12.0
+    },
+    "uq_spec_hash": null,
+    "config_hash": "9ad52a690740477ddd458bad57c7e0437ee941cb0665a4efb35b3b6089e4aace",
+    "source_hashes": {
+      "sharp_vawt/__init__.py": "b668e8225f256b2949f1a392191345d98f98755e3479d6b3af67512fafdde6cf",
+      "sharp_vawt/config.py": "7521fd8730f5d527a60d1e3b8c345bf914e723e11d432c1f899003cc9d571c4e",
+      "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
+      "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
+      "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
+      "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
+      "scripts/compute_aep_small.py": "90dc8e7fd2efa2d1d0611956dfd5e57e3b547df19bdc9dadf666c403666cc5de"
+    },
+    "data_hashes": {
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_1000000.csv": "8e039410c5697a6eeed77f56ce34333a3afd8bdcfb353d0c9d5b8b5ee1d3a456",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_200000.csv": "ba9bdec33f7c4559315ee15147779da6eab27bab0fb7c9c68b83d6131ffded91",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_400000.csv": "7054ea511217f7ed44df48d1dfa5d6ac0758367cdc2a87e32f5f44fd072bc29b",
+      "sharp_vawt/airfoil_polars/provenance.json": "2a251dd01bcc6146ce9d890700ba76ca2e5c9e60dc124f2452ae6cc12bb30561",
+      "sharp_vawt/airfoil_polars/README.md": "0e99fb03dee3e94f051fa5bdad5a5e99c290a58b4a6bef0274d439337947626f"
+    }
+  },
+  "geometry": {
+    "R": 0.6,
+    "c": 0.14,
+    "H": 0.4,
+    "N": 3,
+    "sigma": 0.11140846016432675,
+    "AR": 2.857142857142857
+  },
+  "wind": {
+    "mean_U": 6.0,
+    "k_weibull": 2.0,
+    "cut_in": 3.0,
+    "cut_out": 25.0,
+    "rated_wind_speed": 12.0,
+    "cp_at_rated": 0.09908315599586827,
+    "p_rated_W": 45.303672516203655
+  },
+  "results": {
+    "passive_k_load": {
+      "aep_MWh": 0.07839881018400713,
+      "cf": 0.19754769025741223,
+      "cp_tsr": [
+        0.03235721588886868,
+        0.05122438481406236,
+        0.0629830893505093,
+        0.05334733898303242,
+        0.04683053890902417,
+        0.003784492855563632,
+        -0.06998512086886076,
+        -0.1483178069637774,
+        -0.21277287629970443,
+        -0.12895717609931212,
+        -0.2018620851498157,
+        -0.31891185403576516,
+        -0.46742646154547535,
+        -0.6474799330926928,
+        -0.8546200636337774
+      ],
+      "cp_tsr_lo": [
+        0.03235721588886868,
+        0.05122438481406232,
+        0.0629830893505093,
+        0.053347338983032386,
+        0.04683053890902406,
+        0.0037844892483926396,
+        -0.06998512086901638,
+        -0.14831780696378155,
+        -0.21277287629970454,
+        -0.12895717609931331,
+        -0.20186208514981582,
+        -0.31891185403576516,
+        -0.4674264615454755,
+        -0.6474799330926928,
+        -0.8546200636337773
+      ],
+      "cp_tsr_hi": [
+        0.03235721588886868,
+        0.05122438481406238,
+        0.06298308935050932,
+        0.053347338983032455,
+        0.04683053890902425,
+        0.0037844998406849277,
+        -0.0699851208685622,
+        -0.14831780696377175,
+        -0.21277287629970426,
+        -0.12895717609931087,
+        -0.20186208514981555,
+        -0.31891185403576516,
+        -0.46742646154547535,
+        -0.6474799330926928,
+        -0.8546200636337773
+      ],
+      "tsr": [
+        1.0,
+        1.25,
+        1.5,
+        1.75,
+        2.0,
+        2.25,
+        2.5,
+        2.75,
+        3.0,
+        3.25,
+        3.5,
+        3.75,
+        4.0,
+        4.25,
+        4.5
+      ],
+      "free_results": [
+        {
+          "U": 3.0,
+          "cp": 0.07516590816626735,
+          "tsr_eq": 1.4703488043094648,
+          "steady": true,
+          "rpm": 70.20398408253278
+        },
+        {
+          "U": 4.0,
+          "cp": 0.07514723273574543,
+          "tsr_eq": 1.4702268312314593,
+          "steady": true,
+          "rpm": 93.59754706272822
+        },
+        {
+          "U": 5.0,
+          "cp": 0.07566614693719632,
+          "tsr_eq": 1.4736048113144637,
+          "steady": true,
+          "rpm": 117.26574494234833
+        },
+        {
+          "U": 6.0,
+          "cp": 0.08117990533449845,
+          "tsr_eq": 1.508566250734421,
+          "steady": true,
+          "rpm": 144.05746547159444
+        },
+        {
+          "U": 7.0,
+          "cp": 0.08504560701363179,
+          "tsr_eq": 1.5321663028673083,
+          "steady": true,
+          "rpm": 170.6962885181163
+        },
+        {
+          "U": 8.0,
+          "cp": 0.08819654350921127,
+          "tsr_eq": 1.5508920884659922,
+          "steady": true,
+          "rpm": 197.46571366518054
+        },
+        {
+          "U": 9.0,
+          "cp": 0.09108083656728803,
+          "tsr_eq": 1.5676579964348951,
+          "steady": true,
+          "rpm": 224.55046728913538
+        },
+        {
+          "U": 10.0,
+          "cp": 0.09382899711616086,
+          "tsr_eq": 1.5833110751957515,
+          "steady": true,
+          "rpm": 251.9917840695475
+        },
+        {
+          "U": 11.0,
+          "cp": 0.09625775578088754,
+          "tsr_eq": 1.5968979804148828,
+          "steady": true,
+          "rpm": 279.5696279161426
+        },
+        {
+          "U": 12.0,
+          "cp": 0.09908315599586827,
+          "tsr_eq": 1.6124260274432667,
+          "steady": true,
+          "rpm": 307.95068716514885
+        },
+        {
+          "U": 13.0,
+          "cp": 0.10212991295819657,
+          "tsr_eq": 1.6288410235842956,
+          "steady": true,
+          "rpm": 337.0095305385941
+        },
+        {
+          "U": 14.0,
+          "cp": 0.10532193835890383,
+          "tsr_eq": 1.645686147207447,
+          "steady": true,
+          "rpm": 366.6867191482905
+        },
+        {
+          "U": 15.0,
+          "cp": 0.10851841062248498,
+          "tsr_eq": 1.6622112025119453,
+          "steady": true,
+          "rpm": 396.82369401374945
+        }
+      ],
+      "cp_phase_data": [
+        [
+          {
+            "tsr": 1.0,
+            "psi0_deg": 0.0,
+            "cp": 0.03235721588886868,
+            "tsr_eq": 1.0,
+            "steady": true,
+            "rpm": 127.32395447351627,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.0,
+            "psi0_deg": 120.0,
+            "cp": 0.03235721588886868,
+            "tsr_eq": 1.0,
+            "steady": true,
+            "rpm": 127.32395447351627,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.0,
+            "psi0_deg": 240.0,
+            "cp": 0.03235721588886868,
+            "tsr_eq": 1.0,
+            "steady": true,
+            "rpm": 127.32395447351627,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 1.25,
+            "psi0_deg": 0.0,
+            "cp": 0.05122438481406238,
+            "tsr_eq": 1.2499999999999998,
+            "steady": true,
+            "rpm": 159.15494309189532,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.25,
+            "psi0_deg": 120.0,
+            "cp": 0.05122438481406232,
+            "tsr_eq": 1.2499999999999998,
+            "steady": true,
+            "rpm": 159.15494309189532,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.25,
+            "psi0_deg": 240.0,
+            "cp": 0.051224384814062364,
+            "tsr_eq": 1.2499999999999998,
+            "steady": true,
+            "rpm": 159.15494309189532,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 1.5,
+            "psi0_deg": 0.0,
+            "cp": 0.06298308935050932,
+            "tsr_eq": 1.5,
+            "steady": true,
+            "rpm": 190.9859317102744,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.5,
+            "psi0_deg": 120.0,
+            "cp": 0.0629830893505093,
+            "tsr_eq": 1.5,
+            "steady": true,
+            "rpm": 190.9859317102744,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.5,
+            "psi0_deg": 240.0,
+            "cp": 0.0629830893505093,
+            "tsr_eq": 1.5,
+            "steady": true,
+            "rpm": 190.9859317102744,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 1.75,
+            "psi0_deg": 0.0,
+            "cp": 0.053347338983032386,
+            "tsr_eq": 1.7500000000000002,
+            "steady": true,
+            "rpm": 222.8169203286535,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.75,
+            "psi0_deg": 120.0,
+            "cp": 0.053347338983032455,
+            "tsr_eq": 1.7500000000000002,
+            "steady": true,
+            "rpm": 222.8169203286535,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 1.75,
+            "psi0_deg": 240.0,
+            "cp": 0.05334733898303242,
+            "tsr_eq": 1.7500000000000002,
+            "steady": true,
+            "rpm": 222.8169203286535,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 2.0,
+            "psi0_deg": 0.0,
+            "cp": 0.04683053890902425,
+            "tsr_eq": 2.0000000000000004,
+            "steady": true,
+            "rpm": 254.6479089470326,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.0,
+            "psi0_deg": 120.0,
+            "cp": 0.04683053890902421,
+            "tsr_eq": 2.0000000000000004,
+            "steady": true,
+            "rpm": 254.6479089470326,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.0,
+            "psi0_deg": 240.0,
+            "cp": 0.04683053890902406,
+            "tsr_eq": 2.0000000000000004,
+            "steady": true,
+            "rpm": 254.6479089470326,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 2.25,
+            "psi0_deg": 0.0,
+            "cp": 0.0037844998406849277,
+            "tsr_eq": 2.25,
+            "steady": true,
+            "rpm": 286.4788975654116,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.25,
+            "psi0_deg": 120.0,
+            "cp": 0.003784489477613328,
+            "tsr_eq": 2.25,
+            "steady": true,
+            "rpm": 286.4788975654116,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.25,
+            "psi0_deg": 240.0,
+            "cp": 0.0037844892483926396,
+            "tsr_eq": 2.25,
+            "steady": true,
+            "rpm": 286.4788975654116,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 2.5,
+            "psi0_deg": 0.0,
+            "cp": -0.0699851208685622,
+            "tsr_eq": 2.4999999999999996,
+            "steady": true,
+            "rpm": 318.30988618379064,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.5,
+            "psi0_deg": 120.0,
+            "cp": -0.06998512086900367,
+            "tsr_eq": 2.4999999999999996,
+            "steady": true,
+            "rpm": 318.30988618379064,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.5,
+            "psi0_deg": 240.0,
+            "cp": -0.06998512086901638,
+            "tsr_eq": 2.4999999999999996,
+            "steady": true,
+            "rpm": 318.30988618379064,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 2.75,
+            "psi0_deg": 0.0,
+            "cp": -0.14831780696377175,
+            "tsr_eq": 2.750000000000001,
+            "steady": true,
+            "rpm": 350.1408748021699,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.75,
+            "psi0_deg": 120.0,
+            "cp": -0.14831780696378155,
+            "tsr_eq": 2.750000000000001,
+            "steady": true,
+            "rpm": 350.1408748021699,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 2.75,
+            "psi0_deg": 240.0,
+            "cp": -0.14831780696377883,
+            "tsr_eq": 2.750000000000001,
+            "steady": true,
+            "rpm": 350.1408748021699,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 3.0,
+            "psi0_deg": 0.0,
+            "cp": -0.21277287629970448,
+            "tsr_eq": 3.0,
+            "steady": true,
+            "rpm": 381.9718634205488,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.0,
+            "psi0_deg": 120.0,
+            "cp": -0.21277287629970454,
+            "tsr_eq": 3.0,
+            "steady": true,
+            "rpm": 381.9718634205488,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.0,
+            "psi0_deg": 240.0,
+            "cp": -0.21277287629970426,
+            "tsr_eq": 3.0,
+            "steady": true,
+            "rpm": 381.9718634205488,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 3.25,
+            "psi0_deg": 0.0,
+            "cp": -0.12895717609931087,
+            "tsr_eq": 3.249999999999999,
+            "steady": true,
+            "rpm": 413.80285203892777,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.25,
+            "psi0_deg": 120.0,
+            "cp": -0.12895717609931331,
+            "tsr_eq": 3.249999999999999,
+            "steady": true,
+            "rpm": 413.80285203892777,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.25,
+            "psi0_deg": 240.0,
+            "cp": -0.1289571760993122,
+            "tsr_eq": 3.249999999999999,
+            "steady": true,
+            "rpm": 413.80285203892777,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 3.5,
+            "psi0_deg": 0.0,
+            "cp": -0.20186208514981582,
+            "tsr_eq": 3.5000000000000004,
+            "steady": true,
+            "rpm": 445.633840657307,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.5,
+            "psi0_deg": 120.0,
+            "cp": -0.20186208514981577,
+            "tsr_eq": 3.5000000000000004,
+            "steady": true,
+            "rpm": 445.633840657307,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.5,
+            "psi0_deg": 240.0,
+            "cp": -0.20186208514981555,
+            "tsr_eq": 3.5000000000000004,
+            "steady": true,
+            "rpm": 445.633840657307,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 3.75,
+            "psi0_deg": 0.0,
+            "cp": -0.31891185403576516,
+            "tsr_eq": 3.75,
+            "steady": true,
+            "rpm": 477.46482927568604,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.75,
+            "psi0_deg": 120.0,
+            "cp": -0.31891185403576516,
+            "tsr_eq": 3.75,
+            "steady": true,
+            "rpm": 477.46482927568604,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 3.75,
+            "psi0_deg": 240.0,
+            "cp": -0.31891185403576516,
+            "tsr_eq": 3.75,
+            "steady": true,
+            "rpm": 477.46482927568604,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 4.0,
+            "psi0_deg": 0.0,
+            "cp": -0.46742646154547535,
+            "tsr_eq": 4.0,
+            "steady": true,
+            "rpm": 509.29581789406507,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.0,
+            "psi0_deg": 120.0,
+            "cp": -0.4674264615454755,
+            "tsr_eq": 4.0,
+            "steady": true,
+            "rpm": 509.29581789406507,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.0,
+            "psi0_deg": 240.0,
+            "cp": -0.46742646154547535,
+            "tsr_eq": 4.0,
+            "steady": true,
+            "rpm": 509.29581789406507,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 4.25,
+            "psi0_deg": 0.0,
+            "cp": -0.6474799330926928,
+            "tsr_eq": 4.25,
+            "steady": true,
+            "rpm": 541.1268065124442,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.25,
+            "psi0_deg": 120.0,
+            "cp": -0.6474799330926928,
+            "tsr_eq": 4.25,
+            "steady": true,
+            "rpm": 541.1268065124442,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.25,
+            "psi0_deg": 240.0,
+            "cp": -0.6474799330926928,
+            "tsr_eq": 4.25,
+            "steady": true,
+            "rpm": 541.1268065124442,
+            "success": true,
+            "error": null
+          }
+        ],
+        [
+          {
+            "tsr": 4.5,
+            "psi0_deg": 0.0,
+            "cp": -0.8546200636337773,
+            "tsr_eq": 4.5,
+            "steady": true,
+            "rpm": 572.9577951308232,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.5,
+            "psi0_deg": 120.0,
+            "cp": -0.8546200636337773,
+            "tsr_eq": 4.5,
+            "steady": true,
+            "rpm": 572.9577951308232,
+            "success": true,
+            "error": null
+          },
+          {
+            "tsr": 4.5,
+            "psi0_deg": 240.0,
+            "cp": -0.8546200636337773,
+            "tsr_eq": 4.5,
+            "steady": true,
+            "rpm": 572.9577951308232,
+            "success": true,
+            "error": null
+          }
+        ]
+      ]
+    },
+    "passive_fixed_rpm": {
+      "aep_MWh": 0.03541769094337985,
+      "cf": 0.089244760522435
+    }
+  },
+  "gains_percent": {
+    "passive_vs_fixed_rpm": 121.35494464994525
+  }
+}

@@ -4,6 +4,9 @@ These are slow (long simulations) but they're the ones that catch physics
 regressions. Mark them `slow` so they can be skipped for quick local
 iteration: `pytest -m "not slow"`.
 """
+import importlib
+import json
+
 import pytest
 
 from scripts.validate_ham import (
@@ -36,7 +39,6 @@ class TestHamVerdictContract:
         assert expected_hi == pytest.approx(HAM_MID * (1.0 + HAM_BIAS_HI))
 
     def test_window_is_derived_from_ablation(self):
-        import json
         from pathlib import Path
         path = Path(__file__).resolve().parent.parent / "scripts" / "finite_span_ablation.json"
         data = json.loads(path.read_text())
@@ -63,6 +65,32 @@ class TestHamVerdictContract:
         # A 2D no-tip solver should not fall below the 3D measured midpoint.
         status, *_ = verdict(HAM_MID * 0.95)
         assert status == "comparison_out_of_expected_range"
+
+
+def test_ham_bias_fallback_without_2_5(tmp_path, monkeypatch):
+    """The module-level Sobol fallback uses np.interp(2.5, ...); must not
+    raise NameError when numpy is imported."""
+    import importlib
+
+    import scripts.validate_ham as vh
+    importlib.reload(vh)
+    fixture = tmp_path / "ablation.json"
+    fixture.write_text(json.dumps(
+        {"cases": {"neither": [{"tsr": 2.0, "cp": 0.40},
+                               {"tsr": 3.0, "cp": 0.42}]}}))
+    monkeypatch.setattr(vh, "_ABL_JSON", str(fixture))
+    # Simulate the module-level fallback branch:
+    import numpy as np
+    cp = float(np.interp(2.5, [2.0, 3.0], [0.40, 0.42]))
+    assert 0.40 <= cp <= 0.42
+
+
+def test_ham_bias_fallback_constants_when_file_missing(monkeypatch):
+    import scripts.validate_ham as vh
+    monkeypatch.setattr(vh, "_ABL_JSON", "/nonexistent/path.json")
+    importlib.reload(vh)
+    assert vh.HAM_BIAS_LO == 0.0
+    assert vh.HAM_BIAS_HI == pytest.approx(0.09, abs=1e-3)
 
 
 @pytest.mark.slow

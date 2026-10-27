@@ -22,12 +22,18 @@ from matplotlib.patches import Circle
 
 from sharp_vawt import create_sim_from_params
 
-DESIGN = {
+HISTORICAL_DESIGN = {
     "R": 0.60, "H": 0.40, "N": 3, "ar": 0.50, "sp": 0.25,
     "c": 0.117607, "tsr": 2.14487, "k_load": 0.0015,
-    # Blade-unit material properties — must match the reference design
-    # point (scripts/optimization_actuator.json, mc=0.008, dcw=0.50).
-    # Omitting these silently fell back to the dataclass defaults.
+    # HISTORICAL_DESIGN: Frozen snapshot at commit ddfee9f (the review-fix
+    # round).  The current optimiser output lives in
+    # scripts/optimization_actuator.json and differs in c (0.117607 vs
+    # 0.100996), tsr (2.14487 vs 3.25840), k_load (0.0015 vs 0.000501),
+    # mc (0.008 vs 0.004013), dcw (0.50 vs -0.07922), bias_deg (0.0 vs
+    # 0.49705), and pp0..pp3 (5.156/-6.329/2.758/-0.085 vs
+    # 4.33655/-6.05415/2.53180/-0.18614).  Use HISTORICAL_DESIGN only for
+    # reproducing the historical animation; for current results read
+    # scripts/optimization_actuator.json instead.
     "mb": 0.010, "xbcg": 0.20, "mc": 0.008, "dcw": 0.50,
     "balance": 0, "bias_deg": 0.0,
     "pp0_deg": +5.156, "pp1_deg": -6.329, "pp2_deg": +2.758, "pp3_deg": -0.085,
@@ -43,8 +49,8 @@ DESIGN = {
 
 
 def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
-    print(f"Running simulation (T_max = {DESIGN['T_max']} s) ...")
-    r = create_sim_from_params(DESIGN).run()
+    print(f"Running simulation (T_max = {HISTORICAL_DESIGN['T_max']} s) ...")
+    r = create_sim_from_params(HISTORICAL_DESIGN).run()
     out = r["out"]
     t, th, w, psi, _beta, alpha = out[:, :6].T
 
@@ -66,10 +72,10 @@ def render(out_path="docs/animation.mp4", fps=30, n_revs=3, dpi=120):
     alpha_s = np.concatenate([alpha_w[order], [alpha_w[order][0]]])
 
     # --- geometry ---
-    R, c, N = DESIGN["R"], DESIGN["c"], DESIGN["N"]
-    ar = DESIGN["ar"] * c
+    R, c, N = HISTORICAL_DESIGN["R"], HISTORICAL_DESIGN["c"], HISTORICAL_DESIGN["N"]
+    ar = HISTORICAL_DESIGN["ar"] * c
     Rp = R - ar
-    xq_local = 0.25 * c - DESIGN["sp"] * c   # 0 for sp=0.25
+    xq_local = 0.25 * c - HISTORICAL_DESIGN["sp"] * c   # 0 for sp=0.25
 
     # --- frame timeline (slow motion) ---
     w_mean = w_w.mean()

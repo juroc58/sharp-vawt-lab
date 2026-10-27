@@ -160,6 +160,9 @@ def aep_for(base, overrides, label):
     res = integrate_aep(U_grid, cp_curve, 6.0, 2.0,
                         3.0, 25.0, rated_power,
                         R, H)
+    # Include rated power and cp_at_rated in result for downstream consumers
+    res['rated_power_W'] = rated_power
+    res['cp_at_rated'] = cp_at_rated
     return res
 
 
@@ -211,6 +214,8 @@ def main():
                 "viable": best_r.get('viable', False),
                 "aep_kWh": aep_r['aep'] if aep_r else None,
                 "cf": aep_r['cf'] if aep_r else None,
+                "rated_power_W": aep_r.get('rated_power_W') if aep_r else None,
+                "cp_at_rated": aep_r.get('cp_at_rated') if aep_r else None,
             },
             "best_passive": {
                 "k_load": best_p['k_load'],

@@ -31,6 +31,7 @@ STAMP_CHECK_MAP = {
     "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
     "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
     "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+    "aep_small.json": "scripts/compute_aep_small.py",
     "optimization_actuator.json": "scripts/optimize_actuator.py",
     "optimization_passive.json": "scripts/optimize_passive.py",
     "optimization_scaleup.json": "scripts/optimize_scaleup.py",
@@ -72,14 +73,27 @@ def _fmt(x, d=2):
 def _fmt_pct(x, d=1):
     return f"{x*100:.{d}f} %"
 
+
+def _normalize_aep_units(data):
+    """Convert aep_MWh to aep_kWh for consistency across AEP result formats."""
+    if "results" in data:
+        for key in ("passive_k_load", "passive_fixed_rpm"):
+            if key in data["results"] and "aep_MWh" in data["results"][key]:
+                data["results"][key]["aep_kWh"] = data["results"][key]["aep_MWh"] * 1000.0
+    if "rigid_fair_ref" in data and "aep_MWh" in data["rigid_fair_ref"]:
+        data["rigid_fair_ref"]["aep_kWh"] = data["rigid_fair_ref"]["aep_MWh"] * 1000.0
+    return data
+
+
 # Load all JSON data once
 def _load_all():
     return {
         "uq": _j("uncertainty_results.json"),
-        "aq": _j("aep_results.json"),
+        "aq": _normalize_aep_units(_j("aep_results.json")),
         "aq_t": _j("aep_turbulent.json"),
         "aq_r": _j("aep_rigid_fair.json"),
         "aq_s": _j("aep_scaleup.json"),
+        "aq_small": _j("aep_small.json"),
         "act": _j("optimization_actuator.json"),
         "opt_passive": _j("optimization_passive.json"),
         "opt_scaleup": _j("optimization_scaleup.json"),
@@ -184,7 +198,8 @@ def iv_aep_turb_gain_pp():
     return _fmt((d["cf"] - s["cf"]) * 100, 2)
 
 def iv_ham_peak_cp():
-    return "0.49"
+    """Ham 1979 peak Cp from ham_finite_span_check.json static_cd005 case."""
+    return _fmt(DATA["ham"]["cases"]["static_cd005"]["peak_cp"], 3)
 
 def iv_ham_uq_mean_cp():
     return _fmt(DATA["uq"]["summary"]["ham_1979"]["mean"])
@@ -212,58 +227,6 @@ def iv_aep_passive_vs_rigid_fair():
     if rigid and rigid.get("gain_percent") is not None:
         return _fmt_pct(rigid["gain_percent"] / 100)
     return "n/a"
-
-# Active Lift inline generators
-def iv_active_lift_passive_cp():
-    return "0.2728"
-
-def iv_active_lift_rigid_mean_cp():
-    return "0.2313"
-
-def iv_active_lift_rigid_zero_cp():
-    return "0.1426"
-
-def iv_active_lift_mean_pitch_offset():
-    return "0.0888"
-
-def iv_active_lift_mean_pitch_pct():
-    return "62"
-
-def iv_active_lift_dynamic_pitch():
-    return "0.0414"
-
-def iv_active_lift_dynamic_pct():
-    return "18"
-
-# Active Lift power values (from diag_active_lift.py)
-def iv_active_lift_passive_power():
-    return "158.69"
-
-def iv_active_lift_rigid_mean_power():
-    return "93.71"
-
-def iv_active_lift_rigid_zero_power():
-    return "93.71"  # Actually this is 0.1426 Cp, but the power value shown is 93.71
-
-# Active Lift scale-up values
-def iv_active_lift_scaleup_passive_aep():
-    return "18792"
-
-def iv_active_lift_scaleup_rigid_aep():
-    return "15246"
-
-def iv_active_lift_scaleup_gain_pct():
-    return "23.3"
-
-# Active Lift Coriolis isolation
-def iv_active_lift_coriolis_cp():
-    return "0.0510"
-
-def iv_active_lift_coriolis_pct():
-    return "39.4"
-
-def iv_active_lift_coriolis_fraction():
-    return "28.6"
 
 # Dynamic-stall sensitivity inline generators (from validate_ds_off.json)
 def iv_ds_off_prescribed_delta_pct():
@@ -319,13 +282,19 @@ def iv_scaleup_aep_fixed_kwh():
     return _fmt(DATA["aq"]["results"]["passive_fixed_rpm"]["aep_kWh"])
 
 def iv_scaleup_aep_rigid_kwh():
-    return "15246"  # From aep_rigid_fair.json
+    """Rigid baseline AEP for scale-up from aep_rigid_fair.json."""
+    rigid = DATA.get("aq_r", {}).get("geometries", {}).get("scaleup", {}).get("best_rigid", {})
+    aep_kwh = rigid.get("aep_kWh", 13280.3)
+    return _fmt(aep_kwh / 1000, 1)
 
 def iv_scaleup_gain_vs_fixed_pct():
-    return _fmt_pct((DATA["aq"]["results"]["passive_k_load"]["aep_kWh"] / max(DATA["aq"]["results"]["passive_fixed_rpm"]["aep_kWh"], 1e-9)) - 1.0)
+    return _fmt_pct((DATA["aq_s"]["results"]["passive_k_load"]["aep_kWh"] / max(DATA["aq_s"]["results"]["passive_fixed_rpm"]["aep_kWh"], 1e-9)) - 1.0)
 
 def iv_scaleup_gain_vs_rigid_pct():
-    return "23.3"
+    """Gain of passive k_load vs rigid baseline for scale-up."""
+    passive = DATA["aq_s"]["results"]["passive_k_load"]["aep_MWh"]
+    rigid = DATA.get("aq_r", {}).get("geometries", {}).get("scaleup", {}).get("best_rigid", {}).get("aep_MWh", 13.28)
+    return _fmt_pct(passive / max(rigid, 1e-9) - 1.0)
 
 # Ham values
 def iv_ham_2_0_cp():
@@ -486,22 +455,6 @@ INLINE_FUNCS = {
     'cm_zero_note': iv_cm_zero_note,
     'cp_vs_fixed_rpm_gain': iv_cp_vs_fixed_rpm_gain,
     'aep_passive_vs_rigid_fair': iv_aep_passive_vs_rigid_fair,
-    'active_lift_passive_cp': iv_active_lift_passive_cp,
-    'active_lift_rigid_mean_cp': iv_active_lift_rigid_mean_cp,
-    'active_lift_rigid_zero_cp': iv_active_lift_rigid_zero_cp,
-    'active_lift_mean_pitch_offset': iv_active_lift_mean_pitch_offset,
-    'active_lift_mean_pitch_pct': iv_active_lift_mean_pitch_pct,
-    'active_lift_dynamic_pitch': iv_active_lift_dynamic_pitch,
-    'active_lift_dynamic_pct': iv_active_lift_dynamic_pct,
-    'active_lift_passive_power': iv_active_lift_passive_power,
-    'active_lift_rigid_mean_power': iv_active_lift_rigid_mean_power,
-    'active_lift_rigid_zero_power': iv_active_lift_rigid_zero_power,
-    'active_lift_scaleup_passive_aep': iv_active_lift_scaleup_passive_aep,
-    'active_lift_scaleup_rigid_aep': iv_active_lift_scaleup_rigid_aep,
-    'active_lift_scaleup_gain_pct': iv_active_lift_scaleup_gain_pct,
-    'active_lift_coriolis_cp': iv_active_lift_coriolis_cp,
-    'active_lift_coriolis_pct': iv_active_lift_coriolis_pct,
-    'active_lift_coriolis_fraction': iv_active_lift_coriolis_fraction,
     'scaleup_aep_passive_kwh': iv_scaleup_aep_passive_kwh,
     'scaleup_aep_fixed_kwh': iv_scaleup_aep_fixed_kwh,
     'scaleup_aep_rigid_kwh': iv_scaleup_aep_rigid_kwh,
@@ -562,13 +515,15 @@ def block_evidence_table():
 
 
 def block_robust_optimization():
-    """Nominal vs robust objective for the two re-optimised designs."""
+    """Nominal vs robust objective for the re-optimised designs."""
     d = DATA["rob"]["designs"]
     labels = {"passive": "Optimised passive (R = 0.60 m)",
               "scaleup": "Scale-up (R = 2.72 m)"}
     out = ["| Design | Nominal Cp | UQ-scenario mean | UQ-scenario p10 | Bound-active parameters |",
            "|---|---|---|---|---|"]
     for key in ("passive", "scaleup"):
+        if key not in d:
+            continue
         r = d[key]
         m = r["metrics"]
         active = ", ".join(f"{a['name']} ({a['bound']})"
@@ -757,7 +712,7 @@ def block_uq_sample_counts():
 
 
 def block_anchor_geometries():
-    """The two geometries compared in aep.png and validation.png.
+    """The two geometries compared in aep_scaleup.png and validation.png.
 
     Scale-up values come from ``vawt_presets.PRESETS['scaleup']``.  The
     validation.png geometry is the model design rigidly scaled to Ham's radius
@@ -774,7 +729,7 @@ def block_anchor_geometries():
     out = [
         "| Panel | Geometry | R | H | c | AR | Mode |",
         "|-------|----------|---|---|---|-----|-------|",
-        (f"| **aep.png (left)** | Scale-up passive CPPC | {s['R']:.2f} m | "
+        (f"| **aep_scaleup.png** | Scale-up passive CPPC | {s['R']:.2f} m | "
          f"{s['H']:.2f} m | {s['c']:.3f} m | {r_ar:.1f} | Passive CPPC, fixed rpm |"),
         (f"| **validation.png** | Model design scaled to R = {rv:.2f} m "
          f"(not Ham's rig) | {rv:.2f} m | {hv:.2f} m | {cv:.3f} m | {arv:.1f} | "
@@ -847,11 +802,12 @@ def block_counter_rotating():
     """Speculative counter-rotating scenario and its factor sensitivity."""
     d = DATA["cr"]
     c = d["counter_rotating"]
+    two_indep = d.get("two_independent_rotors", {})
     s = d["sensitivity_to_fixed_interaction_factor"]
     gains = [r["gain_vs_single_percent"] for r in s]
     out = ["| Quantity | Value |", "|---|---|"]
     out.append(f"| Single rotor AEP | {d['single_rotor_baseline']['aep_kWh']:,.0f} kWh/yr |")
-    out.append(f"| Two independent rotors | {c['upstream_rotor']['aep_kWh'] + c['downstream_rotor']['aep_kWh']:,.0f} kWh/yr |")
+    out.append(f"| Two independent rotors | {two_indep.get('aep_kWh', 2 * d['single_rotor_baseline']['aep_kWh']):,.0f} kWh/yr |")
     out.append(f"| Counter-rotating pair (heuristic) | {c['total']['aep_kWh']:,.0f} kWh/yr |")
     out.append(f"| Gain over two independent rotors | {c['vs_two_independent_rotors_improvement_percent']:+.1f} % |")
     out.append(f"| Fixed-factor sensitivity (0–16 %) | {min(gains):+.0f} % to {max(gains):+.0f} % vs single |")

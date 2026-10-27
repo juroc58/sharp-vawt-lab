@@ -12,7 +12,7 @@ DOCS = ROOT / "docs"
 MANIFEST = DOCS / "figure_manifest.json"
 
 REQUIRED = {
-    "aep.png", "aep_scaleup.png", "aep_turbulent.png", "aep_counter_rotating.png",
+    "aep_small.png", "aep_scaleup.png", "aep_turbulent.png", "aep_counter_rotating.png",
     "ham_curve.png", "validation.png", "uncertainty.png", "spearman.png",
     "diag_qa.png", "finite_span_ablation.png", "finite_span_validation.png",
 }

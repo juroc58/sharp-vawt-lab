@@ -274,7 +274,9 @@ def main():
     if rigid_ref and rigid_ref.get('aep_kWh') is not None:
         summary["rigid_fair_ref"] = {
             "aep_MWh": rigid_ref['aep_kWh']/1000,
-            "cf": rigid_ref['cf']
+            "cf": rigid_ref['cf'],
+            "rated_power_W": rigid_ref.get('rated_power_W'),
+            "cp_at_rated": rigid_ref.get('cp_at_rated'),
         }
         summary["gains_percent"]["passive_vs_rigid_fair"] = gain_vs_rigid
 

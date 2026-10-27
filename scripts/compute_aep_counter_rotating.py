@@ -429,9 +429,13 @@ def main():
     # === SENSITIVITY: fixed interaction factor, not a headline gain ===
     # The heuristic factor is the largest source of model-form uncertainty.
     # Sweep it explicitly instead of presenting one number as a prediction.
+    # Include the mean interaction factor from the scenario model as the nominal point.
+    mean_interaction_factor = float(np.mean(interaction_factors))
     print("\n  Sensitivity to a fixed downstream interaction factor:")
     sensitivity = []
-    for f in (0.00, 0.04, 0.08, 0.12, 0.16):
+    # Evaluate at discrete factors plus the nominal model's mean interaction factor
+    factors_to_eval = sorted({0.00, 0.04, 0.08, 0.12, 0.16, mean_interaction_factor})
+    for f in factors_to_eval:
         P_d = []
         for U in U_range:
             U_eff = U * (1.0 + f)
@@ -444,14 +448,27 @@ def main():
                                     U_MEAN, K_WEIBULL,
                                     CUT_IN, CUT_OUT, p_rated)
         gain_f = ((aep_f / aep_single) - 1.0) * 100.0 if aep_single > 0 else 0.0
+        is_nominal = abs(f - mean_interaction_factor) < 1e-6
         sensitivity.append({
             "interaction_factor": float(f),
             "aep_kWh": float(aep_f),
             "cf": float(cf_f),
             "gain_vs_single_percent": float(gain_f),
+            "is_nominal": is_nominal,
         })
         print(f"    f = {f:.2f}  AEP = {aep_f:.1f} kWh/yr  "
-              f"gain vs single = {gain_f:+.1f}%")
+              f"gain vs single = {gain_f:+.1f}%{' (NOMINAL)' if is_nominal else ''}")
+
+    # Calculate improvement over single rotor
+    if aep_single > 0:
+        improvement_over_single = ((aep_total / aep_single) - 1.0) * 100.0
+        print(f"\n  Improvement over single rotor: {improvement_over_single:+.1f}%")
+    else:
+        improvement_over_single = 0.0
+        print("\n  Improvement over single rotor: N/A")
+
+    # Two independent rotors baseline: 2 x single-rotor AEP (no interaction)
+    aep_two_independent = 2.0 * aep_single
 
     # Calculate improvement over single rotor
     if aep_single > 0:
@@ -462,7 +479,6 @@ def main():
         print("\n  Improvement over single rotor: N/A")
 
     # Calculate improvement over two independent rotors
-    aep_two_independent = 2.0 * aep_single
     if aep_two_independent > 0:
         improvement_over_two = ((aep_total / aep_two_independent) - 1.0) * 100.0
         print(f"  Improvement over two independent rotors: {improvement_over_two:+.1f}%")
@@ -597,6 +613,10 @@ def main():
         },
         "single_rotor_baseline": {
             "aep_kWh": aep_single,
+            "capacity_factor": cf_single
+        },
+        "two_independent_rotors": {
+            "aep_kWh": aep_two_independent,
             "capacity_factor": cf_single
         },
         "counter_rotating": {

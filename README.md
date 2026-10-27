@@ -51,6 +51,8 @@ vendored in this archive, so no agreement figure is reproduced here.
 
 ### Small-rotor regime (R = 0.6 m, Re ≈ 1.4 × 10⁵, σ ≈ 0.07)
 
+![aep_small](docs/aep_small.png)
+
 <!-- BEGIN GENERATED: headline_table_small -->
 | Configuration | Cp | 90 % CI | Reference | Evidence |
 |---|---|---|---|---|
@@ -210,16 +212,16 @@ cam-driven Pinson C2E. This is not achievable with a passive Sharp mechanism.
 
 ### ⚠ Important: Two different geometries compared
 
-**aep.png (left panel)** and **validation.png** show Cp(TSR) curves for **two different geometries**:
+**aep_scaleup.png** and **validation.png** show Cp(TSR) curves for **two different geometries**:
 
 <!-- BEGIN GENERATED: anchor_geometries -->
 | Panel | Geometry | R | H | c | AR | Mode |
 |-------|----------|---|---|---|-----|-------|
-| **aep.png (left)** | Scale-up passive CPPC | 2.72 m | 4.06 m | 0.386 m | 10.5 | Passive CPPC, fixed rpm |
+| **aep_scaleup.png** | Scale-up passive CPPC | 2.72 m | 4.06 m | 0.386 m | 10.5 | Passive CPPC, fixed rpm |
 | **validation.png** | Model design scaled to R = 1.83 m (not Ham's rig) | 1.83 m | 1.22 m | 0.359 m | 3.4 | Prescribed pitch, no tip loss |
 <!-- END GENERATED: anchor_geometries -->
 
-The **aep.png left panel** shows our scale-up passive CPPC design (R=2.72m, AR=10.5) with free pitch.
+The **aep_scaleup.png** figure shows our scale-up passive CPPC design (R=2.72m, AR=10.5) with free pitch.
 The **validation.png** panel is this project's prescribed-pitch design point
 scaled rigidly to R = 1.83 m (c and H scale with R). It is a **scaled**
 comparison, not a like-for-like Ham geometry: H/R = 1.49 here versus 0.75
@@ -262,7 +264,7 @@ here, not a primary mechanism.
 
 ## 📈 Annual energy production
 
-![aep](docs/aep.png)
+![aep_scaleup](docs/aep_scaleup.png)
 
 **MODEL RESULT — not an energy forecast.** Power curves are integrated
 against a Weibull wind distribution (k = 2.0, mean U = 6 m/s,
@@ -392,7 +394,7 @@ a few per cent at this spacing.
 | Quantity | Value |
 |---|---|
 | Single rotor AEP | 16,705 kWh/yr |
-| Two independent rotors | 34,350 kWh/yr |
+| Two independent rotors | 33,410 kWh/yr |
 | Counter-rotating pair (heuristic) | 34,350 kWh/yr |
 | Gain over two independent rotors | +2.8 % |
 | Fixed-factor sensitivity (0–16 %) | +100 % to +142 % vs single |
@@ -1025,7 +1027,7 @@ If you use this software, please cite it as:
     @software{sharp_vawt_lab_2026,
       author       = {juroc58},
       title        = {sharp-vawt-lab: a 2D BEM solver for the Sharp cycloturbine},
-      version      = {3.4.0},
+      version      = {3.5.0},
       year         = {2026},
       url          = {https://github.com/juroc58/sharp-vawt-lab},
       license      = {MIT},

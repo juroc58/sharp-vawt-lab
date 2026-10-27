@@ -1,74 +1,50 @@
-"""Shared plotting style for all AEP figures."""
-
+#!/usr/bin/env python3
+"""Shared plotting style module for AEP figures."""
 from __future__ import annotations
 
 import matplotlib
 
 matplotlib.use("Agg")
-import os
-
 import matplotlib.pyplot as plt
 
-# Colour map (consistent across all figures)
-COL_PASSIVE_KLOAD = "C0"      # blue - passive CPPC, variable speed
-COL_PASSIVE_FIXED = "C2"      # green - passive CPPC, fixed rpm
-COL_RIGID = "C7"              # grey - rigid blade baseline
-COL_HIGH_BRANCH = "C1"        # orange - high Cp branch
-COL_LOW_BRANCH = "C4"         # purple - low Cp branch
-COL_WEIBULL = "C3"            # red - Weibull pdf
+# 3-panel: 15 x 4.6 in  (was 15x4.6)
+# 4-panel: 15 x 8   in  (was 15x8)
+FIGSIZE_3PANEL = (15.0, 4.6)
+FIGSIZE_4PANEL = (15.0, 8.0)
 
-# Line styles
+FONT_SIZE = 10
+LEGEND_FONT_SIZE = 9
+GRID_ALPHA = 0.3
+
 LS_SOLID = "-"
 LS_DASHED = "--"
 LS_DOTTED = ":"
 
-# Markers
 MK_FIXED = "o"
-MK_FREE = "s"
+MK_FREE = "D"
 MK_HIGH = "^"
 MK_LOW = "v"
 
-# Sizes
-FIGSIZE_3PANEL = (15, 4.6)
-FIGSIZE_4PANEL = (15, 8)
-DPI = 200
-FONT_SIZE = 10
-FONT_SIZE_TITLE = 12
-FONT_SIZE_SUP = 13
-LEGEND_FONT_SIZE = 9
-GRID_ALPHA = 0.3
-
-
-def apply_style():
-    """Apply consistent matplotlib style."""
-    plt.rcParams.update({
-        'font.size': FONT_SIZE,
-        'axes.titlesize': FONT_SIZE_TITLE,
-        'axes.labelsize': FONT_SIZE,
-        'xtick.labelsize': FONT_SIZE - 1,
-        'ytick.labelsize': FONT_SIZE - 1,
-        'legend.fontsize': LEGEND_FONT_SIZE,
-        'figure.titlesize': FONT_SIZE_SUP,
-        'axes.grid': True,
-        'grid.alpha': GRID_ALPHA,
-        'grid.linestyle': '-',
-        'axes.axisbelow': True,
-        'lines.linewidth': 1.6,
-        'lines.markersize': 5,
-        'savefig.dpi': DPI,
-        'savefig.transparent': False,
-    })
-
+COL_PASSIVE_KLOAD = "#1f77b4"
+COL_PASSIVE_FIXED = "#ff7f0e"
+COL_HIGH_BRANCH = "#2ca02c"
+COL_LOW_BRANCH = "#d62728"
+COL_RIGID = "#9467bd"
+COL_WEIBULL = "#8c564b"
 
 def create_figure_3panel(**kwargs):
-    """Create a 3-panel figure with constrained layout and a dedicated bottom
-    legend row (GridSpec height_ratios reserve real space for legends so they
-    never overlap axis labels, subplot titles, or neighbouring panels)."""
-    fig = plt.figure(figsize=FIGSIZE_3PANEL, constrained_layout=True, **kwargs)
-    gs = fig.add_gridspec(2, 3, height_ratios=[1, 0.10], hspace=0.30, wspace=0.20)
-    axes = [fig.add_subplot(gs[0, i]) for i in range(3)]
-    legend_ax = fig.add_subplot(gs[1, :])
+    """Create a 3-panel figure with a dedicated top suptitle region and bottom legend row.
+    Uses constrained_layout=False with explicit GridSpec layout to reserve space
+    for suptitle at top and legend at bottom, preventing overlap with subplot titles."""
+    fig = plt.figure(figsize=FIGSIZE_3PANEL, constrained_layout=False, **kwargs)
+    # Height ratios: [top_margin, 3 panels, bottom_legend]
+    # Top margin (0.08) reserves space for suptitle; bottom (0.22) for legend
+    gs = fig.add_gridspec(3, 3, height_ratios=[0.08, 1, 0.22], hspace=0.55, wspace=0.20)
+    axes = [fig.add_subplot(gs[1, i]) for i in range(3)]
+    legend_ax = fig.add_subplot(gs[2, :])
     legend_ax.axis("off")
+    legend_ax.set_xticks([])
+    legend_ax.set_yticks([])
     fig._legend_ax = legend_ax
     for ax in axes:
         ax.grid(True, alpha=GRID_ALPHA, linestyle="-")
@@ -77,18 +53,20 @@ def create_figure_3panel(**kwargs):
 
 
 def create_figure_4panel(**kwargs):
-    """Create a 2x2 figure with constrained layout and a dedicated bottom
-    legend row (GridSpec height_ratios reserve real space for legends)."""
-    fig = plt.figure(figsize=FIGSIZE_4PANEL, constrained_layout=True, **kwargs)
-    gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 0.10], hspace=0.30, wspace=0.20)
+    """Create a 2x2 figure with a dedicated top suptitle region and bottom legend row."""
+    fig = plt.figure(figsize=FIGSIZE_4PANEL, constrained_layout=False, **kwargs)
+    # Height ratios: [top_margin, 2 rows of panels, bottom_legend]
+    gs = fig.add_gridspec(4, 2, height_ratios=[0.06, 1, 1, 0.18], hspace=0.40, wspace=0.20)
     axes = [
-        fig.add_subplot(gs[0, 0]),
-        fig.add_subplot(gs[0, 1]),
         fig.add_subplot(gs[1, 0]),
         fig.add_subplot(gs[1, 1]),
+        fig.add_subplot(gs[2, 0]),
+        fig.add_subplot(gs[2, 1]),
     ]
-    legend_ax = fig.add_subplot(gs[2, :])
+    legend_ax = fig.add_subplot(gs[3, :])
     legend_ax.axis("off")
+    legend_ax.set_xticks([])
+    legend_ax.set_yticks([])
     fig._legend_ax = legend_ax
     for ax in axes:
         ax.grid(True, alpha=GRID_ALPHA, linestyle="-")
@@ -99,12 +77,12 @@ def create_figure_4panel(**kwargs):
 def add_weibull_axis(ax, U_grid, pdf, mean_U, k_weibull, color=COL_WEIBULL, label="Weibull pdf"):
     """Add Weibull pdf as secondary y-axis."""
     ax2 = ax.twinx()
-    ax2.fill_between(U_grid, 0, pdf, alpha=0.15, color=color, label=label)
-    ax2.set_ylabel("pdf [1/m/s]", color=color, fontsize=FONT_SIZE - 1)
+    ax2.plot(U_grid, pdf, color=color, lw=1.2, ls=":", label=label)
+    ax2.set_ylabel("Weibull pdf", color=color, fontsize=FONT_SIZE - 1)
     ax2.tick_params(axis='y', labelcolor=color, labelsize=FONT_SIZE - 1)
-    ax2.set_ylim(0, ax2.get_ylim()[1] * 1.1)
-    # Weibull handle is collected into the shared bottom legend by
-    # set_legend_outside; do not draw a competing inside-axes legend here.
+    ax2.set_ylim(bottom=0)
+    ax2.set_xlim(auto=False)
+    ax2.set_ylim(auto=True)
     return ax2
 
 
@@ -143,6 +121,9 @@ def set_legend_outside(ax, ncol=2):
             loc="center", ncol=ncol, frameon=False,
             fontsize=LEGEND_FONT_SIZE,
         )
+    # Hide tick labels on legend axis to prevent overlap with legend
+    legend_ax.set_xticks([])
+    legend_ax.set_yticks([])
 
 
 def annotate_with_arrow(ax, x, y, text, xytext=(10, 10), **kwargs):
@@ -153,29 +134,38 @@ def annotate_with_arrow(ax, x, y, text, xytext=(10, 10), **kwargs):
         "ha": 'left', "va": 'bottom', "fontsize": FONT_SIZE - 1
     }
     default.update(kwargs)
-    ax.annotate(text, xy=(x, y), xytext=xytext, textcoords='offset points', **default)
+    ax.annotate(text, xy=(x, y), xytext=xytext, **default)
 
 
-def finalize_figure(fig, suptitle=None, rect=None):
-    """Apply final layout adjustments.
+def apply_style():
+    """Apply global matplotlib style."""
+    plt.rcParams.update({
+        "font.size": FONT_SIZE,
+        "axes.titlesize": FONT_SIZE + 1,
+        "axes.labelsize": FONT_SIZE,
+        "xtick.labelsize": FONT_SIZE - 1,
+        "ytick.labelsize": FONT_SIZE - 1,
+        "legend.fontsize": LEGEND_FONT_SIZE,
+        "figure.dpi": 200,
+        "savefig.dpi": 200,
+        "savefig.bbox": "tight",
+        "savefig.transparent": False,
+    })
 
-    Constrained layout (enabled at figure creation) handles spacing; do NOT
-    call tight_layout here (incompatible with constrained_layout) and do not
-    rely on bbox_inches='tight' at save time (that changes the saved bounding
-    box rather than reserving real space).
-    """
+
+def finalize_figure(fig, suptitle="", rect=None):
+    """Finalize figure layout and apply suptitle."""
     if suptitle:
-        fig.suptitle(suptitle, fontsize=FONT_SIZE_SUP, fontweight='bold')
-    return fig
+        fig.suptitle(suptitle, fontsize=FONT_SIZE + 2, fontweight='bold', y=0.98)
+    if rect:
+        if isinstance(rect, list):
+            # Convert list [left, bottom, right, top] to dict
+            rect = {"left": rect[0], "bottom": rect[1], "right": rect[2], "top": rect[3]}
+        fig.subplots_adjust(**rect)
+    # Do not call tight_layout() - it conflicts with explicit GridSpec layout
 
 
-def save_figure(fig, path):
-    """Save figure with consistent settings."""
-    dirname = os.path.dirname(path)
-    if dirname:
-        os.makedirs(dirname, exist_ok=True)
-    fig.savefig(path, dpi=DPI)
+def save_figure(fig, out_path):
+    """Save figure to disk."""
+    fig.savefig(out_path, dpi=200)
     plt.close(fig)
-    print(f"  Wrote {path}")
-
-

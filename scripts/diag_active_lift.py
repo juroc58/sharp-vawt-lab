@@ -99,23 +99,6 @@ def main():
     print(f"Fitted pitch schedule: pp0={pp0:+.2f}°, pp1={pp1:+.2f}°, pp2={pp2:+.2f}°, pp3={pp3:+.2f}°")
     print()
 
-    # Base config for prescribed pitch with fitted schedule
-    {
-        "R": DESIGN['R'], "H": DESIGN['H'], "N": DESIGN['N'], "c": DESIGN['c'],
-        "ar": DESIGN['ar'], "sp": DESIGN['sp'],
-        "mb": DESIGN['mb'], "xbcg": DESIGN['xbcg'],
-        "mc": DESIGN['mc'], "dcw": DESIGN['dcw'],
-        "balance": DESIGN['balance'], "bias_deg": DESIGN['bias_deg'],
-        "cd_add": DESIGN['cd_add'],
-        "use_dynamic_stall": DESIGN['use_dynamic_stall'],
-        "use_flow_curvature": DESIGN['use_flow_curvature'],
-        "use_dmst": DESIGN['use_dmst'],
-        "use_tip_loss": DESIGN['use_tip_loss'],
-        "win_deg": DESIGN['win_deg'], "cb": DESIGN['cb'], "mu_c": DESIGN['mu_c'],
-        "free": False, "T_max": 30.0, "stride": 5,
-        "k_load": DESIGN['k_load'],
-    }
-
     # Run 1: ar = 0.00 (pure pitch, NO radial CG motion, NO Coriolis)
     r_ar0 = create_sim_from_params({
         **DESIGN,

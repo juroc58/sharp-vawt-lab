@@ -325,17 +325,28 @@ class TestWorkingDirectoryIndependence:
             assert "Cp=" in result.stdout
 
 
+def _prose_outside_code_fences(text: str) -> str:
+    """Return ``text`` with fenced (```) code blocks removed and lowercased.
+
+    Issue markers such as TODO/FIXME are only meaningful in README prose;
+    fenced code blocks may legitimately contain them in examples, so they are
+    stripped before the prose check. This single helper is exercised by both
+    the real README test and the fixture tests below.
+    """
+    import re
+    return re.sub(r'```.*?```', '', text, flags=re.DOTALL).lower()
+
+
 class TestReadmeProseLint:
     """Lint README for common issues."""
 
     def test_no_double_brackets(self):
         """README should not contain [[...]] placeholder brackets."""
         import os
+        import re
         readme_path = os.path.join(os.path.dirname(__file__), '..', 'README.md')
         with open(readme_path, 'r') as f:
             content = f.read()
-        # Check for [[...]] patterns that indicate unfilled template variables
-        import re
         double_brackets = re.findall(r'\[\[.*?\]\]', content)
         assert not double_brackets, f"Found unfilled [[...]] in README: {double_brackets}"
 
@@ -344,10 +355,46 @@ class TestReadmeProseLint:
         import os
         readme_path = os.path.join(os.path.dirname(__file__), '..', 'README.md')
         with open(readme_path, 'r') as f:
-            content = f.read().lower()
-        # Check for TODO/FIXME (but allow in code blocks)
-        # Just a basic check
-        assert 'todo:' not in content or 'todo:' in content.split('```')[1::2]
+            content = f.read()
+        prose = _prose_outside_code_fences(content)
+        assert 'todo:' not in prose, "TODO found in README prose"
+        assert 'fixme:' not in prose, "FIXME found in README prose"
+
+    def test_todo_allowed_in_code_fence(self):
+        """TODO inside a fenced code block should be allowed."""
+        content = "Some text\n```python\n# TODO: this is fine\n```\nMore text"
+        prose = _prose_outside_code_fences(content)
+        assert 'todo:' not in prose
+
+    def test_todo_outside_code_fence_fails(self):
+        """TODO outside code fence should be caught."""
+        import pytest
+        content = "TODO: this should fail\n```python\n# TODO: this is fine\n```"
+        prose = _prose_outside_code_fences(content)
+        with pytest.raises(AssertionError):
+            assert 'todo:' not in prose
+
+    def test_fixme_allowed_in_code_fence(self):
+        """FIXME inside a fenced code block should be allowed."""
+        content = "Some text\n```bash\n# FIXME: this is fine\n```\nMore text"
+        prose = _prose_outside_code_fences(content)
+        assert 'fixme:' not in prose
+
+    def test_fixme_outside_code_fence_fails(self):
+        """FIXME outside code fence should be caught."""
+        import pytest
+        content = "FIXME: this should fail\n```bash\n# FIXME: this is fine\n```"
+        prose = _prose_outside_code_fences(content)
+        with pytest.raises(AssertionError):
+            assert 'fixme:' not in prose
+
+    def test_mixed_todo_fixme(self):
+        """Mixed TODO/FIXME inside and outside fences."""
+        import pytest
+        content = "TODO: bad\n```\nFIXME: ok\n```\nFIXME: bad"
+        prose = _prose_outside_code_fences(content)
+        with pytest.raises(AssertionError):
+            assert 'todo:' not in prose or 'fixme:' not in prose
 
 
 class TestChangelogReproduction:

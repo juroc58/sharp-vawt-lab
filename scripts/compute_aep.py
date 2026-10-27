@@ -114,7 +114,9 @@ def load_fair_rigid_reference():
         "viable":       bool(br.get("viable", True)),
         "aep_kWh":      br.get("aep_kWh"),
         "cf":           br.get("cf"),
-        "gain_percent": g.get("gain_percent"),
+        "rated_power_W": br.get("rated_power_W"),
+        "cp_at_rated":   br.get("cp_at_rated"),
+        "gain_percent":  g.get("gain_percent"),
     }
 
 

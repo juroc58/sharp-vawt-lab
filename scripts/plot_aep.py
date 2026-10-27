@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Plotting module for AEP figures.
 
-Reads JSON results from compute_aep.py and compute_aep_scaleup.py
+Reads JSON results from compute_aep_small.py, compute_aep_scaleup.py,
+compute_aep_turbulent.py, and compute_aep_counter_rotating.py
 and generates publication-quality figures using shared style.
 
 Usage:
-    python3 scripts/plot_aep.py --json scripts/aep_results.json --out docs/aep.png
-    python3 scripts/plot_aep.py --json scripts/aep_scaleup.json --out docs/aep_scaleup.png --scaleup
+    python3 scripts/plot_aep.py --json scripts/aep_small.json --out docs/aep_small.png --type small
+    python3 scripts/plot_aep.py --json scripts/aep_scaleup.json --out docs/aep_scaleup.png --type scaleup
+    python3 scripts/plot_aep.py --json scripts/aep_turbulent.json --out docs/aep_turbulent.png --type turbulent
+    python3 scripts/plot_aep.py --json scripts/aep_counter_rotating.json --out docs/aep_counter_rotating.png --type counter
 """
 from __future__ import annotations
 
@@ -55,22 +58,26 @@ def load_json(path: str) -> dict[str, Any]:
         return json.load(fh)
 
 
+def _fmt_rated(p_watts: float) -> str:
+    """Format rated power with sensible units: watts below 1 kW, kW otherwise."""
+    if p_watts < 1000:
+        return f"Rated ({p_watts:.1f} W)"
+    return f"Rated ({p_watts/1000:.1f} kW)"
+
+
 def weibull_pdf(U, U_mean, k):
     lam = U_mean / math.gamma(1.0 + 1.0 / k)
     return (k / lam) * (U / lam) ** (k - 1.0) * np.exp(-(U / lam) ** k)
 
 
 def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
-    """Plot AEP for the small-rotor (R=0.60 m) from aep_results.json."""
+    """Plot AEP for the small-rotor (R=0.60 m) from aep_small.json."""
     apply_style()
     fig, axes = create_figure_3panel()
 
     geo = data['geometry']
     wind = data['wind']
     res_p = data['results']['passive_k_load']
-    data['results']['passive_fixed_rpm']
-    data.get('rigid_fair_ref')
-
     R = geo['R']
     H = geo.get('H')
     if H is None:
@@ -101,18 +108,20 @@ def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
         cp_passive = np.zeros_like(U_grid)
 
     # Fixed-rpm Cp from tsr sweep
-    idx_best = int(np.argmax(cp_tsr))
+    # Use nanargmax to handle NaN values in cp_tsr
+    valid_cp_tsr = cp_tsr[~np.isnan(cp_tsr)]
+    if len(valid_cp_tsr) > 0:
+        idx_best = int(np.nanargmax(cp_tsr))
+    else:
+        idx_best = 0
     tsr_design = float(tsrs[idx_best])
     tsr_fixed = np.clip(tsr_design * wind['mean_U'] / U_grid, tsrs[0], tsrs[-1])
     cp_fixed = np.interp(tsr_fixed, tsrs, cp_tsr)
 
-    P_passive = np.minimum(0.5 * 1.225 * A * U_grid ** 3 * np.clip(cp_passive, 0, 0.593) * 0.90, p_rated)
-    P_fixed = np.minimum(0.5 * 1.225 * A * U_grid ** 3 * np.clip(cp_fixed, 0, 0.593) * 0.90, p_rated)
-
     # Panel 1: Cp vs TSR (fixed rpm) with both branches
     ax = axes[0]
     ax.plot(tsrs, cp_tsr, LS_SOLID, color=COL_PASSIVE_KLOAD, lw=1.8,
-            marker=MK_FIXED, label="Passive CPPC (fixed rpm, phase-averaged)")
+            marker=MK_FIXED, label="Passive CPPC (fixed rpm, 3-phase mean)")
     if 'cp_tsr_lo' in res_p and 'cp_tsr_hi' in res_p:
         lo = np.array(res_p['cp_tsr_lo'])
         hi = np.array(res_p['cp_tsr_hi'])
@@ -162,11 +171,11 @@ def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
     ax.set_ylabel(r"Electrical power [kW]")
     ax.set_title("Power curve")
     ax.set_xlim(wind['cut_in'], wind['cut_out'])
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(bottom=-0.02)
     pdf = weibull_pdf(U_grid, wind['mean_U'], wind['k_weibull'])
     add_weibull_axis(ax, U_grid, pdf, wind['mean_U'], wind['k_weibull'])
     ax.axhline(wind['p_rated_W'] / 1000, color='k', ls=':', lw=1, alpha=0.7,
-               label=f"Rated ({wind['p_rated_W']/1000:.1f} kW)")
+               label=_fmt_rated(wind['p_rated_W']))
     ax.axvline(wind['cut_in'], color='k', ls=':', lw=1, alpha=0.5)
     ax.axvline(wind['rated_wind_speed'], color='k', ls=':', lw=1, alpha=0.5)
     set_legend_outside(ax, ncol=2)
@@ -219,7 +228,12 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
         cp_passive = np.zeros_like(U_grid)
 
     # Fixed-rpm Cp from tsr sweep
-    idx_best = int(np.argmax(cp_tsr))
+    # Use nanargmax to handle NaN values in cp_tsr
+    valid_cp_tsr = cp_tsr[~np.isnan(cp_tsr)]
+    if len(valid_cp_tsr) > 0:
+        idx_best = int(np.nanargmax(cp_tsr))
+    else:
+        idx_best = 0
     tsr_design = float(tsrs[idx_best])
     tsr_fixed = np.clip(tsr_design * wind['mean_U'] / U_grid, tsrs[0], tsrs[-1])
     cp_fixed = np.interp(tsr_fixed, tsrs, cp_tsr)
@@ -228,28 +242,23 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     P_fixed = np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_fixed, 0, 0.593) * ETA, p_rated)
 
     # For high/low branches
-    cp_high = cp_passive
-    cp_low = cp_passive
     if high_branch and 'free_results' in high_branch:
         hfr = high_branch['free_results']
         if hfr:
             Uh = np.array([f['U'] for f in hfr])
             cph = np.array([f['cp'] for f in hfr])
-            cp_high = np.interp(U_grid, Uh, cph)
+            np.interp(U_grid, Uh, cph)
     if low_branch and 'free_results' in low_branch:
         lfr = low_branch['free_results']
         if lfr:
             Ul = np.array([f['U'] for f in lfr])
             cpl = np.array([f['cp'] for f in lfr])
-            cp_low = np.interp(U_grid, Ul, cpl)
-
-    np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_high, 0, 0.593) * ETA, p_rated)
-    np.minimum(0.5 * RHO * A * U_grid ** 3 * np.clip(cp_low, 0, 0.593) * ETA, p_rated)
+            np.interp(U_grid, Ul, cpl)
 
     # Panel 1: Cp vs TSR (fixed rpm) with both branches
     ax = axes[0]
     ax.plot(tsrs, cp_tsr, LS_SOLID, color=COL_PASSIVE_KLOAD, lw=1.8,
-            marker=MK_FIXED, label="Passive CPPC (fixed rpm, phase-averaged)")
+            marker=MK_FIXED, label="Passive CPPC (fixed rpm, 3-phase mean)")
     if 'cp_tsr_lo' in res_p and 'cp_tsr_hi' in res_p:
         lo = np.array(res_p['cp_tsr_lo'])
         hi = np.array(res_p['cp_tsr_hi'])
@@ -277,6 +286,14 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
         cps = np.array([f['cp'] for f in free])
         ax.plot(Us, cps, LS_SOLID, color=COL_HIGH_BRANCH, lw=1.8,
                 marker=MK_FREE, label="Branch-traced (continuation)")
+        # Annotate branch switching at U=4 where traced branch drops to lower equilibrium
+        u4_idx = np.argmin(np.abs(Us - 4.0))
+        if abs(Us[u4_idx] - 4.0) < 0.2 and len(cps) > u4_idx:
+            ax.annotate('Branch switch:\ntraced → lower equil.\nseeds → upper equil.',
+                        xy=(Us[u4_idx], cps[u4_idx]), xytext=(Us[u4_idx]+1.5, cps[u4_idx]-0.05),
+                        fontsize=FONT_SIZE - 2, ha='left', va='top',
+                        arrowprops={'arrowstyle': '->', 'color': 'k', 'lw': 1},
+                        bbox={'boxstyle': 'round,pad=0.3', 'fc': 'yellow', 'ec': 'k', 'alpha': 0.9})
     if high_branch and 'free_results' in high_branch:
         hfr = high_branch['free_results']
         if hfr:
@@ -291,6 +308,7 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
             cpl = np.array([f['cp'] for f in lfr])
             ax.plot(Ul, cpl, LS_DOTTED, color=COL_LOW_BRANCH, lw=1.2,
                     marker=MK_LOW, ms=4, label="Low seed ($w_0=0.20$)")
+    # Branch envelope: only show when high/low seeds are distinct
     if (high_branch and low_branch and
         'free_results' in high_branch and 'free_results' in low_branch):
         hfr = high_branch['free_results']
@@ -301,15 +319,20 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
             Ul = np.array([f['U'] for f in lfr])
             cpl = np.array([f['cp'] for f in lfr])
             if len(Uh) == len(Ul) and np.allclose(Uh, Ul):
-                ax.fill_between(Uh, cpl, cph, color='gray', alpha=0.15,
-                                label="Branch envelope")
+                # Check if high/low are actually distinct
+                if np.any(np.abs(cph - cpl) > 1e-4):
+                    ax.fill_between(Uh, cpl, cph, color='gray', alpha=0.15,
+                                    label="Branch envelope")
+                else:
+                    # Seeds converged - no envelope needed
+                    pass
     ax.set_xlabel(r"Wind speed $U$ [m/s]")
     ax.set_ylabel(r"Cp at equilibrium")
     ax.set_title("Free-running Cp vs wind speed (all branches)")
     ax.set_ylim(bottom=0)
     ax.axvline(wind['cut_in'], color='k', ls=':', lw=1, alpha=0.5)
     ax.axvline(wind['rated_wind_speed'], color='k', ls=':', lw=1, alpha=0.5)
-    set_legend_outside(ax, ncol=2)
+    set_legend_outside(ax, ncol=3)
 
     # Panel 3: Power curve with Weibull
     ax = axes[2]
@@ -325,10 +348,10 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     pdf = weibull_pdf(U_grid, wind['mean_U'], wind['k_weibull'])
     add_weibull_axis(ax, U_grid, pdf, wind['mean_U'], wind['k_weibull'])
     ax.axhline(wind['p_rated_W'] / 1000, color='k', ls=':', lw=1, alpha=0.7,
-               label=f"Rated ({wind['p_rated_W']/1000:.1f} kW)")
+               label=_fmt_rated(wind['p_rated_W']))
     ax.axvline(wind['cut_in'], color='k', ls=':', lw=1, alpha=0.5)
     ax.axvline(wind['rated_wind_speed'], color='k', ls=':', lw=1, alpha=0.5)
-    set_legend_outside(ax, ncol=2)
+    set_legend_outside(ax, ncol=3)
 
     # Panel 4: AEP bar chart
     ax = axes[3]
@@ -337,6 +360,15 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     aep_low = []
     aep_high = []
     cf_vals = []
+    rated_powers = []
+
+    # Check if high/low seeds are effectively identical (within 0.01%)
+    seeds_identical = False
+    if high_branch and low_branch:
+        aep_high_val = high_branch.get('aep_MWh', 0)
+        aep_low_val = low_branch.get('aep_MWh', 0)
+        if aep_high_val > 0 and abs(aep_high_val - aep_low_val) / aep_high_val < 1e-4:
+            seeds_identical = True
 
     if traced_branch:
         strategies.append("Branch-\ntraced")
@@ -344,29 +376,47 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
         cf_vals.append(traced_branch.get('cf', 0) * 100)
         aep_low.append(traced_branch.get('aep_MWh', 0))
         aep_high.append(traced_branch.get('aep_MWh', 0))
-    if high_branch:
-        strategies.append("High\nseed")
+        rated_powers.append(wind.get('p_rated_W', 0) / 1000)
+
+    if seeds_identical and high_branch:
+        # Collapse identical high/low seeds into one "Seeds converged" bar
+        strategies.append("Seeds\nconverged")
         aep_vals.append(high_branch.get('aep_MWh', 0))
         cf_vals.append(high_branch.get('cf', 0) * 100)
         aep_low.append(high_branch.get('aep_MWh', 0))
         aep_high.append(high_branch.get('aep_MWh', 0))
-    if low_branch:
-        strategies.append("Low\nseed")
-        aep_vals.append(low_branch.get('aep_MWh', 0))
-        cf_vals.append(low_branch.get('cf', 0) * 100)
-        aep_low.append(low_branch.get('aep_MWh', 0))
-        aep_high.append(low_branch.get('aep_MWh', 0))
+        rated_powers.append(wind.get('p_rated_W', 0) / 1000)
+    else:
+        if high_branch:
+            strategies.append("High\nseed")
+            aep_vals.append(high_branch.get('aep_MWh', 0))
+            cf_vals.append(high_branch.get('cf', 0) * 100)
+            aep_low.append(high_branch.get('aep_MWh', 0))
+            aep_high.append(high_branch.get('aep_MWh', 0))
+            rated_powers.append(wind.get('p_rated_W', 0) / 1000)
+        if low_branch:
+            strategies.append("Low\nseed")
+            aep_vals.append(low_branch.get('aep_MWh', 0))
+            cf_vals.append(low_branch.get('cf', 0) * 100)
+            aep_low.append(low_branch.get('aep_MWh', 0))
+            aep_high.append(low_branch.get('aep_MWh', 0))
+            rated_powers.append(wind.get('p_rated_W', 0) / 1000)
+
     strategies.append("Fixed\nrpm")
     aep_vals.append(res_f.get('aep_MWh', 0))
     cf_vals.append(res_f.get('cf', 0) * 100)
     aep_low.append(res_f.get('aep_MWh', 0))
     aep_high.append(res_f.get('aep_MWh', 0))
+    rated_powers.append(wind.get('p_rated_W', 0) / 1000)
     if rigid and rigid.get('aep_MWh') is not None:
         strategies.append("Rigid\nbaseline")
         aep_vals.append(rigid['aep_MWh'])
         cf_vals.append(rigid['cf'] * 100)
         aep_low.append(rigid['aep_MWh'])
         aep_high.append(rigid['aep_MWh'])
+        rated_powers.append(rigid.get('rated_power_W', 0) / 1000)
+    else:
+        rated_powers = [wind.get('p_rated_W', 0) / 1000] * len(strategies)
 
     x = np.arange(len(strategies))
     colors = [COL_HIGH_BRANCH, COL_HIGH_BRANCH, COL_LOW_BRANCH, COL_PASSIVE_FIXED]
@@ -384,10 +434,11 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
             ax.errorbar(x, aep_vals, yerr=[yerr_low, yerr_high],
                         fmt='none', color='k', capsize=4, lw=1)
 
-    for i, (bar, aep, cf) in enumerate(zip(bars, aep_vals, cf_vals)):
+    for i, (bar, aep, cf, p_rated) in enumerate(zip(bars, aep_vals, cf_vals, rated_powers)):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1,
-                f"{aep:.1f} MWh\nCF={cf:.1f}%", ha='center', va='bottom',
-                fontsize=FONT_SIZE - 1, fontweight='bold')
+                f"{aep:.1f} MWh\nCF={cf:.1f}%\n({p_rated:.1f} kW rated)",
+                ha='center', va='bottom',
+                fontsize=FONT_SIZE - 2, fontweight='bold')
 
     if rigid and rigid.get('aep_MWh') is not None and len(aep_vals) > 0:
         rigid_aep = rigid['aep_MWh']
@@ -405,7 +456,7 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
     title = fr"AEP — Passive CPPC, $R = {geo['R']:.2f}$ m, $H = {geo['H']:.2f}$ m"
-    finalize_figure(fig, suptitle=title, rect=[0, 0.05, 1, 0.95])
+    finalize_figure(fig, suptitle=title, rect=[0.06, 0.05, 0.93, 0.95])
     save_figure(fig, out_path)
 
 
@@ -414,7 +465,6 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
     fig, axes = create_figure_3panel()
     _ax1, _ax2, _ax3 = axes
 
-    data['wind']
     steady = data['steady']
     turbulent = data['turbulent']
     pws = data.get('per_wind_speed', [])
@@ -457,7 +507,7 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.05,
                 f"{aep:.1f} MWh\nCF={cf:.2f}%", ha='center', va='bottom',
                 fontsize=FONT_SIZE - 1, fontweight='bold')
-    ax.text(0.5, max(aep_vals) * 0.6, f"Turbulence effect:\n{gain:+.1f}%",
+    ax.text(0.5, max(aep_vals) * 0.35, f"Turbulence effect:\n{gain:+.1f}%",
             ha='center', va='center', fontsize=FONT_SIZE,
             bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9})
 
@@ -470,9 +520,15 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
 
     # Panel 3: Turbulence effect explanation (conditional on the actual results)
     ax = axes[2]
+    # Idealised cube-bias reference: E[U^3]/(E[U])^3 for Gaussian turbulence
+    # Under Gaussian assumption: E[U^3]/(E[U])^3 = 1 + 3*I^2 (no clipping, no limits)
+    I = data['turbulence']['I']
+    idealised_gain = (1.0 + 3.0 * I**2 - 1.0) * 100.0  # percent
     ax.text(0.5, 0.5,
             f"Turbulence effect: {gain:+.1f}% on AEP "
             f"({('gain' if gain >= 0 else 'loss')}).\n"
+            f"Idealised reference (E[U^3]/E[U]^3, I={I:.2f}, no clipping/limits): "
+            f"+{idealised_gain:.1f}%.\n"
             "Possible mechanisms (not established causation):\n"
             "1. Cube bias: E[U^3] > (E[U])^3 (Jensen)\n"
             "2. Cp(U) convexity: E[Cp(U)] > Cp(E[U])\n"
@@ -493,39 +549,43 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
     _ax1, _ax2, _ax3 = axes
 
     single = data['single_rotor_baseline']
+    two_indep = data.get('two_independent_rotors', {})
     counter = data['counter_rotating']
     sensitivity = data.get('sensitivity_to_fixed_interaction_factor', [])
 
     # Panel 1: AEP comparison
     ax = axes[0]
-    strategies = ["Single rotor", "Two independent", "Counter-rotating"]
+    strategies = ["Single rotor", "Two\nindependent", "Counter-\nrotating"]
     aep_vals = [
         single['aep_kWh'] / 1000,
-        (counter['upstream_rotor']['aep_kWh'] + counter['downstream_rotor']['aep_kWh']) / 1000,
+        two_indep.get('aep_kWh', 2 * single['aep_kWh']) / 1000,
         counter['total']['aep_kWh'] / 1000
     ]
     cf_vals = [single['capacity_factor'] * 100,
-               (counter['upstream_rotor']['capacity_factor'] + counter['downstream_rotor']['capacity_factor']) / 2 * 100,
+               two_indep.get('capacity_factor', single['capacity_factor']) * 100,
                counter['total']['capacity_factor'] * 100]
 
     x = np.arange(len(strategies))
     colors = [COL_PASSIVE_KLOAD, COL_PASSIVE_FIXED, COL_HIGH_BRANCH]
-    bars = ax.bar(x, aep_vals, color=colors, alpha=0.7, edgecolor='k', lw=0.5, width=0.6)
+    bars = ax.bar(x, aep_vals, color=colors, alpha=0.7, edgecolor='k', lw=0.5, width=0.55)
     for i, (bar, aep, cf) in enumerate(zip(bars, aep_vals, cf_vals)):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02,
                 f"{aep:.1f} MWh\nCF={cf:.1f}%", ha='center', va='bottom',
                 fontsize=FONT_SIZE - 1, fontweight='bold')
 
     gain_vs_two = counter.get('vs_two_independent_rotors_improvement_percent', 0)
-    ax.text(0.5, max(aep_vals) * 0.6, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",
-            ha='center', va='center', fontsize=FONT_SIZE,
-            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9})
+    # Place gain annotation at top of figure with offset to avoid bar labels
+    y_top = max(aep_vals) * 1.15
+    ax.text(0.5, y_top, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",
+            ha='center', va='bottom', fontsize=FONT_SIZE,
+            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9},
+            transform=ax.get_yaxis_transform())
 
     ax.set_xticks(x)
-    ax.set_xticklabels(strategies)
+    ax.set_xticklabels(strategies, fontsize=FONT_SIZE - 1)
     ax.set_ylabel("AEP [MWh/yr]")
     ax.set_title("AEP comparison")
-    ax.set_ylim(bottom=0, top=max(aep_vals) * 1.3)
+    ax.set_ylim(bottom=0, top=max(aep_vals) * 1.35)
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
     # Panel 2: Sensitivity to interaction factor
@@ -538,10 +598,19 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
         ax.set_ylabel("Total AEP [MWh/yr]")
         ax.set_title("Sensitivity to interaction factor")
         ax.grid(True, alpha=GRID_ALPHA)
-        nominal_idx = next((i for i, f in enumerate(factors)
-                           if abs(f - data['configuration'].get('interaction_factor_mean', 0)*100) < 1), 0)
-        annotate_with_arrow(ax, factors[nominal_idx], aeps[nominal_idx],
-                            f"Nominal model\n(factor = {factors[nominal_idx]:.1f}%)")
+        # Find the nominal model point (explicitly marked in sensitivity data)
+        nominal_idx = next((i for i, s in enumerate(sensitivity) if s.get('is_nominal')), None)
+        if nominal_idx is not None:
+            annotate_with_arrow(ax, factors[nominal_idx], aeps[nominal_idx],
+                                f"Nominal model\n(factor = {factors[nominal_idx]:.1f}%)",
+                                xytext=(25, -15))
+        else:
+            # Fallback: annotate the point closest to the mean interaction factor
+            mean_f = data['configuration'].get('interaction_factor_mean', 0) * 100
+            nominal_idx = min(range(len(factors)), key=lambda i: abs(factors[i] - mean_f))
+            annotate_with_arrow(ax, factors[nominal_idx], aep[nominal_idx],
+                                f"Nearest evaluated\n(factor = {factors[nominal_idx]:.1f}%)",
+                                xytext=(25, -15))
 
     # Panel 3: Model caveat
     ax = axes[2]
@@ -556,7 +625,7 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
     ax.axis('off')
 
     title = "AEP - Counter-Rotating Pair (speculative, 0.37D spacing)"
-    finalize_figure(fig, suptitle=title)
+    finalize_figure(fig, suptitle=title, rect=[0.06, 0.05, 0.98, 0.93])
     save_figure(fig, out_path)
 
 

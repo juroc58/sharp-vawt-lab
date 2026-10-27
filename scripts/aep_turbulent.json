@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "b1faa8d8f7687870eff58be7a83bc4d678d3a7060bdc109a4b47359794b2cb20",
+    "code_hash": "64786f6a83f74e10faffff530ee86e67942b4b0c6c53b1fcb9b0e0920ba38b9d",
     "script": "scripts/compute_aep_turbulent.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-26T13:28:15.935263+00:00",
+    "created_utc": "2026-10-27T06:24:23.048100+00:00",
     "python_version": "3.14.4",
-    "git_commit": "0f086b16571194d92e69f729081a5af465059444",
+    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
     "seed": 0,
     "n": 460,
     "script_args": [],
@@ -33,7 +33,7 @@
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/compute_aep_turbulent.py": "fcc55001386564caa91a74ccaa6264d51788d6a1701840cf62cff3b90cd972af",
-      "scripts/compute_aep.py": "730b5b591cde6e11731b0d7e9a2414b13c655db96aa6c46b5a0181f323b989e4"
+      "scripts/compute_aep.py": "6a2e56ee412673b31ca7f2db0000f1343c566bcbf89e4318f32776bd34363762"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

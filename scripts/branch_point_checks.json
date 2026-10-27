@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "0dae82d379e1a49a49b6e8c01b0b13cc17e32bda3ffa8c1ec856629f1dd10052",
+    "code_hash": "456837fbcc30714b2038ee355154e80fdc7ec6e070a001d1d435b4f024f14c01",
     "script": "scripts/check_branch_points.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-26T13:20:36.528790+00:00",
+    "created_utc": "2026-10-27T06:27:31.713633+00:00",
     "python_version": "3.14.4",
-    "git_commit": "0f086b16571194d92e69f729081a5af465059444",
+    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -25,7 +25,7 @@
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/check_branch_points.py": "534c0989aa99a781368e5ba0bd5244370e50857fd728ede6dc5fbfe6569efa5d",
-      "scripts/compute_aep.py": "730b5b591cde6e11731b0d7e9a2414b13c655db96aa6c46b5a0181f323b989e4"
+      "scripts/compute_aep.py": "6a2e56ee412673b31ca7f2db0000f1343c566bcbf89e4318f32776bd34363762"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

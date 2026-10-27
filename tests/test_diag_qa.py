@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 # Import the pure evaluation function (no simulation dependency)
 from scripts.diag_qa import evaluate_restoring
@@ -121,5 +120,61 @@ def test_restoring_thresholds_use_achieved_alpha_max():
     assert not report["frac_ok"]
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+def test_restoring_status_messages():
+    """Test that the status field correctly distinguishes failure modes."""
+    # PASS case
+    alpha = np.array([10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 0.0,
+                      -6.0, -7.0, -8.0, -9.0, -10.0])
+    qa = np.array([-2.0, -1.8, -1.6, -1.4, -1.2, -1.0, 0.0,
+                   1.0, 1.2, 1.4, 1.6, 2.0])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "PASS"
+
+    # FAIL_WRONG_SIGN at positive alpha
+    alpha = np.array([12.0, 10.0, 8.0, 6.0, 4.0, 2.0, 0.0,
+                      -2.0, -4.0, -6.0, -8.0, -10.0, -12.0])
+    qa = np.array([2.0, 1.5, 1.0, 0.5, 0.2, 0.1, 0.0,
+                   -0.1, -0.2, -0.5, -1.0, -1.5, -2.0])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "FAIL_WRONG_SIGN"
+
+    # FAIL_WRONG_SIGN at negative alpha
+    alpha = np.array([12.0, 10.0, 8.0, 6.0, 4.0, 2.0, 0.0,
+                      -2.0, -4.0, -6.0, -8.0, -10.0, -12.0])
+    qa = np.array([-2.0, -1.5, -1.0, -0.5, -0.2, -0.1, 0.0,
+                   -0.1, -0.2, -0.5, -1.0, -1.5, -2.0])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "FAIL_WRONG_SIGN"
+
+    # INCONCLUSIVE_INSUFFICIENT_SAMPLES
+    alpha = np.array([1.0, 0.5, 0.0, -0.5, -1.0])
+    qa = np.array([-0.2, -0.1, 0.0, 0.1, 0.2])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "INCONCLUSIVE_INSUFFICIENT_SAMPLES"
+
+    # INCONCLUSIVE_NO_EXTREMES (flat alpha)
+    alpha = np.array([0.0, 0.0, 0.0])
+    qa = np.array([0.0, 0.0, 0.0])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "INCONCLUSIVE_NO_EXTREMES"
+
+    # FAIL_LOW_FRACTION: extreme checks pass but fraction is low
+    # |alpha|_max = 10, band = |alpha| > 5 -> 6 samples in band (10, 8, 6, -6, -8, -10)
+    # 4 correct, 2 wrong = 67% < 70% -> FAIL_LOW_FRACTION
+    alpha = np.array([10.0, 8.0, 6.0, 4.0, 2.0, 0.0,
+                      -2.0, -4.0, -6.0, -8.0, -10.0])
+    # Extreme correct: 10->-2 (ok), -10->2 (ok)
+    # Middle: 8->1.5 (wrong, should be negative), 6->-1 (ok), -6->-1 (wrong, should be pos), -8->1.5 (ok)
+    # Wait: alpha=8 (pos) -> Qa=1.5 (wrong, should be neg)
+    # alpha = -6: Qa=-1 (wrong, should be pos)
+    # alpha = -8: Qa=1.5 (correct)
+    qa = np.array([-2.0,  1.5, -1.0, -0.5, -0.1,  0.0,
+                   -0.1, -0.5, -1.0,  1.5,  2.0])
+    stall = 16.0
+    report = evaluate_restoring(alpha, qa, stall)
+    assert report["status"] == "FAIL_LOW_FRACTION", f"Got {report['status']}, fraction={report['fraction']}, n_band={report['n_band']}"

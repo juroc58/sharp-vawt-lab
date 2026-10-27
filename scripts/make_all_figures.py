@@ -29,9 +29,9 @@ PY = sys.executable
 
 # (output name, argv, source files)
 FIGURES = [
-    ("aep.png", ["scripts/plot_aep.py", "--json", "scripts/aep_results.json",
-                 "--out", "docs/aep.png", "--type", "small"],
-     ["scripts/aep_results.json"]),
+    ("aep_small.png", ["scripts/plot_aep.py", "--json", "scripts/aep_small.json",
+                       "--out", "docs/aep_small.png", "--type", "small"],
+     ["scripts/aep_small.json"]),
     ("aep_scaleup.png", ["scripts/plot_aep.py", "--json", "scripts/aep_scaleup.json",
                          "--out", "docs/aep_scaleup.png", "--type", "scaleup"],
      ["scripts/aep_scaleup.json"]),
@@ -71,10 +71,11 @@ def _output_path(argv: list[str]) -> Path | None:
 def _run(argv) -> bool:
     """Run one figure command.
 
-    Returns True if the figure was produced/refreshed.  Some figure scripts
-    (e.g. the pitch-torque diagnostic) are inconclusive at certain operating
-    points and exit non-zero even though they still write their figure; those
-    are treated as soft failures so the rest of the suite is not aborted.
+    Returns True if the figure was produced/refreshed.
+
+    Exit codes: any non-zero exit is a hard failure (RuntimeError), including
+    ``diag_qa.py --check``. A figure produced by a failing command is not
+    accepted, so a failed check can never be hidden by a regenerated image.
     """
     out_path = _output_path(argv)
     mtime_before = out_path.stat().st_mtime if out_path and out_path.is_file() else None
@@ -88,12 +89,16 @@ def _run(argv) -> bool:
         print(result.stderr, end="", file=sys.stderr)
     mtime_after = out_path.stat().st_mtime if out_path and out_path.is_file() else None
     produced = mtime_after is not None and (mtime_before is None or mtime_after > mtime_before)
-    if result.returncode != 0 and not produced:
+
+    if result.returncode != 0:
+        if produced:
+            raise RuntimeError(
+                f"Figure command exited {result.returncode} but figure was produced: {' '.join(argv)}"
+            )
         raise RuntimeError(
-            f"Figure command failed and did not produce output: {' '.join(argv)}"
+            f"Figure command failed and did not produce output "
+            f"(exit {result.returncode}): {' '.join(argv)}"
         )
-    if result.returncode != 0 and produced:
-        print(f"  (note: command exited {result.returncode} but figure was produced)")
     return produced
 
 

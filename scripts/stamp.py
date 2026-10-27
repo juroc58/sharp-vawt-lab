@@ -43,6 +43,7 @@ SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/compute_aep_counter_rotating.py": "2.0.0",
     "scripts/compute_aep_rigid_fair.py": "2.0.0",
     "scripts/compute_aep_scaleup.py": "2.0.0",
+    "scripts/compute_aep_small.py": "1.0.1",
     "scripts/compute_aep_turbulent.py": "2.0.0",
     "scripts/diag_aep_branches.py": "2.0.0",
     "scripts/finite_span_ablation.py": "3.0.0",
@@ -344,9 +345,10 @@ def verify_stamp(json_path: str, expected_script: str) -> tuple[bool, str]:
 # asserts this explicitly.
 STAMP_CHECK_MAP: dict[str, str] = {
     "aep_counter_rotating.json": "scripts/compute_aep_counter_rotating.py",
-    "aep_results.json": "scripts/compute_aep.py",
     "aep_rigid_fair.json": "scripts/compute_aep_rigid_fair.py",
+    "aep_results.json": "scripts/compute_aep.py",
     "aep_scaleup.json": "scripts/compute_aep_scaleup.py",
+    "aep_small.json": "scripts/compute_aep_small.py",
     "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
     "branch_point_checks.json": "scripts/check_branch_points.py",
     "cm_scale_scan.json": "scripts/scan_cm_scale.py",

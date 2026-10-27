@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "229eb43d07f176c35f85736bedd5f0a28955242b6a597ff9de2ea9aa9658aeb7",
+    "code_hash": "6f1ead204eb43fa4a786c61c9d4d88daba3946c5b979019554b94354001f7e0b",
     "script": "scripts/compute_aep_counter_rotating.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-26T13:42:47.211095+00:00",
+    "created_utc": "2026-10-27T18:44:26.987163+00:00",
     "python_version": "3.14.4",
-    "git_commit": "0f086b16571194d92e69f729081a5af465059444",
+    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
     "seed": 0,
     "n": 69,
     "script_args": [],
@@ -30,8 +30,8 @@
       "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
-      "scripts/compute_aep_counter_rotating.py": "6bdc284690f10fbc95e08f8f2eb0caf33de3ac369ce747eabd4da259c9d17956",
-      "scripts/compute_aep.py": "730b5b591cde6e11731b0d7e9a2414b13c655db96aa6c46b5a0181f323b989e4"
+      "scripts/compute_aep_counter_rotating.py": "be478a6d195cd20e270740178ca72dbe2c6ce592834f4f514b07cc01cd97ab5a",
+      "scripts/compute_aep.py": "6a2e56ee412673b31ca7f2db0000f1343c566bcbf89e4318f32776bd34363762"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
@@ -64,6 +64,10 @@
     "aep_kWh": 16704.780344718925,
     "capacity_factor": 0.2114308614915323
   },
+  "two_independent_rotors": {
+    "aep_kWh": 33409.56068943785,
+    "capacity_factor": 0.2114308614915323
+  },
   "counter_rotating": {
     "upstream_rotor": {
       "aep_kWh": 16704.780344718925,
@@ -85,31 +89,43 @@
       "interaction_factor": 0.0,
       "aep_kWh": 33409.56068943785,
       "cf": 0.2114308614915323,
-      "gain_vs_single_percent": 100.0
+      "gain_vs_single_percent": 100.0,
+      "is_nominal": false
+    },
+    {
+      "interaction_factor": 0.01758441111613961,
+      "aep_kWh": 34084.355769087364,
+      "cf": 0.21570127098140177,
+      "gain_vs_single_percent": 104.03953279076097,
+      "is_nominal": true
     },
     {
       "interaction_factor": 0.04,
       "aep_kWh": 34979.505574114984,
       "cf": 0.2213661851716922,
-      "gain_vs_single_percent": 109.39817736168833
+      "gain_vs_single_percent": 109.39817736168833,
+      "is_nominal": false
     },
     {
       "interaction_factor": 0.08,
       "aep_kWh": 36676.839992944326,
       "cf": 0.2321076876340628,
-      "gain_vs_single_percent": 119.55894801417966
+      "gain_vs_single_percent": 119.55894801417966,
+      "is_nominal": false
     },
     {
       "interaction_factor": 0.12,
       "aep_kWh": 38507.28121377286,
       "cf": 0.24369155034410858,
-      "gain_vs_single_percent": 130.51653729734082
+      "gain_vs_single_percent": 130.51653729734082,
+      "is_nominal": false
     },
     {
       "interaction_factor": 0.16,
       "aep_kWh": 40475.16064716039,
       "cf": 0.2561451844334706,
-      "gain_vs_single_percent": 142.29687437917295
+      "gain_vs_single_percent": 142.29687437917295,
+      "is_nominal": false
     }
   ],
   "power_curves": {

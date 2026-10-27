@@ -45,6 +45,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **diag_qa figure regeneration**: `make_all_figures.py` now runs `--check`
   first and fails on non-zero exit code before producing figure.
 
+### Fixed (figure round)
+- **Counter-rotating AEP figure**: "Two independent" baseline is now 2× the
+  single-rotor AEP (`two_independent_rotors` field added to the JSON); the
+  printed gain and the displayed bars now agree arithmetically; nominal
+  sensitivity point annotated via `is_nominal` flag; wrapped tick labels;
+  gain annotation repositioned.
+- **Scale-up AEP figure**: identical high/low seed bars collapsed to
+  "Seeds converged"; CF bar labels disclose the rated power used (9.0 kW
+  passive vs 7.3 kW rigid); panel-1 label corrected to "3-phase mean";
+  branch-envelope legend hidden when seeds converge; U=4 branch switch
+  annotated (bistability plausible but unproven).
+- **Small-rotor AEP**: new `compute_aep_small.py` / `aep_small.json` /
+  `docs/aep_small.png` for the R = 0.60 m machine; stale `aep_results.json`
+  and `docs/aep.png` (scale-up data under a small-rotor name) deleted;
+  README, stamp map, and figure manifest rewired.
+- **Turbulent AEP figure**: idealised cube-bias reference (3I², +4.3% at
+  I = 0.12) shown alongside the simulated +6.5%, labelled as a reference
+  under stated assumptions, not a decomposition.
+- **Rated-line label**: watts shown below 1 kW ("Rated (45.3 W)").
+- **Figure-content tests**: gain arithmetic, CF/rated-power consistency,
+  nominal and U=4 annotations, bounding-box overlap, canvas containment,
+  README figure-reference validity.
+
 ## [3.5.0] - 2026-10-25
 
 ### Breaking
