@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "6f1ead204eb43fa4a786c61c9d4d88daba3946c5b979019554b94354001f7e0b",
+    "code_hash": "b105d76be4145a8db72892d38e39d5b7d390235fd433afce69a4c619439addeb",
     "script": "scripts/compute_aep_counter_rotating.py",
-    "script_version": "2.0.0",
-    "created_utc": "2026-10-27T18:44:26.987163+00:00",
+    "script_version": "2.0.1",
+    "created_utc": "2026-10-29T14:22:18.230721+00:00",
     "python_version": "3.14.4",
-    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
+    "git_commit": "6140be538a1d904ebfa64591b0d8dffcd1327481",
     "seed": 0,
     "n": 69,
     "script_args": [],
@@ -30,7 +30,7 @@
       "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
-      "scripts/compute_aep_counter_rotating.py": "be478a6d195cd20e270740178ca72dbe2c6ce592834f4f514b07cc01cd97ab5a",
+      "scripts/compute_aep_counter_rotating.py": "817d181c05cac40a0e211881915e3cddf5c9976847d780245669d472e70c135e",
       "scripts/compute_aep.py": "6a2e56ee412673b31ca7f2db0000f1343c566bcbf89e4318f32776bd34363762"
     },
     "data_hashes": {
@@ -50,7 +50,9 @@
     "interaction_factor_note": "heuristic scenario model momentum theory model: upstream rotor induction factor from Ct=4a(1-a), wake recovery between rotors, counter-rotating channeling from blades moving toward each other in gap. Factor varies with wind speed, TSR, and spacing.",
     "description": "Two counter-rotating Sharp cycloturbines with bluff-body flow acceleration between rotors",
     "paper_reference": "VUB wind-tunnel study (closely spaced counter-rotating VAWT pairs); Dabiri et al., Energies 2019, 12(14):2724",
-    "speculative_scenario_gain_percent": "+2.8% combined improvement over two independent rotors (heuristic scenario model)"
+    "speculative_scenario_gain_percent": "+2.8% combined improvement over two independent rotors (heuristic scenario model)",
+    "speculative_scenario": true,
+    "not_a_validated_array_prediction": true
   },
   "wind_resource": {
     "mean_U": 6.0,

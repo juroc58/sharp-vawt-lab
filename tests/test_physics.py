@@ -1,9 +1,12 @@
 """Tests for the physics overrides added for the UQ study."""
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from scripts.compute_aep_small import integrate_aep
 from sharp_vawt.engine import _cm_moment, _energy_diagnostics
 from tests.conftest import BASE_QUICK
 from vawt_core import create_sim_from_params
@@ -547,6 +550,75 @@ class TestEnergyLedger:
         r1 = create_sim_from_params(p).run()
         r2 = create_sim_from_params(p).run()
         assert r1['cp'] == pytest.approx(r2['cp'], abs=1e-9)
+
+
+class TestCommonRatingComparison:
+    """Small-rotor passive (free-running) vs fixed-rpm is a common-rating AEP
+    comparison: both strategies are integrated at the same p_rated, derived
+    from the free-running Cp at U_RATED (45.3 W). The fixed-rpm workflow has
+    no well-defined rating at U_RATED (its cp(TSR) grid spans tsr 1.0-4.5,
+    which does not cover tsr = omega*R/U_RATED = 0.75), so the free-running
+    design rating is the only defensible common cap.
+
+    These tests verify the comparison is reproducible from the stored cp
+    curves at the stored p_rated and that both strategies genuinely share the
+    rating, so the reported gain is a true common-rating comparison, not a
+    rating artefact.
+    """
+
+    def test_common_rating_reproduces_stored_aep(self):
+        data = json.loads(
+            (Path(__file__).resolve().parents[1] / "scripts" / "aep_small.json")
+            .read_text()
+        )
+        wind = data["wind"]
+        R = data["geometry"]["R"]
+        H = data["geometry"]["H"]
+        U_MEAN = wind["mean_U"]
+        K = wind["k_weibull"]
+        CUT_IN = wind["cut_in"]
+        CUT_OUT = wind["cut_out"]
+        p_rated = wind["p_rated_W"]
+
+        U_grid = np.linspace(CUT_IN, CUT_OUT, 200)
+
+        # Free-running cp curve interpolated onto the common U_grid.
+        fr = data["results"]["passive_k_load"]["free_results"]
+        U_free = np.array([f["U"] for f in fr])
+        cp_free = np.array([f["cp"] for f in fr])
+        cp_passive = np.interp(U_grid, U_free, cp_free)
+
+        # Fixed-rpm cp(TSR) curve mapped onto the common U_grid.
+        tsrs = np.array(data["results"]["passive_k_load"]["tsr"])
+        cps_tsr = np.array(data["results"]["passive_k_load"]["cp_tsr"])
+        tsr_design = float(tsrs[int(np.argmax(cps_tsr))])
+        tsr_fixed = np.clip(tsr_design * U_MEAN / U_grid, tsrs[0], tsrs[-1])
+        cp_fixed = np.interp(tsr_fixed, tsrs, cps_tsr)
+
+        # Both strategies integrated at the SAME rated power (common rating).
+        res_passive = integrate_aep(
+            U_grid, cp_passive, U_MEAN, K, CUT_IN, CUT_OUT, p_rated, R, H
+        )
+        res_fixed = integrate_aep(
+            U_grid, cp_fixed, U_MEAN, K, CUT_IN, CUT_OUT, p_rated, R, H
+        )
+
+        assert res_passive["aep"] == pytest.approx(
+            data["results"]["passive_k_load"]["aep_MWh"] * 1000.0, rel=1e-6
+        )
+        assert res_fixed["aep"] == pytest.approx(
+            data["results"]["passive_fixed_rpm"]["aep_MWh"] * 1000.0, rel=1e-6
+        )
+        # Common rating: both strategies share p_rated, so their CFs use it.
+        assert res_passive["cf"] == pytest.approx(
+            data["results"]["passive_k_load"]["cf"], rel=1e-6
+        )
+        assert res_fixed["cf"] == pytest.approx(
+            data["results"]["passive_fixed_rpm"]["cf"], rel=1e-6
+        )
+        # The discrepancy is real data at the same rating, not a rating
+        # artefact: passive (self-adjusting omega) exceeds fixed-rpm.
+        assert res_passive["aep"] > res_fixed["aep"]
 
 
 class TestFnRatio:

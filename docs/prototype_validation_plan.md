@@ -14,6 +14,12 @@ validate other geometries, other Reynolds numbers, array configurations, or long
 Until the data exist and the pre-registered acceptance criteria are met, every reference to this work
 must say **“prototype validation planned”**, never “validated”.
 
+**Exclusion protocol (pre-registered).** Exclusions are pre-registered handling rules, not
+post-hoc filters. Excluded rows remain in the dataset with explicit exclusion reasons;
+exclusion counts and reasons are reported. Acceptance criteria and exclusion rules must
+not be loosened after inspecting results. Any change requires a dated, documented
+amendment.
+
 ## 1. Rotor and hardware (fill in before the first run; do not edit during the campaign)
 
 | Item | Value | Notes |

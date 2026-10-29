@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "ebc5ae9b767ff9bb31a057c6c42d19cc314b2fe24e38860e68265b8559a386a6",
+    "code_hash": "ae53331c36ece4b526189dba656105b47f5934b5f39eb2faa99ece44c90beadf",
     "script": "scripts/scan_tip_loss.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-26T12:21:49.376370+00:00",
+    "created_utc": "2026-10-28T11:52:00.707658+00:00",
     "python_version": "3.14.4",
-    "git_commit": "0f086b16571194d92e69f729081a5af465059444",
+    "git_commit": "6140be538a1d904ebfa64591b0d8dffcd1327481",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -25,7 +25,7 @@
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/scan_tip_loss.py": "29e7ae1e9568ac14e469444e6827cbb2aa29d73a5d3d89e8454c77208429751e",
-      "scripts/uncertainty.py": "05f8040908ba35a8ae990007e6005ece359b58014870fbb97ca7da2ac114fc26"
+      "scripts/uncertainty.py": "3591c120e407ba4843f0de7805e4b2b2662c0fc825232d8ced6a5ed1f2756861"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

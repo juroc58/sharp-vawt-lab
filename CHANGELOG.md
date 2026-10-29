@@ -38,6 +38,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **pytest timeout removed** (not installable in system Python); CI timeout
   handled by GitHub Actions job timeout.
 - **Ruff config**: moved `per-file-ignores` to `[tool.ruff.lint.per-file-ignores]`.
+- **UQ worker control**: `scripts/uncertainty.py` gained a `--workers` option
+  (positive integer, default 4) to size the process pool to the host; the
+  effective worker count is reported at startup. The result code hash is now
+  cached per process so it is not recomputed once per UQ task.
+- **UQ output controls**: `scripts/uncertainty.py` gained `--samples` (LHS
+  sample count, distinct from Saltelli base N `--saltelli-n`), `--out`
+  (output JSON path), `--cache-dir` (resumable cache directory), and
+  `--dry-run` (print resolved configuration without running simulations).
+  Quick/custom-budget runs should use `--out` to avoid overwriting the
+  canonical `scripts/uncertainty_results.json`.
+- **Benchmark**: added `scripts/benchmark_runtime.py`, a focused runtime
+  benchmark entry point measuring fresh-process startup (import and possible
+  Numba JIT compile), warm execution, and worker-count scaling (1/2/4) on a
+  bounded workload. Fresh-process startup does not prove fresh compilation.
+  Measured reused-pool speedup was ~1.31x on the bounded workload but repeat
+  count and coverage are insufficient for a general recommendation;
+  worker-count guidance remains workload-specific. Results may be saved to
+  the git-ignored `.bench_cache/` directory.
+- **UQ output isolation**: noncanonical / custom-budget runs default to a
+  separate development output directory (`.uq_dev/`) and are rejected from
+  writing the canonical `scripts/uncertainty_results.json` unless the budget
+  is the canonical Saltelli base_n = 64 study. Conflicting sampling flags
+  (--samples with --saltelli) are rejected. `--dry-run` prints every
+  resolved output and cache path without running simulations. Output
+  isolation is enforced by tested path resolution; baseline-stale artifacts
+  can still be invalidated by dependency edits.
+- **UQ cache propagation**: the cache directory is passed explicitly to each
+  worker task (not via a module global), so it is honored under every
+  multiprocessing start method. Cache identity excludes cache_dir and worker
+  count, so execution-only changes never alter simulation cache identity.
+- **Figure layout**: `scripts/plot_style.py` reserves explicit GridSpec rows
+  for suptitle (top) and legend/caveat (bottom), preventing title/annotation
+  overlap. Removed `savefig.bbox='tight'` from rcParams; layout is explicit.
+- **Figure content**: `scripts/plot_aep.py` small-rotor figure shows
+  electrical power in W (≈45 W rated) with AEP/CF summary comparing
+  variable-speed vs fixed-speed generator strategy. Counter-rotating figure
+  replaces text-only panel with AEP comparison + interaction-factor
+  sensitivity, moves speculative caveat to footer. Turbulent figure replaces
+  text-only panel with steady vs turbulent power comparison (W), moves
+  explanatory prose to footer. Scale-up figure labels ratings as
+  design-specific (passive ≈9.0 kW, rigid ≈7.3 kW) and states equal-rating
+  comparison is not supplied.
+- **Layout/content tests**: `tests/test_figures.py` adds suptitle vs
+  subplot-title separation, gain annotation vs bar-label separation,
+  small-rotor W units, small-rotor AEP/CF values matching JSON,
+  scale-up design-specific rating labels, and a negative-control overlap
+  test.
+- **Common-rating AEP test**: `tests/test_physics.py` verifies the small-rotor
+  passive (free-running) vs fixed-rpm AEP comparison is computed at a common
+  rated power (45.3 W, from the free-running Cp at U_RATED) by re-integrating
+  the stored cp curves and matching the stored AEP values; it also confirms
+  the fixed-rpm workflow has no well-defined rating at U_RATED, so the free-
+  running design rating is the only defensible common cap.
 
 ### Fixed
 - **diag_qa vacuous check**: old 60 % of stall threshold never evaluated
@@ -57,9 +110,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   branch-envelope legend hidden when seeds converge; U=4 branch switch
   annotated (bistability plausible but unproven).
 - **Small-rotor AEP**: new `compute_aep_small.py` / `aep_small.json` /
-  `docs/aep_small.png` for the R = 0.60 m machine; stale `aep_results.json`
-  and `docs/aep.png` (scale-up data under a small-rotor name) deleted;
-  README, stamp map, and figure manifest rewired.
+  `docs/aep_small.png` for the R = 0.60 m machine; `docs/aep.png` (the old
+  scale-up figure shown under a small-rotor name) deleted. `aep_results.json`
+  remains a supported scale-up AEP artifact produced by
+  `scripts/compute_aep.py`; README, stamp map, and figure manifest rewired.
 - **Turbulent AEP figure**: idealised cube-bias reference (3I², +4.3% at
   I = 0.12) shown alongside the simulated +6.5%, labelled as a reference
   under stated assumptions, not a decomposition.
@@ -67,6 +121,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Figure-content tests**: gain arithmetic, CF/rated-power consistency,
   nominal and U=4 annotations, bounding-box overlap, canvas containment,
   README figure-reference validity.
+
+### Deferred
+- **`--verify-stored` T_max mismatch (P1C)**:
+  `scripts/optimize_actuator.py --verify-stored` overrides `T_max = 30.0`
+  while the stored `best_params` in `scripts/optimization_actuator.json`
+  uses `T_max = 20.0`. Confirmed defect: the verification does not verify
+  the stored configuration. **Fix deferred** because reverting the
+  producer-code change restores the stored artifact stamp but leaves the
+  mismatch in place; applying the fix changes `optimize_actuator.py`'s code
+  hash and invalidates `optimization_actuator.json`, which can only be
+  regenerated by its actual producer (a global optimiser search).
+  Required follow-up: regenerate `optimization_actuator.json` through
+  `scripts/optimize_actuator.py`, then apply and test the verification fix.
+  The stored snapshot remains coherent with the current producer code.
+- **`validate_ds_off.py` DESIGN vs `optimization_actuator.json` best_params**:
+  `validate_ds_off.py::DESIGN` (c=0.117607, ar=0.31, sp=0.18, mc=0.040,
+  dcw=-0.132) differs from `optimization_actuator.json::best_params`
+  (c≈0.101, ar=0.5, sp=0.25, mc=0.008, dcw=0.5). They are different
+  configurations; the DS-sensitivity result applies to DESIGN, not to
+  best_params. **Fix deferred** because no test or documentation change
+  should silently equate them.
+- **`vawt_presets.py` docstring vs `optimization_passive.json`**:
+  The docstring comment for `PRESETS["optimised_passive"]` claims its values
+  "mirror scripts/optimization_passive.json", but they differ (e.g.
+  `c=0.070077` vs `c=0.0612`, `ar=0.2604` vs `ar=0.493`). The preset is an
+  earlier optimisation snapshot used as the UQ anchor; `optimization_passive.json`
+  is a separate historical result. **Fix deferred** because `vawt_presets.py`
+  is listed as an `extra_files` dependency in most result stamps; changing it
+  would invalidate many JSONs and require coordinated regeneration.
+  Required follow-up: correct the docstring, then regenerate all affected
+  result JSONs through their producers.
+- **Dead legacy fallback in `load_fair_rigid_reference`**: retained with
+  clearer comment. The `else: g = {}` branch handles non-scaleup geometry
+  data (AR <= 5) by returning None. It supports a real legacy-format
+  contract where a rigid_fair JSON without a "geometries" key and with
+  AR <= 5 is not a valid reference. **Not removed** because changing
+  artifact-loading behaviour is out of scope for this pass.
+- **Shared AEP-core extraction**: `aep_core.py` refactor not started.
+- **Cross-workflow AEP consistency test**: not added.
+- **Branch-continuation regression test**: not added (formula fixed but no
+  dedicated unit test for w0_frac continuation).
+- **validate_ds_off-versus-actuator consistency test**: not added.
+- **Tip-loss threshold documentation test**: not added.
+- **Ruff per-file-ignore reduction**: not done.
+- **`vawt_core.OUT_COLS` legacy-name migration**: not done.
+- **`render_animation.py` historical-design default**: not changed.
+- **`validate_ham.py` circular expected-bias window**: not reviewed.
+- **Low-severity plot/test cleanups**: not done.
+- **Test-isolation root cause**: individual-vs-full-suite discrepancy not
+  reproduced; stale README references removed but underlying mechanism
+  unknown. Do not claim the interference mechanism is understood.
+- **Small-rotor free-running/fixed-speed Cp discrepancy**: causally
+  unresolved. Do not claim it is explained by self-optimisation or
+  constraint work.
+- **`scripts/optimize_scaleup.py` docstring false budget claim**: the docstring
+  claims the DE budget was "raised from the initial popsize=6/maxiter=8",
+  but `DE_POPSIZE=6` and `DE_MAXITER=8` are unchanged — there was no raise.
+  The stored result is a local refinement, not a converged global optimum.
+  **Fix deferred** because editing the docstring changes `optimize_scaleup.py`'s
+  code hash and invalidates `scripts/optimization_scaleup.json`, which can only
+  be regenerated by its actual producer (a global optimiser search).
+  Required follow-up: correct the docstring, then regenerate
+  `optimization_scaleup.json` via `scripts/optimize_scaleup.py`.
 
 ## [3.5.0] - 2026-10-25
 

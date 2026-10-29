@@ -470,14 +470,6 @@ def main():
     # Two independent rotors baseline: 2 x single-rotor AEP (no interaction)
     aep_two_independent = 2.0 * aep_single
 
-    # Calculate improvement over single rotor
-    if aep_single > 0:
-        improvement_over_single = ((aep_total / aep_single) - 1.0) * 100.0
-        print(f"\n  Improvement over single rotor: {improvement_over_single:+.1f}%")
-    else:
-        improvement_over_single = 0.0
-        print("\n  Improvement over single rotor: N/A")
-
     # Calculate improvement over two independent rotors
     if aep_two_independent > 0:
         improvement_over_two = ((aep_total / aep_two_independent) - 1.0) * 100.0
@@ -602,6 +594,8 @@ def main():
             "description": "Two counter-rotating Sharp cycloturbines with bluff-body flow acceleration between rotors",
             "paper_reference": "VUB wind-tunnel study (closely spaced counter-rotating VAWT pairs); Dabiri et al., Energies 2019, 12(14):2724",
             "speculative_scenario_gain_percent": f"{improvement_over_two:+.1f}% combined improvement over two independent rotors (heuristic scenario model)",
+            "speculative_scenario": True,
+            "not_a_validated_array_prediction": True,
         },
         "wind_resource": {
             "mean_U": U_MEAN,
@@ -658,7 +652,7 @@ def main():
         "scripts/compute_aep_counter_rotating.py",
 
     
-        script_version="2.0.0",
+        script_version="2.0.1",
 
     
         n=len(U_range) * 3,

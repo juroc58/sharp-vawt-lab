@@ -86,6 +86,13 @@ def _normalize_aep_units(data):
 
 
 # Load all JSON data once
+# Dataset roles:
+#   "aq"      -> aep_results.json:     scale-up AEP, compute_aep.py (passive/fixed-rpm, branch tracing)
+#   "aq_s"    -> aep_scaleup.json:     scale-up AEP, compute_aep_scaleup.py (branch-traced + seeded continuations)
+#   "aq_t"    -> aep_turbulent.json:   turbulent-wind AEP
+#   "aq_r"    -> aep_rigid_fair.json:  fair rigid-blade baseline
+#   "aq_small"-> aep_small.json:       small-rotor (R=0.60 m) AEP
+#   "cr"      -> aep_counter_rotating.json: heuristic counter-rotating pair scenario (own single baseline)
 def _load_all():
     return {
         "uq": _j("uncertainty_results.json"),
@@ -485,7 +492,10 @@ def block_evidence_table():
     uq = DATA["uq"]["summary"]
     aq = DATA["aq"]
     act = DATA["act"]
+    ds = DATA.get("ds_off", {})
     gain = aq.get("gains_percent", {}).get("passive_vs_rigid_fair")
+    pp_ds = ds.get("prescribed_pitch", {})
+    pa_ds = ds.get("passive_anchors", {})
     rows = [
         ("**Ham 1979 Peak Cp**", f"{uq['ham_1979']['mean']:.2f}",
          "Literature comparison (2D upper bound)"),
@@ -505,6 +515,21 @@ def block_evidence_table():
         ("**Prescribed-pitch Upper Bound**", f"{act['best_cp']:.2f}",
          "Ideal actuator (no physical limit)"),
     ]
+    if pp_ds:
+        rows.append((
+            "**DS-off sensitivity (prescribed)**",
+            f"{pp_ds.get('delta_rel', 0)*100:.1f} % Cp change",
+            "validate_ds_off.json (below-stall design point)",
+        ))
+    if pa_ds:
+        sharp = pa_ds.get("sharp_cppc", {})
+        opt = pa_ds.get("optimised_passive", {})
+        rows.append((
+            "**DS-off sensitivity (passive)**",
+            (f"Sharp: {sharp.get('delta_rel', 0)*100:.1f} %; "
+             f"Opt. passive: {opt.get('delta_rel', 0)*100:.1f} %"),
+            "validate_ds_off.json (passive anchors)",
+        ))
     if gain is not None:
         rows.append(("**AEP Gain vs Rigid**", f"{gain:+.1f}%",
                      "**Model comparison** (unproven machine)"))
@@ -540,18 +565,21 @@ def block_headline_table_small():
     # Evidence levels: M = model result at fixed inputs / S = scenario estimate from UQ
     #              / U = ideal-actuator upper bound / V = validated vs literature
     rows = [
-        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range (UQ)", "S"),
+        ("**Sharp-inspired CPPC**", uq["sharp_cppc"], "scenario range (UQ; bimodal)", "S"),
         ("Optimised passive (mass-balanced)", uq["optimised_passive"], "stored design point (UQ)", "S"),
         ("Prescribed pitch (ideal actuator)", None, "ideal-actuator upper bound (model)", "U"),
         ("Ham 1979 comparison", uq["ham_1979"], "fixed design point (2D upper-bound comparison)", "V"),
     ]
-    out = ["| Configuration | Cp | 90 % CI | Reference | Evidence |",
-           "|---|---|---|---|---|"]
+    out = ["| Configuration | Cp | 90 % CI | Collapsed | Reference | Evidence |",
+           "|---|---|---|---|---|---|"]
     for name, s, ref, ev in rows:
         if s is None:
-            out.append(f"| {name} | {DATA['act']['best_cp']:.2f} | \u2014 | {ref} | {ev} |")
+            out.append(f"| {name} | {DATA['act']['best_cp']:.2f} | \u2014 | \u2014 | {ref} | {ev} |")
         else:
-            out.append(f"| {name} | **{s['mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {ref} | {ev} |")
+            collapsed = s.get("collapse_fraction")
+            collapsed_str = f"{collapsed*100:.1f} %" if collapsed is not None else "\u2014"
+            branch = " (working branch)" if collapsed is not None and collapsed > 0 else ""
+            out.append(f"| {name} | **{s['working_mean']:.2f}** | {_ci(s['p5'], s['p95'])} | {collapsed_str} | {ref}{branch} | {ev} |")
     return "\n".join(out)
 
 
@@ -806,6 +834,7 @@ def block_counter_rotating():
     s = d["sensitivity_to_fixed_interaction_factor"]
     gains = [r["gain_vs_single_percent"] for r in s]
     out = ["| Quantity | Value |", "|---|---|"]
+    out.append("| **Status** | **Speculative scenario — not a validated array prediction** |")
     out.append(f"| Single rotor AEP | {d['single_rotor_baseline']['aep_kWh']:,.0f} kWh/yr |")
     out.append(f"| Two independent rotors | {two_indep.get('aep_kWh', 2 * d['single_rotor_baseline']['aep_kWh']):,.0f} kWh/yr |")
     out.append(f"| Counter-rotating pair (heuristic) | {c['total']['aep_kWh']:,.0f} kWh/yr |")

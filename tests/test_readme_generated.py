@@ -136,11 +136,11 @@ def test_headline_cp_matches_uq_json():
     small = _block(text, "headline_table_small")
     large = _block(text, "headline_table_large")
 
-    def cell(block, label):
+    def cell(block, label, col=1):
         for ln in block.splitlines():
             if label in ln:
                 cells = [c.strip() for c in ln.strip("|").split("|")]
-                return cells[1].replace("*", "")
+                return cells[col].replace("*", "")
         raise AssertionError(f"{label!r} not found")
 
     checks = [
@@ -149,8 +149,51 @@ def test_headline_cp_matches_uq_json():
         ("Ham 1979 comparison", uq["ham_1979"]),
     ]
     for label, s in checks:
-        assert cell(small, label) == f"{s['mean']:.2f}", label
-    assert cell(large, "Scaled-up passive") == f"{uq['scaleup']['mean']:.2f}"
+        assert cell(small, label) == f"{s['working_mean']:.2f}", label
+        # Collapsed fraction must be reported for bimodal anchors
+        if "Sharp-inspired" in label:
+            cf = s.get("collapse_fraction")
+            if cf is not None:
+                assert f"{cf*100:.1f} %" in small, f"collapsed fraction missing for {label}"
+    assert cell(large, "Scaled-up passive") == f"{uq['scaleup']['working_mean']:.2f}"
+
+
+def test_evidence_table_includes_ds_off_sensitivity():
+    """The evidence table must report DS-off sensitivity from validate_ds_off.json."""
+    ds = json.loads((ROOT / "scripts" / "validate_ds_off.json").read_text(encoding="utf-8"))
+    text = README.read_text(encoding="utf-8")
+    body = _block(text, "evidence_table")
+
+    # Prescribed-pitch DS-off delta
+    pp_delta = ds["prescribed_pitch"]["delta_rel"]
+    assert f"{pp_delta*100:.1f} %" in body, \
+        f"prescribed-pitch DS-off delta {pp_delta*100:.1f}% missing from evidence table"
+
+    # Passive anchor DS-off deltas
+    sharp_delta = ds["passive_anchors"]["sharp_cppc"]["delta_rel"]
+    opt_delta = ds["passive_anchors"]["optimised_passive"]["delta_rel"]
+    assert f"{sharp_delta*100:.1f} %" in body, \
+        f"Sharp-inspired DS-off delta {sharp_delta*100:.1f}% missing from evidence table"
+    assert f"{opt_delta*100:.1f} %" in body, \
+        f"Optimised-passive DS-off delta {opt_delta*100:.1f}% missing from evidence table"
+
+
+def test_counter_rotating_status_row():
+    """The counter-rotating block must lead with a speculative-scenario
+    status row matching the JSON flags."""
+    cr = json.loads((ROOT / "scripts" / "aep_counter_rotating.json").read_text(encoding="utf-8"))
+    cfg = cr["configuration"]
+    assert cfg["speculative_scenario"] is True
+    assert cfg["not_a_validated_array_prediction"] is True
+
+    text = README.read_text(encoding="utf-8")
+    body = _block(text, "counter_rotating")
+    lines = body.splitlines()
+    # lines[0] = header, lines[1] = separator, lines[2] = first data row
+    first_row = lines[2]
+    assert "**Status**" in first_row, f"first data row missing Status: {first_row!r}"
+    assert "**Speculative scenario — not a validated array prediction**" in first_row, \
+        f"status row wording mismatch: {first_row!r}"
 
 
 def test_ham_peak_matches_json():

@@ -90,6 +90,16 @@ COLLAPSE_CP = 0.02
 # Disk cache for UQ runs (interrupt-safe resume)
 CACHE_DIR = ".uq_cache"
 
+# Development output directory for noncanonical / custom-budget runs.  The
+# canonical study is committed at HEAD as Saltelli base_n = 64
+# (scripts/uncertainty_results.json); quick / custom LHS budgets must not
+# silently overwrite it.
+DEV_OUTPUT_DIR = ".uq_dev"
+
+# Canonical Saltelli base N, as committed at HEAD.  Only this exact
+# configuration may write to the canonical output path.
+CANONICAL_SALTELLI_N = 64
+
 # Version string hashed into the cache key so that changes to the core physics,
 # polars or parameter spec invalidate stale cache entries.  Semantic version of
 # this script; also used in the result stamp.
@@ -111,6 +121,9 @@ def _numba_installed() -> bool:
         return False
 
 
+_CODE_HASH_CACHE: str | None = None
+
+
 def _code_hash() -> str:
     """Hash of sharp_vawt/ package, airfoil polars, UQ_SPEC and the script version.
 
@@ -118,7 +131,19 @@ def _code_hash() -> str:
     the process working directory, so the hash is identical however the
     script is launched. Missing inputs raise instead of being silently
     skipped: a stale cache that cannot see the polars is worse than no cache.
+
+    The result is cached per process: ``_code_hash`` is invoked once per UQ
+    task (including cache-hit tasks that return early), so caching avoids
+    re-reading every source file and polar CSV on every call.
     """
+    global _CODE_HASH_CACHE
+    if _CODE_HASH_CACHE is not None:
+        return _CODE_HASH_CACHE
+    _CODE_HASH_CACHE = _compute_code_hash()
+    return _CODE_HASH_CACHE
+
+
+def _compute_code_hash() -> str:
     root = Path(__file__).resolve().parent.parent
     h = hashlib.sha256()
     # Core physics (hard requirement) - sharp_vawt package
@@ -172,8 +197,8 @@ def _cache_key(anchor_name: str, anchor_params: dict, uq_params: dict) -> str:
     return hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:16]
 
 
-def _cache_path(key: str) -> str:
-    return os.path.join(CACHE_DIR, f"{key}.json")
+def _cache_path(key: str, cache_dir: str) -> str:
+    return os.path.join(cache_dir, f"{key}.json")
 
 
 def _base_cm0(anchor_params: dict[str, Any]) -> dict[str, float]:
@@ -192,8 +217,8 @@ def _base_cm0(anchor_params: dict[str, Any]) -> dict[str, float]:
                     "error": str(exc)[:120]}
 
 
-def _load_from_cache(key: str) -> dict | None:
-    path = _cache_path(key)
+def _load_from_cache(key: str, cache_dir: str) -> dict | None:
+    path = _cache_path(key, cache_dir)
     if os.path.exists(path):
         try:
             with open(path) as f:
@@ -203,9 +228,9 @@ def _load_from_cache(key: str) -> dict | None:
     return None
 
 
-def _save_to_cache(key: str, result: dict) -> None:
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    path = _cache_path(key)
+def _save_to_cache(key: str, result: dict, cache_dir: str) -> None:
+    os.makedirs(cache_dir, exist_ok=True)
+    path = _cache_path(key, cache_dir)
     with open(path, "w") as f:
         json.dump(result, f)
 
@@ -259,12 +284,19 @@ def sample_to_params_saltelli(unit_row: np.ndarray) -> dict[str, float]:
 # 4. WORKER
 # ============================================================================
 def run_one_task(args):
-    """Standalone top-level function for pickling."""
-    anchor_name, anchor_params, uq_params = args
+    """Standalone top-level function for pickling.
+
+    ``args`` is ``(anchor_name, anchor_params, uq_params, cache_dir)``.
+    ``cache_dir`` is passed explicitly (not via a module global) so worker
+    processes use the resolved cache directory under every start method.
+    Cache *identity* (the key) does not include cache_dir: worker count and
+    cache location never change a simulation's cache identity.
+    """
+    anchor_name, anchor_params, uq_params, cache_dir = args
     key = _cache_key(anchor_name, anchor_params, uq_params)
 
     # Check disk cache first (interrupt-safe resume)
-    cached = _load_from_cache(key)
+    cached = _load_from_cache(key, cache_dir)
     if cached is not None:
         return (anchor_name, cached, None, uq_params)
 
@@ -296,7 +328,7 @@ def run_one_task(args):
                       "tsr": float(r["tsr_eq"]),
                       "aoa_max": float(r["aoa_max"]),
                       "steady": bool(r.get("steady", True))}
-        _save_to_cache(key, result)
+        _save_to_cache(key, result, cache_dir)
         return (anchor_name, result, None, uq_params)
     except Exception as e:  # noqa: BLE001 - per-anchor failure is recorded, not fatal
         return (anchor_name, None, str(e)[:80], uq_params)
@@ -346,13 +378,91 @@ def main():
              "--production and when numba is installed and a multi-hour time "
              "budget is available.",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of worker processes for parallel evaluation "
+             "(positive integer; default: 4).",
+    )
+    parser.add_argument(
+        "--samples",
+        type=int,
+        default=None,
+        help="LHS sample count per anchor (default: N_SAMPLES=40). "
+             "Distinct from Saltelli base N (--saltelli-n).",
+    )
+    parser.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="Output JSON path (default: scripts/uncertainty_results.json). "
+             "Use a noncanonical path for quick/custom-budget runs.",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        type=str,
+        default=None,
+        help="Disk cache directory for resumable runs (default: .uq_cache/).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print resolved configuration and exit without running "
+             "simulations or writing outputs.",
+    )
     args = parser.parse_args()
 
+    if args.workers < 1:
+        parser.error("--workers must be a positive integer")
+    if args.samples is not None and args.samples < 1:
+        parser.error("--samples must be a positive integer")
+    # Conflicting sampling flags: --samples is an LHS-only budget and has no
+    # meaning under Saltelli sampling.
+    if args.saltelli and args.samples is not None:
+        parser.error("--samples cannot be combined with --saltelli")
+
+    # Resolve effective configuration
     use_saltelli = args.saltelli
     saltelli_n = args.saltelli_n if args.saltelli_n is not None else N_SAMPLES
     calc_second_order = args.saltelli_second_order
+    lhs_n = args.samples if args.samples is not None else N_SAMPLES
 
-    # --- Production mode: base N >= 512, first-order Saltelli only ---------
+    # Canonical study (committed at HEAD): Saltelli, base_n = 64.  Any other
+    # configuration is noncanonical and must not write to the canonical
+    # output path unless the user explicitly requests it with --out.
+    canonical = use_saltelli and saltelli_n == CANONICAL_SALTELLI_N
+    canonical_out = os.path.join(_HERE, "uncertainty_results.json")
+    dev_out = os.path.join(_HERE, DEV_OUTPUT_DIR, "uncertainty_results.json")
+
+    if args.out is not None:
+        out_json = args.out
+    elif canonical:
+        out_json = canonical_out
+    else:
+        # Noncanonical / custom-budget run: default to a separate
+        # development output directory so canonical artifacts are never
+        # silently overwritten.
+        out_json = dev_out
+
+    if args.cache_dir is not None:
+        cache_dir = args.cache_dir
+    else:
+        cache_dir = CACHE_DIR
+
+    # Normalize for comparison (user may pass a relative --out).
+    out_json_abs = os.path.abspath(out_json)
+    canonical_out_abs = os.path.abspath(canonical_out)
+
+    # Reject writing the canonical output path with a noncanonical budget.
+    if out_json_abs == canonical_out_abs and not canonical:
+        parser.error(
+            "noncanonical budget must not write to the canonical output "
+            f"path {canonical_out!r}; pass --out to a noncanonical "
+            "destination"
+        )
+
+    # Production mode: base N >= 512, first-order Saltelli only
     production_requested = args.production
     confirm = args.confirm_production
     if production_requested:
@@ -364,7 +474,27 @@ def main():
     print("=" * 74)
     print("Uncertainty quantification — Sharp cycloturbine model")
     print("=" * 74)
-    
+
+    # Print resolved execution configuration
+    print("  Resolved execution configuration:")
+    print(f"    method           : {'Saltelli' if use_saltelli else 'LHS'}")
+    if use_saltelli:
+        print(f"    saltelli base N  : {saltelli_n}")
+        print(f"    second order     : {calc_second_order}")
+    else:
+        print(f"    lhs samples      : {lhs_n}")
+    print(f"    anchors          : {len(ANCHORS)}")
+    print(f"    workers          : {args.workers}")
+    print(f"    seed             : {SEED}")
+    print(f"    output JSON      : {out_json}")
+    print(f"    cache dir        : {cache_dir}")
+    print(f"    dry run          : {args.dry_run}")
+    print()
+
+    if args.dry_run:
+        print("  Dry run complete: no simulations executed, no outputs written.")
+        return 0
+
     if use_saltelli:
         if not HAS_SALIB:
             print("ERROR: SALib not installed. Install with: pip install SALib")
@@ -375,9 +505,9 @@ def main():
         print(f"  Saltelli sampling: N={saltelli_n}, D={D}, second_order={calc_second_order}")
         print(f"  Runs per anchor: {samples_per_anchor}")
     else:
-        samples_per_anchor = N_SAMPLES
+        samples_per_anchor = lhs_n
         total_runs = samples_per_anchor * len(ANCHORS)
-        print(f"  Samples per anchor : {N_SAMPLES}")
+        print(f"  Samples per anchor : {samples_per_anchor}")
     print(f"  Anchors            : {len(ANCHORS)}")
     print(f"  Total runs         : {total_runs}")
     print()
@@ -433,8 +563,8 @@ def main():
         samples = [sample_to_params_saltelli(row) for row in unit]
         print(f"  Generated {len(samples)} Saltelli samples")
     else:
-        unit = latin_hypercube(N_SAMPLES, SEED)
-        samples = [sample_to_params(unit[i]) for i in range(N_SAMPLES)]
+        unit = latin_hypercube(lhs_n, SEED)
+        samples = [sample_to_params(unit[i]) for i in range(lhs_n)]
         print(f"  Generated {len(samples)} LHS samples")
 
     # Deterministic physical-Cm base case per anchor (Cm = 0).
@@ -446,19 +576,28 @@ def main():
         print(f"    {name:<22s} Cp = {b['cp']:.4f}  TSR = {b['tsr']:.3f}")
     print()
 
-    # Build task list
+    # Build task list.  cache_dir is passed explicitly to every task so
+    # workers use the resolved directory under any start method.  Cache
+    # identity (the key) excludes cache_dir: worker count and cache location
+    # never change a simulation's cache identity.
     tasks = []
     for s_idx, uq in enumerate(samples):
         for anchor_name, anchor_params in ANCHORS.items():
-            tasks.append((anchor_name, anchor_params, uq))
+            tasks.append((anchor_name, anchor_params, uq, cache_dir))
+
+    # Pre-compute the code hash in the parent process so forked workers
+    # inherit the cached value instead of re-reading all source files once
+    # per task.
+    _code_hash()
 
     # Run in parallel, preserving task order for Sobol compatibility
+    print(f"  Workers           : {args.workers}")
     print("  Running ...")
     results_by_anchor: dict[str, list[float]] = {n: [] for n in ANCHOR_NAMES}
     failures: dict[str, int] = {n: 0 for n in ANCHOR_NAMES}
     raw_rows: list[dict[str, Any]] = []
 
-    with ProcessPoolExecutor(max_workers=4) as ex:
+    with ProcessPoolExecutor(max_workers=args.workers) as ex:
         for i, (anchor_name, res, err, uq_params) in enumerate(ex.map(run_one_task, tasks)):
             if res is not None:
                 results_by_anchor[anchor_name].append(res["cp"])
@@ -581,17 +720,23 @@ def main():
     fig.suptitle("Uncertainty propagation — 13 sampled inputs (12 active)",
                  fontsize=13, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.96])
-    out_png = os.path.join(_ROOT, "docs", "uncertainty.png")
+    # Output isolation: only write the canonical figure when writing the
+    # canonical JSON.  A dev / custom-budget run (--out to a noncanonical
+    # path) writes its figure alongside the dev JSON so it never overwrites
+    # docs/uncertainty.png.
+    if os.path.abspath(out_json) == os.path.abspath(canonical_out):
+        out_png = os.path.join(_ROOT, "docs", "uncertainty.png")
+    else:
+        out_png = os.path.splitext(out_json)[0] + ".png"
     os.makedirs(os.path.dirname(out_png), exist_ok=True)
     fig.savefig(out_png, dpi=140)
     print(f"\nWrote {out_png}")
 
     # -------- JSON --------
-    out_json = os.path.join(_HERE, "uncertainty_results.json")
     method = "saltelli" if use_saltelli else "lhs"
     # base_n is the Saltelli base N (or LHS sample count); runs_per_anchor
     # is base_n * (D + 2) for first-order Saltelli, or base_n for LHS.
-    base_n = saltelli_n if use_saltelli else N_SAMPLES
+    base_n = saltelli_n if use_saltelli else lhs_n
     uq_metadata = {
         "UQ_SPEC": UQ_SPEC,
         "method": method,

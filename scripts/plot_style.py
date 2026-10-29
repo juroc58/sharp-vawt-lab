@@ -33,13 +33,15 @@ COL_RIGID = "#9467bd"
 COL_WEIBULL = "#8c564b"
 
 def create_figure_3panel(**kwargs):
-    """Create a 3-panel figure with a dedicated top suptitle region and bottom legend row.
-    Uses constrained_layout=False with explicit GridSpec layout to reserve space
-    for suptitle at top and legend at bottom, preventing overlap with subplot titles."""
+    """Create a 3-panel figure with reserved space for suptitle, subplot titles,
+    data axes, axis labels, and a bottom legend/caveat row.
+    Uses constrained_layout=False with explicit GridSpec layout."""
     fig = plt.figure(figsize=FIGSIZE_3PANEL, constrained_layout=False, **kwargs)
-    # Height ratios: [top_margin, 3 panels, bottom_legend]
-    # Top margin (0.08) reserves space for suptitle; bottom (0.22) for legend
-    gs = fig.add_gridspec(3, 3, height_ratios=[0.08, 1, 0.22], hspace=0.55, wspace=0.20)
+    # Height ratios: [suptitle_region, 3 panels, legend+caveat_row]
+    # Top row (~12%) reserves space for the main figure heading;
+    # bottom row (~28%) reserves space for the shared legend and caveat text,
+    # keeping them clear of data axes and subplot titles.
+    gs = fig.add_gridspec(3, 3, height_ratios=[0.12, 1, 0.20], hspace=0.85, wspace=0.20)
     axes = [fig.add_subplot(gs[1, i]) for i in range(3)]
     legend_ax = fig.add_subplot(gs[2, :])
     legend_ax.axis("off")
@@ -53,10 +55,12 @@ def create_figure_3panel(**kwargs):
 
 
 def create_figure_4panel(**kwargs):
-    """Create a 2x2 figure with a dedicated top suptitle region and bottom legend row."""
+    """Create a 2x2 figure with reserved space for suptitle, subplot titles,
+    data axes, axis labels, and a bottom legend/caveat row.
+    Uses constrained_layout=False with explicit GridSpec layout."""
     fig = plt.figure(figsize=FIGSIZE_4PANEL, constrained_layout=False, **kwargs)
-    # Height ratios: [top_margin, 2 rows of panels, bottom_legend]
-    gs = fig.add_gridspec(4, 2, height_ratios=[0.06, 1, 1, 0.18], hspace=0.40, wspace=0.20)
+    # Height ratios: [suptitle_region, 2 rows of panels, legend+caveat_row]
+    gs = fig.add_gridspec(4, 2, height_ratios=[0.10, 1, 1, 0.22], hspace=0.45, wspace=0.20)
     axes = [
         fig.add_subplot(gs[1, 0]),
         fig.add_subplot(gs[1, 1]),
@@ -148,20 +152,20 @@ def apply_style():
         "legend.fontsize": LEGEND_FONT_SIZE,
         "figure.dpi": 200,
         "savefig.dpi": 200,
-        "savefig.bbox": "tight",
         "savefig.transparent": False,
     })
 
 
 def finalize_figure(fig, suptitle="", rect=None):
-    """Finalize figure layout and apply suptitle."""
+    """Finalize figure layout and apply suptitle.
+
+    The GridSpec in create_figure_* already reserves explicit rows for the
+    suptitle (top) and legend/caveat (bottom).  Do not call
+    fig.subplots_adjust() here — it overrides GridSpec spacing and can cause
+    title/axis overlap.  Do not call tight_layout() either.
+    """
     if suptitle:
-        fig.suptitle(suptitle, fontsize=FONT_SIZE + 2, fontweight='bold', y=0.98)
-    if rect:
-        if isinstance(rect, list):
-            # Convert list [left, bottom, right, top] to dict
-            rect = {"left": rect[0], "bottom": rect[1], "right": rect[2], "top": rect[3]}
-        fig.subplots_adjust(**rect)
+        fig.suptitle(suptitle, fontsize=FONT_SIZE + 2, fontweight='bold', y=0.985)
     # Do not call tight_layout() - it conflicts with explicit GridSpec layout
 
 

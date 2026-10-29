@@ -163,18 +163,18 @@ def plot_aep_small_rotor(data: dict[str, Any], out_path: str):
     P_passive = np.minimum(0.5 * 1.225 * A * U_grid ** 3 * np.clip(cp_passive, 0, 0.593) * 0.90, p_rated)
     P_fixed = np.minimum(0.5 * 1.225 * A * U_grid ** 3 * np.clip(cp_fixed, 0, 0.593) * 0.90, p_rated)
 
-    ax.plot(U_grid, P_passive / 1000, LS_SOLID, color=COL_PASSIVE_KLOAD, lw=2.0,
+    ax.plot(U_grid, P_passive, LS_SOLID, color=COL_PASSIVE_KLOAD, lw=2.0,
             label="Passive CPPC, $k_{load}$ (var. speed)")
-    ax.plot(U_grid, P_fixed / 1000, LS_DASHED, color=COL_PASSIVE_FIXED, lw=1.8,
+    ax.plot(U_grid, P_fixed, LS_DASHED, color=COL_PASSIVE_FIXED, lw=1.8,
             label="Passive CPPC, fixed rpm")
     ax.set_xlabel(r"Wind speed $U$ [m/s]")
-    ax.set_ylabel(r"Electrical power [kW]")
+    ax.set_ylabel(r"Electrical power [W]")
     ax.set_title("Power curve")
     ax.set_xlim(wind['cut_in'], wind['cut_out'])
     ax.set_ylim(bottom=-0.02)
     pdf = weibull_pdf(U_grid, wind['mean_U'], wind['k_weibull'])
     add_weibull_axis(ax, U_grid, pdf, wind['mean_U'], wind['k_weibull'])
-    ax.axhline(wind['p_rated_W'] / 1000, color='k', ls=':', lw=1, alpha=0.7,
+    ax.axhline(wind['p_rated_W'], color='k', ls=':', lw=1, alpha=0.7,
                label=_fmt_rated(wind['p_rated_W']))
     ax.axvline(wind['cut_in'], color='k', ls=':', lw=1, alpha=0.5)
     ax.axvline(wind['rated_wind_speed'], color='k', ls=':', lw=1, alpha=0.5)
@@ -286,14 +286,6 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
         cps = np.array([f['cp'] for f in free])
         ax.plot(Us, cps, LS_SOLID, color=COL_HIGH_BRANCH, lw=1.8,
                 marker=MK_FREE, label="Branch-traced (continuation)")
-        # Annotate branch switching at U=4 where traced branch drops to lower equilibrium
-        u4_idx = np.argmin(np.abs(Us - 4.0))
-        if abs(Us[u4_idx] - 4.0) < 0.2 and len(cps) > u4_idx:
-            ax.annotate('Branch switch:\ntraced → lower equil.\nseeds → upper equil.',
-                        xy=(Us[u4_idx], cps[u4_idx]), xytext=(Us[u4_idx]+1.5, cps[u4_idx]-0.05),
-                        fontsize=FONT_SIZE - 2, ha='left', va='top',
-                        arrowprops={'arrowstyle': '->', 'color': 'k', 'lw': 1},
-                        bbox={'boxstyle': 'round,pad=0.3', 'fc': 'yellow', 'ec': 'k', 'alpha': 0.9})
     if high_branch and 'free_results' in high_branch:
         hfr = high_branch['free_results']
         if hfr:
@@ -308,6 +300,28 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
             cpl = np.array([f['cp'] for f in lfr])
             ax.plot(Ul, cpl, LS_DOTTED, color=COL_LOW_BRANCH, lw=1.2,
                     marker=MK_LOW, ms=4, label="Low seed ($w_0=0.20$)")
+    # Annotate branch switching at U=4 only when traced branch differs from seeds
+    if free and len(Us) > 0:
+        u4_idx = np.argmin(np.abs(Us - 4.0))
+        if abs(Us[u4_idx] - 4.0) < 0.2 and len(cps) > u4_idx:
+            traced_cp = cps[u4_idx]
+            seed_diff = 0.0
+            if high_branch and 'free_results' in high_branch and high_branch['free_results']:
+                hfr = high_branch['free_results']
+                uh_idx = np.argmin(np.abs(Uh - 4.0))
+                if abs(Uh[uh_idx] - 4.0) < 0.2:
+                    seed_diff = max(seed_diff, abs(traced_cp - cph[uh_idx]))
+            if low_branch and 'free_results' in low_branch and low_branch['free_results']:
+                lfr = low_branch['free_results']
+                ul_idx = np.argmin(np.abs(Ul - 4.0))
+                if abs(Ul[ul_idx] - 4.0) < 0.2:
+                    seed_diff = max(seed_diff, abs(traced_cp - cpl[ul_idx]))
+            if seed_diff > 0.01:
+                ax.annotate('Branch switch:\ntraced → lower equil.\nseeds → upper equil.',
+                            xy=(Us[u4_idx], cps[u4_idx]), xytext=(Us[u4_idx]+1.5, cps[u4_idx]-0.05),
+                            fontsize=FONT_SIZE - 2, ha='left', va='top',
+                            arrowprops={'arrowstyle': '->', 'color': 'k', 'lw': 1},
+                            bbox={'boxstyle': 'round,pad=0.3', 'fc': 'yellow', 'ec': 'k', 'alpha': 0.9})
     # Branch envelope: only show when high/low seeds are distinct
     if (high_branch and low_branch and
         'free_results' in high_branch and 'free_results' in low_branch):
@@ -545,6 +559,18 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
 
 def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
     apply_style()
+    # Guard: refuse to render if speculative flags are absent from the data.
+    config = data.get("configuration", {})
+    if not config.get("speculative_scenario", False):
+        raise ValueError(
+            "aep_counter_rotating.json is missing 'speculative_scenario=True'; "
+            "regenerate with scripts/compute_aep_counter_rotating.py"
+        )
+    if not config.get("not_a_validated_array_prediction", False):
+        raise ValueError(
+            "aep_counter_rotating.json is missing 'not_a_validated_array_prediction=True'; "
+            "regenerate with scripts/compute_aep_counter_rotating.py"
+        )
     fig, axes = create_figure_3panel()
     _ax1, _ax2, _ax3 = axes
 

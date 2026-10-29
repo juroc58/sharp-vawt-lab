@@ -23,6 +23,14 @@ DOCS = ROOT / "docs"
 MANIFEST = DOCS / "figure_manifest.json"
 
 
+@pytest.fixture(autouse=True)
+def close_figures():
+    """Close all matplotlib figures after each test to prevent state leakage."""
+    yield
+    import matplotlib.pyplot as plt
+    plt.close('all')
+
+
 def test_manifest_exists_and_covers_required_figures():
     assert MANIFEST.is_file(), "run scripts/make_all_figures.py"
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -308,6 +316,24 @@ def test_counter_rotating_gain_arithmetic():
     assert f"{json_gain:+.1f}%" in gain_texts[0], f"Gain mismatch: {gain_texts[0]} vs {json_gain:+.1f}%"
 
 
+def test_counter_rotating_plotter_guard_requires_speculative_flags():
+    """plot_aep_counter_rotating must refuse to render when speculative
+    flags are absent from the data."""
+    import copy
+    data = _load_json("aep_counter_rotating.json")
+
+    # Strip the speculative flags
+    data_no_flags = copy.deepcopy(data)
+    config = data_no_flags.setdefault("configuration", {})
+    config.pop("speculative_scenario", None)
+    config.pop("not_a_validated_array_prediction", None)
+
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "out.png"
+        with pytest.raises(ValueError, match="speculative_scenario"):
+            pa.plot_aep_counter_rotating(data_no_flags, str(out))
+
+
 def test_scaleup_cf_consistency():
     """Scale-up figure: each bar's printed CF must equal AEP/(rated_power x 8760)
     with the rated power shown on that bar. Seeds-converged collapse when
@@ -507,6 +533,53 @@ def test_bounding_boxes_no_overlap():
     readme = (ROOT / "README.md").read_text()
     assert "aep.png" not in readme, "README must not reference deleted aep.png"
     assert "aep_results.json" not in readme, "README must not reference deleted aep_results.json"
+
+
+def test_small_machine_rating_label_in_watts():
+    """Small-rotor power panel uses watts (45.3 W), not kilowatts,
+    since the rated power is below 1 kW.
+
+    Checks both the axis label and the plotted data contract, not only
+    legend text.
+    """
+    data = _load_json("aep_small.json")
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "out.png"
+        captured = _capture_plot(pa.plot_aep_small_rotor, data, out)
+    fig = captured["fig"]
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    renderer = FigureCanvasAgg(fig).get_renderer()
+    fig.draw(renderer)
+    all_text = " ".join(
+        t.get_text()
+        for ax in fig.axes
+        for t in ax.texts
+        if t.get_text()
+    )
+    # Also include legend text (rating label lives in the legend axis)
+    legend_ax = fig._legend_ax
+    if legend_ax:
+        legend = legend_ax.get_legend()
+        if legend is not None:
+            all_text += " " + " ".join(
+                t.get_text() for t in legend.get_texts() if t.get_text()
+            )
+    # The power panel axis must say [W], not [kW]
+    power_ax = fig.axes[2]
+    ylabel = power_ax.get_ylabel()
+    assert "W" in ylabel and "kW" not in ylabel, (
+        f"small-rotor power axis label must use W, got: {ylabel!r}"
+    )
+    # The rated-power line label must show W not kW for <1 kW
+    assert "45.3 W" in all_text, (
+        f"small-rotor labels must show '45.3 W', got: {all_text}"
+    )
+    assert "0.0 kW" not in all_text, (
+        "small-rotor bar labels must not show '0.0 kW'"
+    )
+    assert "45.3 kW" not in all_text, (
+        "small-rotor bar labels must not show '45.3 kW'"
+    )
 
 
 def test_plot_aep_no_bare_subscript_statements():

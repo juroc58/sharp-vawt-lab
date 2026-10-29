@@ -7,6 +7,7 @@ iteration: `pytest -m "not slow"`.
 import importlib
 import json
 
+import numpy as np
 import pytest
 
 from scripts.validate_ham import (

@@ -680,19 +680,22 @@ limitations in the README:
    why the central estimate changed.
 
    **Finite-span uncertainty.** `tip_loss_multiplier` is a residual
-   two-sided multiplier around Helmbold, sampled over [0.85, 1.15] in the
+   two-sided multiplier around Helmbold, sampled over [0.85, 1.40] in the
    UQ study. The old band [0.70, 1.30] was needed to cover the systematic
-   low-AR bias of the Prandtl form; with Helmbold that bias is gone, so a
-   ±15 % residual band is used instead. For the small-rotor anchors the
-   multiplier is a leading driver of the Cp variance (for Sharp-inspired
-CPPC it is nearly tied with the separation lag `ds_Tf`, S₁ = 0.41 vs
-0.43 at N = 64).
+   low-AR bias of the Prandtl form; with Helmbold that bias is largely gone, but the band is kept asymmetric (+40% / −15%) to cover the Prandtl/Helmbold spread at low AR.
+   For the small-rotor anchors the multiplier is a leading driver of the Cp
+   variance.
+   First-order Sobol indices are reported in `scripts/uncertainty_results.json`
+   and are scenario-dependent; see that file for current values.
 
    **The Sharp-inspired design sits close to the collapse threshold.**
    The rotation-sustaining branch switches to the collapsed branch between
-   multipliers 0.955 and 0.96, i.e. about 4 % below the Helmbold central
-   value. At the central value Cp = 0.067; at 0.955 it is 0.005. Because
-   With `cm_scale` sampled down to zero, 56.8 % of the UQ samples
+   tip-loss multipliers 0.96 and 0.98 per `scripts/cm_scale_scan.json`
+   (Cp ≈ 0.0182 at 0.96, Cp ≈ 0.0718 at 0.98), i.e. about 4 % below the
+   Helmbold central value. Deterministic Cp values at specific multipliers
+   are reported in `scripts/tip_loss_scan.json` and
+   `scripts/cm_scale_scan.json`; those JSONs are the authoritative source.
+   With `cm_scale` sampled down to zero, a substantial fraction of UQ samples
    collapse — the design does not self-sustain without its pitching
    moment — so the 90 % interval is a scenario range, not a precision
    estimate. The scale-up anchor (AR 10.5) is much less sensitive because
@@ -721,10 +724,10 @@ CPPC it is nearly tied with the separation lag `ds_Tf`, S₁ = 0.41 vs
    literature-typical values from Pawsey's thesis, not fitted to data.
    With the XFOIL-derived polars the passive machine operates close to
    static stall, so the DS model is not a small correction there:
-   switching it off drops Cp by 91 % at the Sharp-inspired anchor
-   (0.067 -> 0.006) and by 75 % at the optimised-passive anchor
-   (0.272 -> 0.068). At the prescribed-pitch design point the effect is
-   only ~2 %. The DS constants are sampled in the UQ study, and every
+   switching it off drops Cp by 72 % at the Sharp-inspired anchor
+   (0.079 -> 0.022) and by 1 % at the optimised-passive anchor
+   (0.264 -> 0.261). At the prescribed-pitch design point the effect is
+   only 0.5 %. The DS constants are sampled in the UQ study, and every
    passive result in this archive rests on the DS model.
 
 5. **No stall-cell effects.** At low aspect ratio, stall cells can
@@ -748,7 +751,7 @@ Additional known-good behaviours:
 
 - The dynamic-stall increment is designed so that steady flow reproduces
   the static polar exactly. Turning `use_dynamic_stall=False` at the
-  prescribed-pitch design point changes Cp by ≈2 % — a good sign the DS
+  prescribed-pitch design point changes Cp by 0.5 % — a good sign the DS
   model is not being exploited by the optimiser.
 - The Adams curvature cap $s_c \le 1$ was added after discovering that
   the uncapped version over-corrected at high chord-to-radius ratio and

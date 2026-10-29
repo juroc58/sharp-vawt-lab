@@ -19,6 +19,8 @@ This is a solo research lab, not a library. See CONTRIBUTING.md for scope.
 | **Optimised Passive Cp** | 0.27 [0.19, 0.36] | **Model result** (uncalibrated DS) |
 | **Scale-up Passive Cp** | 0.43 [0.37, 0.49] | **Model result** (robust) |
 | **Prescribed-pitch Upper Bound** | 0.50 | Ideal actuator (no physical limit) |
+| **DS-off sensitivity (prescribed)** | 0.5 % Cp change | validate_ds_off.json (below-stall design point) |
+| **DS-off sensitivity (passive)** | Sharp: 72.5 %; Opt. passive: 1.3 % | validate_ds_off.json (passive anchors) |
 | **AEP Gain vs Rigid** | +25.5% | **Model comparison** (unproven machine) |
 <!-- END GENERATED: evidence_table -->
 
@@ -53,13 +55,16 @@ vendored in this archive, so no agreement figure is reproduced here.
 
 ![aep_small](docs/aep_small.png)
 
+Electrical power is shown in W (≈45.3 W rated). Panel 3 gives the AEP/CF
+summary comparing variable-speed vs fixed-speed generator strategy.
+
 <!-- BEGIN GENERATED: headline_table_small -->
-| Configuration | Cp | 90 % CI | Reference | Evidence |
-|---|---|---|---|---|
-| **Sharp-inspired CPPC** | **0.12** | [0.007, 0.22] | scenario range (UQ) | S |
-| Optimised passive (mass-balanced) | **0.27** | [0.19, 0.36] | stored design point (UQ) | S |
-| Prescribed pitch (ideal actuator) | 0.50 | — | ideal-actuator upper bound (model) | U |
-| Ham 1979 comparison | **0.49** | [0.46, 0.51] | fixed design point (2D upper-bound comparison) | V |
+| Configuration | Cp | 90 % CI | Collapsed | Reference | Evidence |
+|---|---|---|---|---|---|
+| **Sharp-inspired CPPC** | **0.14** | [0.007, 0.22] | 13.8 % | scenario range (UQ; bimodal) (working branch) | S |
+| Optimised passive (mass-balanced) | **0.27** | [0.19, 0.36] | 0.0 % | stored design point (UQ) | S |
+| Prescribed pitch (ideal actuator) | 0.50 | — | — | ideal-actuator upper bound (model) | U |
+| Ham 1979 comparison | **0.49** | [0.46, 0.51] | 0.0 % | fixed design point (2D upper-bound comparison) | V |
 <!-- END GENERATED: headline_table_small -->
 
 **Evidence levels.** `S` = scenario estimate from UQ sampling (a range, not a precision bar);
@@ -72,11 +77,11 @@ correction), not by measurement error.
 
 **Read the Sharp-inspired interval as two branches, not a precision bar.**
 The nominal design point (Helmbold multiplier 1.0) gives Cp = `0.079`.
-The rotation-sustaining branch ends between multipliers 0.955 and 0.96;
+The rotation-sustaining branch ends between multipliers 0.96 and 0.98;
 below it the same rotor collapses to Cp ≈ `0.005`–`0.017`. Because the
 Helmbold central estimate sits only about 4 % above that threshold, a
 large fraction of the UQ band lands on the collapsed branch — that is why
-the 90 % interval reaches 0.146. `scripts/scan_tip_loss.py` reproduces the
+the 90 % interval reaches 0.22. `scripts/scan_tip_loss.py` reproduces the
 scan. The optimised-passive distribution has a smaller collapsed tail;
 the scale-up has none.
 
@@ -147,11 +152,13 @@ speeds — see the AEP section below.
 ### Optimised passive
 
 A joint optimisation over chord, counterweight mass and position, load factor,
-and pivot geometry found a configuration with a relatively heavy counterweight
-and a large arm ratio. The stored design point is Cp ≈ `0.264` (verified at
-T_max = 40 s, steady, TSR_eq ≈ 2.86, pitch [−3.5°, +12.5°], α_max ≈ 10°,
-no stops), with c ≈ 0.098 m, k_load ≈ 7.4×10⁻⁴, m_c ≈ 8.9 g,
-d_cw ≈ +0.066c, ar ≈ 0.87, sp ≈ 0.15c, bias ≈ +4.9°.
+and pivot geometry found a configuration. The stored design point in
+`scripts/optimization_passive.json` evaluates to Cp ≈ `0.264` at its anchor
+(T_max = 40 s, steady, TSR_eq ≈ 2.86). The UQ anchor in `vawt_presets.py`
+(`PRESETS["optimised_passive"]`) uses c ≈ 0.070 m, ar ≈ 0.260 — an earlier
+optimisation snapshot; the headline prose parameters (c ≈ 0.098 m, ar ≈ 0.87)
+describe a different optimisation run and are **not** the values used by the
+UQ anchor or the AEP figures.
 
 The UQ mean at the fixed anchor is **0.25 [0.11, 0.35]** over the active
 inputs — the deterministic optimum sits near the top of its own interval, a
@@ -266,6 +273,10 @@ here, not a primary mechanism.
 
 ![aep_scaleup](docs/aep_scaleup.png)
 
+Generator ratings are design-specific (passive ≈9.0 kW, rigid ≈7.3 kW at
+12 m/s); this is not an equal-rating comparison. Bar labels show each
+design's rating.
+
 **MODEL RESULT — not an energy forecast.** Power curves are integrated
 against a Weibull wind distribution (k = 2.0, mean U = 6 m/s,
 cut-in 3 m/s, cut-out 25 m/s) using assumed drivetrain efficiency,
@@ -332,11 +343,15 @@ For the scale-up design (R = 2.72 m):
 <!-- END GENERATED: aep_steady -->
 
 The passive machine produces more energy than the same rotor on a
-fixed-rpm generator because the k_load·ω² torque tracks the wind's power
-curve: the rotor speed adjusts so the tip-speed ratio stays near its
-optimum at every wind speed. A fixed-speed generator drifts far from the
-design point as the wind varies and only operates near peak efficiency in
-a narrow window around its design wind speed.
+fixed-rpm generator at the same rated power. The difference is reproduced
+at matched wind speed and mean angular speed, but matching mean omega does
+not match omega(t), pitch, induction, or stall state, so a dynamical
+explanation is plausible but not isolated; duration, timestep, and
+initial-condition sensitivity remain unverified. The rotor speed adjusts
+so the tip-speed ratio stays near its optimum at every wind speed, while a
+fixed-speed generator drifts far from the design point as the wind varies
+and only operates near peak efficiency in a narrow window around its
+design wind speed.
 
 **Branches and initial conditions.** The scale-up AEP is not a
 single-trajectory number. The table below reruns the free-running curve
@@ -353,8 +368,8 @@ so the claim can be checked.
 |---|---|---|
 | High-speed seed: w0_frac = 1.20, psi0 = 0° | 16.68 MWh/yr | 21.11 % |
 | Low-speed seed: w0_frac = 0.20, psi0 = 0° | 16.68 MWh/yr | 21.11 % |
-| Branch-traced: w0_frac = 0.90, psi0 = 0° | 16.61 MWh/yr | 21.03 % |
-| **Range across seeds** | **16.61–16.68 MWh/yr** | — |
+| Branch-traced: w0_frac = 0.90, psi0 = 0° | 16.68 MWh/yr | 21.11 % |
+| **Range across seeds** | **16.68–16.68 MWh/yr** | — |
 <!-- END GENERATED: aep_branches -->
 
 The suspicious fixed-rpm point at TSR = 3.25 was re-run with longer
@@ -393,6 +408,7 @@ a few per cent at this spacing.
 <!-- BEGIN GENERATED: counter_rotating -->
 | Quantity | Value |
 |---|---|
+| **Status** | **Speculative scenario — not a validated array prediction** |
 | Single rotor AEP | 16,705 kWh/yr |
 | Two independent rotors | 33,410 kWh/yr |
 | Counter-rotating pair (heuristic) | 34,350 kWh/yr |
@@ -400,16 +416,65 @@ a few per cent at this spacing.
 | Fixed-factor sensitivity (0–16 %) | +100 % to +142 % vs single |
 <!-- END GENERATED: counter_rotating -->
 
+### AEP artifact roles and baseline differences
+
+Three result JSONs report scale-up AEP for the same R = 2.72 m geometry, each
+produced by a different workflow:
+
+- **`scripts/aep_scaleup.json`** — produced by `scripts/compute_aep_scaleup.py`.
+  Scale-up passive CPPC AEP with seeded branches: reports branch-traced,
+  high-seed (w0 = 1.20) and low-seed (w0 = 0.20) continuations in addition to
+  the passive/fixed-rpm pair. Uses plain free-run seeding (no alternative-seed
+  recovery on Cp drops), TSR grid of 13 points (1.0–4.0), preset-default
+  T_max and stride, same dense 200-point grid, clipping, efficiency and
+  rating rules as `compute_aep.py`. The continuation and seeded results agree
+  within ~0.4 % (degenerate high-TSR branch); no low branch was found.
+
+- **`scripts/aep_counter_rotating.json`** — produced by
+  `scripts/compute_aep_counter_rotating.py`. Heuristic speculative scenario:
+  two counter-rotating rotors with an assumed downstream velocity increase.
+  Its **single-rotor baseline** is calculated by the pair workflow itself on
+  a coarse 23-point grid (~1 m/s spacing) with a locally-defined integrator;
+  **two independent rotors** is exactly 2 × that same single baseline. Pair
+  gain uses that same independent baseline, not a value imported from another
+  AEP workflow.
+
+**Why the scale-up AEPs differ.** Two result JSONs report passive k_load AEP
+for the same geometry. `aep_scaleup.json` (branch-traced continuation with the
+corrected w0_frac formula) and `compute_aep.py`'s output (alternative-seed
+recovery on Cp drops) now agree to within ~0.0001% after the branch-continuation
+fix in `compute_aep_scaleup.py`. Confirmed workflow differences remain:
+branch-tracing policy (alternative-seed recovery on Cp drops vs plain free-run
+seeding), explicit T_max/stride vs preset defaults, and fixed-rpm TSR grid
+density/range (15 vs 13 points, 1.0–4.5 vs 1.0–4.0). The fixed-rpm TSR grid
+feeds the fixed-rpm curve; the passive free-running AEP is built from
+interpolated free-running equilibria, so the TSR-grid difference does not by
+itself trace to the passive free-running AEP difference. The integration grid
+(200 points), Cp clipping (0.593), drivetrain efficiency (0.90), Weibull
+parameters, and cut-in/out are shared. The rating rule (per design at U = 12
+m/s) is shared. The residual difference is at the level of numerical
+integration and branch-tracing tolerances, not a material workflow divergence;
+no simulation was rerun to attribute it further.
+
+The counter-rotating single-rotor baseline is produced by the pair workflow on
+a coarse 23-point grid (~1 m/s spacing) with a locally-defined integrator.
+These are confirmed workflow differences, not proven causes of the entire gap
+between its baseline and the other scale-up AEPs, and their individual
+contributions have not been isolated. The baseline is **not** automatically
+interchangeable with the scale-up AEP from either of the other workflows.
+Pair gain (+2.8 %) uses `two_independent_rotors` = 2 ×
+`single_rotor_baseline` from the same JSON; the arithmetic is internally
+consistent within that workflow only.
+
 ## 📊 Uncertainty
 
 ![uncertainty](docs/uncertainty.png)
 
 The sampler varies the inputs listed below, but **`arm_cd` is inert**: every
 anchor sets `arm_d = 0`, so the support-arm drag term is identically zero and
-`arm_cd` cannot affect Cp. The active inputs are nine model constants that
-come from the source papers but were not fitted to this specific machine,
-plus the finite-span multiplier, the attached-flow Cm scale and the
-polar model-form variant (all model-form uncertainties, not constants).
+`arm_cd` cannot affect Cp. The active inputs are 14 model parameters
+(15 sampled minus 1 inert), comprising model constants, model-form
+uncertainties, and categorical variants as listed in the table below.
 Saltelli sampling (first-order) propagates that uncertainty through each headline case and
 yields first-order (S₁) and total-order (Sₜ) Sobol indices:
 
@@ -452,10 +517,10 @@ The regenerated table is in `scripts/uncertainty_results.json` and below.
 `arm_cd` is exactly zero in every anchor because `arm_d = 0`, and
 `polar_variant` is a categorical 0/1 model-form input.
 The finite-span multiplier is a model-form uncertainty, not a fitted
-constant: the Helmbold factor is multiplied by a residual value in [0.85–1.15].
+constant: the Helmbold factor is multiplied by a residual value in [0.85–1.40].
 
 **The small-rotor distribution is bimodal.** Below a multiplier of about
-0.955 the Sharp-inspired rotor cannot sustain rotation; the scan in
+0.96 the Sharp-inspired rotor cannot sustain rotation; the scan in
 `scripts/cm_scale_scan.json` shows the transition. The UQ samples are
 therefore reported three ways: the physical-Cm base case (`cm_scale = 0`,
 the symmetric-section value), the all-sample mean, and the mean of the
@@ -474,9 +539,9 @@ share of samples with Cp below 0.02.
 `scripts/scan_cm_scale.py` (output `scripts/cm_scale_scan.json`) makes the
 two knobs explicit: a uniform `cm_scale` from 0 (physical symmetric-section
 Cm ≈ 0) to 1 (raw NeuralFoil table), and the finite-span multiplier. The
-Sharp-inspired rotor only sustains rotation above `cm_scale ≈ 0.75` or
-above a tip multiplier near 0.96; the optimised passive rotor survives at
-Cm = 0.
+Sharp-inspired rotor collapses below `cm_scale ≈ 0.25` (between 0.0 and 0.25
+the rotor switches from collapsed to rotation-sustaining) or below a tip
+multiplier near 0.96; the optimised passive rotor survives at Cm = 0.
 
 <!-- BEGIN GENERATED: cm_scale_scan -->
 | Anchor | Cp, Cm = 0 | Cp, Cm = 0.5 | Cp, Cm = 0.75 | Cp, Cm = 1.0 | Working branch from tip multiplier |
@@ -510,6 +575,9 @@ run resumes).
 ## 🌪️ Turbulent-wind sensitivity
 
 ![aep_turbulent](docs/aep_turbulent.png)
+
+Panel 3 compares steady vs turbulent power curves (W). Model-only result;
+caveat in figure footer.
 
 10 realisations per wind speed, turbulence intensity I = 12 %,
 length scale L = 30 m (von Kármán spectrum with √0.47 variance scaling). See
@@ -593,10 +661,10 @@ No tested finite-span variant reproduces the Ham band (0.42–0.45). The 2D mode
 <!-- BEGIN GENERATED: uq_reading -->
 **Reading the table.** Values are model output from the committed Saltelli run.
 
-- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.26) and `cd_add` (S1 = 0.20 ± 0.11) have overlapping 95 % intervals.
-- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.24) and `ind_drag_scale` (S1 = 0.30 ± 0.21) have overlapping 95 % intervals.
-- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.23) and `tip_loss_multiplier` (S1 = 0.41 ± 0.39) have overlapping 95 % intervals.
-- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.38) and `cd_add` (S1 = 0.09 ± 0.06) have overlapping 95 % intervals.
+- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.29) and `cd_add` (S1 = 0.20 ± 0.13) have overlapping 95 % intervals.
+- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.21) and `ind_drag_scale` (S1 = 0.30 ± 0.20) have overlapping 95 % intervals.
+- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.26) and `tip_loss_multiplier` (S1 = 0.41 ± 0.39) have overlapping 95 % intervals.
+- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.39) and `cd_add` (S1 = 0.09 ± 0.08) have overlapping 95 % intervals.
 <!-- END GENERATED: uq_reading -->
 
 

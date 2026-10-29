@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "53b70627bb14178bb45ff7efded6ff04d484452d3e18f6074e24e1b5b27c42bd",
+    "code_hash": "949ea836a35698037066e8791327aeb8e465860d34fc4498a183c6ef3d3dfb43",
     "script": "scripts/scan_cm_scale.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-10-26T13:20:21.306252+00:00",
+    "created_utc": "2026-10-28T11:51:18.888167+00:00",
     "python_version": "3.14.4",
-    "git_commit": "0f086b16571194d92e69f729081a5af465059444",
+    "git_commit": "6140be538a1d904ebfa64591b0d8dffcd1327481",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -25,7 +25,7 @@
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
       "scripts/scan_cm_scale.py": "2934afbe9148c602147857e96bf8e8c862669400bb40cee046796fa36ccf3afb",
-      "scripts/uncertainty.py": "05f8040908ba35a8ae990007e6005ece359b58014870fbb97ca7da2ac114fc26"
+      "scripts/uncertainty.py": "3591c120e407ba4843f0de7805e4b2b2662c0fc825232d8ced6a5ed1f2756861"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

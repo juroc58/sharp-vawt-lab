@@ -40,7 +40,7 @@ STAMP_SCHEMA_VERSION = "2"
 SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/check_branch_points.py": "2.0.0",
     "scripts/compute_aep.py": "2.0.0",
-    "scripts/compute_aep_counter_rotating.py": "2.0.0",
+    "scripts/compute_aep_counter_rotating.py": "2.0.1",
     "scripts/compute_aep_rigid_fair.py": "2.0.0",
     "scripts/compute_aep_scaleup.py": "2.0.0",
     "scripts/compute_aep_small.py": "1.0.1",

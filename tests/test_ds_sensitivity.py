@@ -25,17 +25,18 @@ DS_CONSTANTS = [
 ]
 
 
+@pytest.fixture(scope="class")
+def base_cps():
+    """Run baseline simulations for each anchor."""
+    cps = {}
+    for name, params in ANCHORS.items():
+        r = create_sim_from_params(params).run()
+        cps[name] = r['cp']
+    return cps
+
+
 class TestDSSensitivity:
     """Dynamic-stall sensitivity tests."""
-
-    @pytest.fixture(scope="class")
-    def base_cps(self):
-        """Run baseline simulations for each anchor."""
-        cps = {}
-        for name, params in ANCHORS.items():
-            r = create_sim_from_params(params).run()
-            cps[name] = r['cp']
-        return cps
 
     @pytest.mark.parametrize("anchor_name", ["sharp_cppc", "optimised_passive", "scaleup"])
     def test_ds_constants_ranking(self, anchor_name, base_cps):
