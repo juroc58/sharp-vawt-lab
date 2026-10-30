@@ -318,8 +318,8 @@ def plot_aep_scaleup(data: dict[str, Any], out_path: str):
                     seed_diff = max(seed_diff, abs(traced_cp - cpl[ul_idx]))
             if seed_diff > 0.01:
                 ax.annotate('Branch switch:\ntraced → lower equil.\nseeds → upper equil.',
-                            xy=(Us[u4_idx], cps[u4_idx]), xytext=(Us[u4_idx]+1.5, cps[u4_idx]-0.05),
-                            fontsize=FONT_SIZE - 2, ha='left', va='top',
+                            xy=(Us[u4_idx], cps[u4_idx]), xytext=(Us[u4_idx]+1.5, cps[u4_idx]+0.05),
+                            fontsize=FONT_SIZE - 2, ha='left', va='bottom',
                             arrowprops={'arrowstyle': '->', 'color': 'k', 'lw': 1},
                             bbox={'boxstyle': 'round,pad=0.3', 'fc': 'yellow', 'ec': 'k', 'alpha': 0.9})
     # Branch envelope: only show when high/low seeds are distinct
