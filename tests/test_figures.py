@@ -544,7 +544,10 @@ def test_scaleup_legend_no_overlap_branch_traced_tick():
         captured = _capture_plot(pa.plot_aep_scaleup, data, out)
 
     fig = captured["fig"]
-    renderer = fig.canvas.get_renderer()
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    canvas = FigureCanvasAgg(fig)
+    renderer = canvas.get_renderer()
     fig.draw(renderer)
 
     legend = next(
