@@ -12,8 +12,8 @@
       }
     },
     "aep_scaleup.png": {
-      "bytes": 303869,
-      "sha256": "d7e411ede8c0ed11310c1b9c02957d9138bee96636061105ae886bdaf4227dba",
+      "bytes": 305725,
+      "sha256": "c7eca6348f68c35c48e86424d416789156e7cddf6a342c6b78baee95e2307bff",
       "sources": {
         "scripts/aep_scaleup.json": "0cf951ebce1079c9852961fd92a32ccbccec08ef5aa73e7732382d64a575eebe"
       }
@@ -41,7 +41,7 @@
       "bytes": 144433,
       "sha256": "d400916d58b448ae0253ab0a12ed7066adf031c11b40176f5d81e2d9b5609ea6",
       "sources": {
-        "scripts/finite_span_ablation.json": "207d7bc59731cd8dae8f67e1f88473ce81a4979f17751c954933207fb4e47bba"
+        "scripts/finite_span_ablation.json": "315965361e3ba7143ce138ec830ad18c03bbc77212a1cb88e277a9b96b9b7ad1"
       }
     },
     "finite_span_validation.png": {
@@ -74,6 +74,6 @@
       "sources": {}
     }
   },
-  "generated_utc": "2026-10-30T05:28:39.943660+00:00",
+  "generated_utc": "2026-10-31T19:18:55.876603+00:00",
   "schema": 1
 }

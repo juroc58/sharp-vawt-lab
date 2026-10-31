@@ -8,9 +8,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # 3-panel: 15 x 4.6 in  (was 15x4.6)
-# 4-panel: 15 x 8   in  (was 15x8)
+# 4-panel: 15 x 8.5 in  (was 15x8)
 FIGSIZE_3PANEL = (15.0, 4.6)
-FIGSIZE_4PANEL = (15.0, 8.0)
+FIGSIZE_4PANEL = (15.0, 8.5)
 
 FONT_SIZE = 10
 LEGEND_FONT_SIZE = 9
@@ -60,7 +60,7 @@ def create_figure_4panel(**kwargs):
     Uses constrained_layout=False with explicit GridSpec layout."""
     fig = plt.figure(figsize=FIGSIZE_4PANEL, constrained_layout=False, **kwargs)
     # Height ratios: [suptitle_region, 2 rows of panels, legend+caveat_row]
-    gs = fig.add_gridspec(4, 2, height_ratios=[0.10, 1, 1, 0.22], hspace=0.45, wspace=0.20)
+    gs = fig.add_gridspec(4, 2, height_ratios=[0.10, 1, 1, 0.28], hspace=0.60, wspace=0.20)
     axes = [
         fig.add_subplot(gs[1, 0]),
         fig.add_subplot(gs[1, 1]),

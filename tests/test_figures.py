@@ -535,6 +535,58 @@ def test_bounding_boxes_no_overlap():
     assert "aep_results.json" not in readme, "README must not reference deleted aep_results.json"
 
 
+def test_scaleup_legend_no_overlap_branch_traced_tick():
+    """Scale-up figure: the bottom legend row must clear the two-line
+    'Branch-\\ntraced' x tick label of the strategy panel."""
+    data = _load_json("aep_scaleup.json")
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "aep_scaleup.png"
+        captured = _capture_plot(pa.plot_aep_scaleup, data, out)
+
+    fig = captured["fig"]
+    renderer = fig.canvas.get_renderer()
+    fig.draw(renderer)
+
+    legend = next(
+        (ax.get_legend() for ax in fig.axes if ax.get_legend()),
+        None,
+    )
+    assert legend is not None, "scale-up figure has no legend"
+
+    tick = None
+    for ax in fig.axes:
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            if label.get_text() == "Branch-\ntraced":
+                tick = label
+                break
+        if tick is not None:
+            break
+
+    assert tick is not None, "expected 'Branch-\\ntraced' tick label is missing"
+
+    legend_bbox = legend.get_window_extent(renderer)
+    tick_bbox = tick.get_window_extent(renderer)
+
+    separated = (
+        legend_bbox.x1 + 2 <= tick_bbox.x0
+        or tick_bbox.x1 + 2 <= legend_bbox.x0
+        or legend_bbox.y1 + 2 <= tick_bbox.y0
+        or tick_bbox.y1 + 2 <= legend_bbox.y0
+    )
+    assert separated, (
+        f"legend {legend_bbox} overlaps Branch-traced tick {tick_bbox}"
+    )
+
+    canvas = fig.get_window_extent(renderer)
+    for name, bbox in (("legend", legend_bbox), ("tick", tick_bbox)):
+        assert bbox.x0 >= 0 and bbox.x1 <= canvas.width, (
+            f"{name} bbox outside canvas horizontally: {bbox} vs {canvas}"
+        )
+        assert bbox.y0 >= 0 and bbox.y1 <= canvas.height, (
+            f"{name} bbox outside canvas vertically: {bbox} vs {canvas}"
+        )
+
+
 def test_small_machine_rating_label_in_watts():
     """Small-rotor power panel uses watts (45.3 W), not kilowatts,
     since the rated power is below 1 kW.
