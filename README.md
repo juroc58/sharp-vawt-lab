@@ -1079,6 +1079,9 @@ be made about it:
   compared. Until acceptance criteria are met on independent data,
   no validation is claimed.
 
+See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for known
+limitations and deferred work not covered above.
+
 ## 📄 References
 
 - Ham, N.D., Soohoo, P., Noll, R.B., Drees, H.M. (1979). Analytical and experimental evaluation of cycloturbine aerodynamic performance. AIAA 79-0968.

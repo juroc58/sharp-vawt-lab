@@ -87,7 +87,7 @@ src = ["."]
 "tests/test_readme_numbers.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_validation.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510", "RUF012"]
 "tests/test_diag_qa.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
-"tests/test_regenerate_golden.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
+"tests/regenerate_golden.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_factory.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_geometry.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_polars.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
@@ -96,6 +96,7 @@ src = ["."]
 
 [tool.setuptools]
 packages = ["sharp_vawt"]
+py-modules = ["vawt_core", "vawt_presets"]
 package-dir = { "sharp_vawt" = "sharp_vawt" }
 
 [tool.setuptools.package-data]

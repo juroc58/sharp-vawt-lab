@@ -39,6 +39,15 @@
     exact reproduction command. |
   | `uncertainty_results.json` | `uncertainty.py` |
   | `spearman_results.json` | `spearman_sensitivity.py` |
+  | `aep_results.json` | `compute_aep.py` |
+  | `branch_point_checks.json` | `check_branch_points.py` |
+  | `cm_scale_scan.json` | `scan_cm_scale.py` |
+  | `diag_aep_branches.json` | `diag_aep_branches.py` (diagnostic only; not consumed downstream) |
+  | `diag_small_equilibria.json` | `diag_small_equilibria.py` (diagnostic only; not consumed downstream) |
+  | `finite_span_ablation.json` | `finite_span_ablation.py` |
+  | `ham_finite_span_check.json` | `ham_finite_span_check.py` |
+  | `robust_optimization.json` | `robust_reopt.py` |
+  | `validate_ds_off.json` | `validate_ds_off.py` |
 
   Note: base N = 64 (quick mode); indices are qualitative.
 

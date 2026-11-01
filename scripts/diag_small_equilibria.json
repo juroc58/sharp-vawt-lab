@@ -1,0 +1,76 @@
+{
+  "stamp": {
+    "schema_version": "2",
+    "code_hash": "5f19003388b6825bc8a92e2fa7854f075f39526dec95ed7b089db3046d40a078",
+    "script": "scripts/diag_small_equilibria.py",
+    "script_version": "1.0.1",
+    "created_utc": "2026-11-01T19:29:21.635058+00:00",
+    "python_version": "3.14.4",
+    "git_commit": "72b6b986cd2794a73512943d26f45f659cddc69c",
+    "seed": null,
+    "n": 3,
+    "script_args": [],
+    "extra_files": [
+      "vawt_presets.py",
+      "scripts/aep_small.json"
+    ],
+    "extra_data": {
+      "want_U": [
+        6.0,
+        8.0,
+        12.0
+      ]
+    },
+    "uq_spec_hash": null,
+    "config_hash": "9ad52a690740477ddd458bad57c7e0437ee941cb0665a4efb35b3b6089e4aace",
+    "source_hashes": {
+      "sharp_vawt/__init__.py": "b668e8225f256b2949f1a392191345d98f98755e3479d6b3af67512fafdde6cf",
+      "sharp_vawt/config.py": "7521fd8730f5d527a60d1e3b8c345bf914e723e11d432c1f899003cc9d571c4e",
+      "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
+      "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
+      "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
+      "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
+      "scripts/diag_small_equilibria.py": "56772656c8d0c2dd0e1ec15d64c446af73fd4d7724e9efdf6d9c12d8b7ac13e0",
+      "scripts/aep_small.json": "bab4df8f8840a6af9d1425661e1c58c6ab10bffb1ea85984a34fe2dba8ae7e4d"
+    },
+    "data_hashes": {
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_1000000.csv": "8e039410c5697a6eeed77f56ce34333a3afd8bdcfb353d0c9d5b8b5ee1d3a456",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_200000.csv": "ba9bdec33f7c4559315ee15147779da6eab27bab0fb7c9c68b83d6131ffded91",
+      "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_400000.csv": "7054ea511217f7ed44df48d1dfa5d6ac0758367cdc2a87e32f5f44fd072bc29b",
+      "sharp_vawt/airfoil_polars/provenance.json": "2a251dd01bcc6146ce9d890700ba76ca2e5c9e60dc124f2452ae6cc12bb30561",
+      "sharp_vawt/airfoil_polars/README.md": "0e99fb03dee3e94f051fa5bdad5a5e99c290a58b4a6bef0274d439337947626f"
+    }
+  },
+  "note": "Diagnostic for the small-rotor free-vs-fixed Cp gap. Compares aep_small.json's single-phase free-running equilibrium Cp against a fixed-rpm run at the same TSR. The gap is either a reporting artefact (phase averaging) or a genuine free-vs-fixed physics difference.",
+  "source": "scripts/aep_small.json",
+  "cases": [
+    {
+      "U": 6.0,
+      "free_tsr_eq": 1.508566250734421,
+      "free_cp": 0.08117990533449845,
+      "fixed_cp": 0.054820762493531044,
+      "fixed_steady": true,
+      "gap_percent": 48.08240827383209,
+      "interpretation": "genuine free-vs-fixed difference \u2014 free run is not a fixed-omega operation"
+    },
+    {
+      "U": 8.0,
+      "free_tsr_eq": 1.5508920884659922,
+      "free_cp": 0.08819654350921127,
+      "fixed_cp": 0.06188783946701247,
+      "fixed_steady": true,
+      "gap_percent": 42.510296479523895,
+      "interpretation": "genuine free-vs-fixed difference \u2014 free run is not a fixed-omega operation"
+    },
+    {
+      "U": 12.0,
+      "free_tsr_eq": 1.6124260274432667,
+      "free_cp": 0.09908315599586827,
+      "fixed_cp": 0.0737863627002514,
+      "fixed_steady": true,
+      "gap_percent": 34.283832906064454,
+      "interpretation": "genuine free-vs-fixed difference \u2014 free run is not a fixed-omega operation"
+    }
+  ]
+}
