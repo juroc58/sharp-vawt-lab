@@ -84,6 +84,40 @@ Items grouped by blocker type:
   preset. Decision needed: consolidate to one measurement schema before
   implementing the fitting code.
 
+- **Negative-TSR mirror symmetry not testable without a kernel change**:
+  `test_mirror_symmetry_prescribed` covers pitch-coefficient reversal at
+  positive TSR. The negative-rotation case (mirror symmetry of the full
+  state, TSR < 0) raises `ZeroDivisionError` in
+  `sharp_vawt/engine.py::_kernel` because the induction update divides by
+  TSR. Adding negative-TSR support is a kernel change; not undertaken in
+  PASS 33.
+
+## Test invariants not upheld
+
+- **Similarity in wind speed is not an invariant of this model**:
+  doubling U at fixed TSR doubles Re, moving across polar-table
+  boundaries (Re = 1e5 -> 2e5 for the small rotor at TSR=1.5,
+  U=6 -> U=12). The 34% Cp shift measured in PASS 34 is the
+  real Re-driven polar change, not a numerical error. A model
+  with Reynolds-independent polars would satisfy similarity;
+  this one does not. The test was removed rather than widened
+  to hide the effect.
+
+- **Geometric scaling is not an invariant of this model**:
+  same root cause. Scaling R, H, c by 2x doubles Re at fixed U
+  and TSR, crossing a polar-table boundary. The 30% Cp shift
+  is the Re-driven polar change, not a physics violation.
+
+- **Pitch-reversal "mirror symmetry" at fixed rotation is not
+  a symmetry operation**: reversing pitch coefficients
+  (psi -> -psi) at fixed positive rotation is a different pitch
+  schedule, not a mirror of the original. True mirror symmetry
+  (negate psi AND alpha AND omega simultaneously) requires
+  negative TSR, which raises ZeroDivisionError in
+  `sharp_vawt/engine.py::_kernel` because the induction update
+  divides by TSR. Negative-TSR support is tracked separately
+  under "Decision-blocked."
+
 ## Process
 
 - **Shared AEP-core extraction**: `aep_core.py` refactor not started.
@@ -100,3 +134,8 @@ Items grouped by blocker type:
 - **Test-isolation root cause**: individual-vs-full-suite discrepancy not
   reproduced; stale README references removed but underlying mechanism
   unknown. Do not claim the interference mechanism is understood.
+
+- **Report/test drift**: PASS 31 and PASS 32 reports claimed analytic
+  tests passed that failed when re-run. Test reports must include the
+  command that was run and its actual output, not a summary count.
+  Logged as a process correction, not a defect in the code.

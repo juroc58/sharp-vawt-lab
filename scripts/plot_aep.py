@@ -622,22 +622,26 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
     fig.canvas.draw()
     _renderer = fig.canvas.get_renderer()
 
-    # Highest top edge of any bar label, in data coordinates.
-    # With this axis (data y increases downward on screen), the label
-    # highest on screen has the *smallest* data y.
+    # Highest bar-label top edge in data coordinates.
+    # Matplotlib display coords have y increasing upward, so y1 is the
+    # top edge; the label highest on screen has the *largest* data y.
     _label_tops_data = []
     for _t in ax.texts:
         _txt = _t.get_text()
         if 'MWh' not in _txt or 'CF=' not in _txt:
             continue
         _bb = _t.get_window_extent(_renderer)
-        _y_data = ax.transData.inverted().transform((0, _bb.y0))[1]
+        _y_data = ax.transData.inverted().transform((0, _bb.y1))[1]
         _label_tops_data.append(_y_data)
 
-    _highest_label_top_data = min(_label_tops_data) if _label_tops_data else 0.0
+    _highest_label_top_data = max(_label_tops_data) if _label_tops_data else 0.0
 
-    # Place annotation above the highest label top (smaller data y = higher on screen)
-    _annotation_data_y = _highest_label_top_data - 0.03 * max(aep_vals)
+    # Place annotation above the highest label top (larger data y = higher on screen)
+    _margin = 0.05 * max(aep_vals)
+    _annotation_data_y = _highest_label_top_data + _margin
+
+    # Extend ylim so the annotation fits above all bar labels
+    ax.set_ylim(bottom=0, top=_annotation_data_y + 0.25 * max(aep_vals))
 
     # Annotation now at data y guaranteed to be above all bar labels
     ax.text(1.0, _annotation_data_y, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",

@@ -1,12 +1,12 @@
 {
   "figures": {
     "aep_counter_rotating.png": {
-      "bytes": 181307,
+      "bytes": 179835,
       "labels": [
         "SPECULATIVE SCENARIO",
         "NOT A VALIDATED ARRAY PREDICTION"
       ],
-      "sha256": "69f1194909b7edbf3c39273486f2364a0e70dc1e166a67649f6e637d1f03cc61",
+      "sha256": "1d8be560f06a99dae6c697cb220a547b84427e537182139885482675f1470178",
       "sources": {
         "scripts/aep_counter_rotating.json": "aa23a5cd9e0608363bc41714e8a67920e71960e529e2705ba3985db6e1d43fb0"
       }
@@ -74,6 +74,6 @@
       "sources": {}
     }
   },
-  "generated_utc": "2026-11-01T19:39:14.828167+00:00",
+  "generated_utc": "2026-11-01T19:52:55.105303+00:00",
   "schema": 1
 }
