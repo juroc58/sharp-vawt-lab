@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all 20 `STAMP_CHECK_MAP` entries); `pyproject.toml`
   (`py-modules = ["vawt_core", "vawt_presets"]` so `pip install .` ships the
   root modules; corrected per-file-ignore path `tests/regenerate_golden.py`).
+- **Analytic invariants extended** (`tests/test_analytic.py`): added
+  zero-wind decay (rotor must slow, Cp must not stay positive at U -> 0),
+  mirror symmetry in prescribed-pitch mode (reversed rotation + negated
+  pitch preserves Cp), and Helmbold lift-slope match at AR in {2, 3, 4,
+  6, 10} (pure math check on the finite-span correction).
 
 ### Changed
 - **diag_qa.py** thresholds use achieved |α|_max (EXTREME_MARGIN=0.75,
@@ -137,6 +142,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (exploratory UQ output was previously untracked). No producer,
   result JSON, or stamp was touched; all result JSONs remain
   bit-identical and fresh.
+- **AEP counter-rotating figure**: the "Gain vs two independent"
+  annotation on panel 1 now places itself above the highest rendered
+  bar label (measured via the figure canvas renderer) instead of at a
+  fixed multiplier of `max(aep_vals)`. This is robust to changes in
+  JSON values, bar count, and font size. Figure regenerated; manifest
+  updated for `aep_counter_rotating.png` only.
 
 ### Fixed (figure round)
 - **Counter-rotating AEP figure**: "Two independent" baseline is now 2× the

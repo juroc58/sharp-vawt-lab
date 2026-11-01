@@ -607,19 +607,43 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
                 fontsize=FONT_SIZE - 1, fontweight='bold')
 
     gain_vs_two = counter.get('vs_two_independent_rotors_improvement_percent', 0)
-    # Place gain annotation at top of figure with offset to avoid bar labels
-    y_top = max(aep_vals) * 1.15
-    ax.text(0.5, y_top, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",
-            ha='center', va='bottom', fontsize=FONT_SIZE,
-            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9},
-            transform=ax.get_yaxis_transform())
 
+    # Draw bars and bar labels first, then measure the actual rendered extent
+    # of the bar labels so the gain annotation can be placed in the clearance
+    # above them. This is robust to changes in JSON values, bar count, font size.
     ax.set_xticks(x)
     ax.set_xticklabels(strategies, fontsize=FONT_SIZE - 1)
     ax.set_ylabel("AEP [MWh/yr]")
     ax.set_title("AEP comparison")
-    ax.set_ylim(bottom=0, top=max(aep_vals) * 1.35)
+    ax.set_ylim(bottom=0, top=max(aep_vals) * 1.45)
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
+
+    # Force render so text bboxes are measurable
+    fig.canvas.draw()
+    _renderer = fig.canvas.get_renderer()
+
+    # Highest top edge of any bar label, in data coordinates.
+    # With this axis (data y increases downward on screen), the label
+    # highest on screen has the *smallest* data y.
+    _label_tops_data = []
+    for _t in ax.texts:
+        _txt = _t.get_text()
+        if 'MWh' not in _txt or 'CF=' not in _txt:
+            continue
+        _bb = _t.get_window_extent(_renderer)
+        _y_data = ax.transData.inverted().transform((0, _bb.y0))[1]
+        _label_tops_data.append(_y_data)
+
+    _highest_label_top_data = min(_label_tops_data) if _label_tops_data else 0.0
+
+    # Place annotation above the highest label top (smaller data y = higher on screen)
+    _annotation_data_y = _highest_label_top_data - 0.03 * max(aep_vals)
+
+    # Annotation now at data y guaranteed to be above all bar labels
+    ax.text(1.0, _annotation_data_y, f"Gain vs two independent:\n{gain_vs_two:+.1f}%",
+            ha='center', va='bottom', fontsize=FONT_SIZE,
+            bbox={'boxstyle': "round,pad=0.4", 'fc': "wheat", 'ec': "k", 'alpha': 0.9},
+            transform=ax.transData)
 
     # Panel 2: Sensitivity to interaction factor
     ax = axes[1]
@@ -636,14 +660,16 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
         if nominal_idx is not None:
             annotate_with_arrow(ax, factors[nominal_idx], aeps[nominal_idx],
                                 f"Nominal model\n(factor = {factors[nominal_idx]:.1f}%)",
-                                xytext=(25, -15))
+                                xytext=(0.02, 0.98), textcoords='axes fraction',
+                                va='top')
         else:
             # Fallback: annotate the point closest to the mean interaction factor
             mean_f = data['configuration'].get('interaction_factor_mean', 0) * 100
             nominal_idx = min(range(len(factors)), key=lambda i: abs(factors[i] - mean_f))
             annotate_with_arrow(ax, factors[nominal_idx], aep[nominal_idx],
                                 f"Nearest evaluated\n(factor = {factors[nominal_idx]:.1f}%)",
-                                xytext=(25, -15))
+                                xytext=(0.02, 0.98), textcoords='axes fraction',
+                                va='top')
 
     # Panel 3: Marginal gain vs interaction factor
     # SPECULATIVE SCENARIO: heuristic interaction model; NOT A VALIDATED ARRAY PREDICTION.

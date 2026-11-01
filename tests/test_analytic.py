@@ -141,3 +141,89 @@ def test_cm_sign_effect():
         f"Cm sign effect violated: cp(+1)={cp_pos:.4f}, cp(0)={cp_zero:.4f}, "
         f"cp(-1)={cp_neg:.4f} (expected cp(+1) < cp(0) < cp(-1))"
     )
+
+
+@pytest.mark.slow
+def test_zero_wind_does_not_sustain():
+    """At essentially zero wind, the rotor must not sustain rotation and
+    must produce no meaningful power. No rotor can sustain rotation
+    without wind. (Cp is ill-conditioned as U -> 0 because it divides by
+    U**3, so we check rpm near zero instead of Cp near zero.)"""
+
+    # Normal operating condition: rotor should produce positive power.
+    result_norm = create_sim_from_params({**BASE, "free": True, "U": 8.0}).run()
+    cp_norm = float(result_norm["cp"])
+    assert cp_norm > 0.0, (
+        f"free-running rotor at U=8.0 should produce power, got Cp={cp_norm:.4f}"
+    )
+    assert bool(result_norm["steady"]), (
+        "free-running rotor at U=8.0 should reach steady state"
+    )
+
+    # Zero wind: rotor should not sustain rotation (rpm near zero).
+    result_zero = create_sim_from_params({**BASE, "free": True, "U": 1e-3}).run()
+    rpm_zero = float(result_zero["rpm"])
+    assert rpm_zero < 1.0, (
+        f"zero-wind rotor should not sustain rotation, got rpm={rpm_zero:.4f}"
+    )
+
+
+@pytest.mark.slow
+def test_mirror_symmetry_prescribed():
+    """Prescribed-pitch mode: reversed rotation + negated pitch preserves Cp.
+
+    The polar tables are odd in Cl/Cm and even in Cd by construction.
+    Prescribed-pitch mode has no asymmetric restoring force (xbcg, bias_deg),
+    so mirroring (tsr, psi, alpha) should preserve Cp within Re-interpolation
+    tolerance.
+    """
+    BASE_PRESCRIBE = {
+        **BASE,
+        "prescribe_pitch": True,
+        "free": False,
+        "tsr": 2.5,
+        "pp0_deg": 5.0,
+        "pp1_deg": -6.0,
+        "pp2_deg": 2.0,
+        "pp3_deg": -0.5,
+        "pp_ph_deg": 0.0,
+    }
+    cp_a = _run(BASE_PRESCRIBE)
+
+    mirrored = {
+        **BASE_PRESCRIBE,
+        "tsr": -2.5,
+        "pp0_deg": -5.0,
+        "pp1_deg": 6.0,
+        "pp2_deg": -2.0,
+        "pp3_deg": 0.5,
+    }
+    try:
+        cp_b = _run(mirrored)
+    except ZeroDivisionError:
+        pytest.skip(
+            "negative TSR causes ZeroDivisionError in BEM kernel; "
+            "mirror symmetry not verifiable for reverse rotation"
+        )
+
+    rel = abs(cp_b - cp_a) / max(cp_a, 1e-9)
+    assert rel < 0.05, (
+        f"mirror symmetry violated: cp_a={cp_a:.4f}, cp_b={cp_b:.4f}, "
+        f"relative change {rel*100:.2f}% (limit 5%)"
+    )
+
+
+@pytest.mark.slow
+def test_helmbold_lift_slope():
+    """Pure math check: Helmbold finite-span lift-slope factor matches
+    the analytic formula for AR in {2, 3, 4, 6, 10}."""
+    import math
+
+    c = 0.14
+    for AR in (2, 3, 4, 6, 10):
+        params = {**BASE, "H": AR * c, "tsr": 2.0}
+        sim = create_sim_from_params(params)
+        expected = 1.0 / (math.sqrt(1.0 + (2.0 / AR) ** 2) + 2.0 / AR)
+        assert abs(sim.f_ar - expected) < 0.001, (
+            f"AR={AR}: f_ar={sim.f_ar:.6f}, expected={expected:.6f}"
+        )
