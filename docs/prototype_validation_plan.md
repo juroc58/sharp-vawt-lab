@@ -160,7 +160,7 @@ Calibration rules (pre-registered):
 5. **Defaults do not change**: `sharp_vawt/config.py` defaults are not modified
    until a calibrated value passes the pre-registered held-out criterion.
 
-## 6. Model outputs to compare
+## 7. Model outputs to compare
 
 At each measured condition, run the frozen model with the measured wind speed and the measured load
 (or measured RPM, if the generator holds speed) and compare:
@@ -174,7 +174,7 @@ At each measured condition, run the frozen model with the measured wind speed an
 The comparison must report absolute and relative errors per row, bias, RMSE, and coverage of the
 uncertainty band. Predictions and measurements must be plotted with error bars, unfiltered.
 
-## 7. Acceptance criteria (pre-registered)
+## 8. Acceptance criteria (pre-registered)
 
 Validation is considered **met** only if all of the following hold on the held-out measured rows:
 
@@ -191,7 +191,7 @@ Validation is considered **met** only if all of the following hold on the held-o
 If any criterion fails, the result is reported as a **discrepancy**, not validation. No post-hoc
 loosening of these thresholds is permitted without a dated amendment and a new held-out set.
 
-## 8. Uncertainty propagation
+## 9. Uncertainty propagation
 
 - Each measured quantity carries Type A (repeatability) and Type B (calibration) uncertainty.
 - Derived quantities (Cp, TSR, torque) use first-order propagation, or Monte Carlo with ≥ 10 000
@@ -199,7 +199,7 @@ loosening of these thresholds is permitted without a dated amendment and a new h
 - Model uncertainty is reported separately as a scenario range (not a confidence interval). It is
   not added to measurement uncertainty to manufacture agreement.
 
-## 9. Reporting template
+## 10. Reporting template
 
 `scripts/compare_prototype.py` writes `data/prototype/results/comparison_<date>.json` with:
 
@@ -209,7 +209,7 @@ loosening of these thresholds is permitted without a dated amendment and a new h
 - aggregate metrics and acceptance-criteria booleans;
 - a plain-language statement of what the comparison does and does not establish.
 
-## 10. Explicit non-claims
+## 11. Explicit non-claims
 
 This plan does **not** claim:
 

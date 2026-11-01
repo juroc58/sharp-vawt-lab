@@ -304,12 +304,6 @@ def iv_scaleup_gain_vs_rigid_pct():
     return _fmt_pct(passive / max(rigid, 1e-9) - 1.0)
 
 # Ham values
-def iv_ham_2_0_cp():
-    return "0.389"
-
-def iv_ham_2_5_cp():
-    return "0.485"
-
 def iv_ham_uq_ci():
     s = DATA["uq"]["summary"]["ham_1979"]
     return _ci(s['p5'], s['p95'])
@@ -467,8 +461,6 @@ INLINE_FUNCS = {
     'scaleup_aep_rigid_kwh': iv_scaleup_aep_rigid_kwh,
     'scaleup_gain_vs_fixed_pct': iv_scaleup_gain_vs_fixed_pct,
     'scaleup_gain_vs_rigid_pct': iv_scaleup_gain_vs_rigid_pct,
-    'ham_2_0_cp': iv_ham_2_0_cp,
-    'ham_2_5_cp': iv_ham_2_5_cp,
     'ham_uq_ci': iv_ham_uq_ci,
     'ham_peak_no_tip_cp': iv_ham_peak_no_tip_cp,
     'ham_case_static_cd005_cp': iv_ham_case_static_cd005_cp,

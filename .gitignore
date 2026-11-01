@@ -110,6 +110,7 @@ __pycache__/numba_*
 
 # Project-specific
 .uq_cache/
+.uq_dev/
 .bench_cache/
 *.json.backup
 *.json.bak

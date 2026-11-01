@@ -46,7 +46,6 @@ class TestDSSensitivity:
         verifies that ds_Tf (separation lag) is the most sensitive parameter
         for the sharp_cppc anchor, and that all sensitivities are non-negative.
         """
-        base_cps[anchor_name]
         sensitivities = {}
 
         for param_name, default_val in DS_CONSTANTS:
