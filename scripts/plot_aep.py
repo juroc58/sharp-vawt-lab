@@ -532,25 +532,32 @@ def plot_aep_turbulent(data: dict[str, Any], out_path: str):
     ax.set_ylim(bottom=0, top=max(aep_vals) * 1.3)
     ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
-    # Panel 3: Turbulence effect explanation (conditional on the actual results)
+    # Panel 3: Gain decomposition (bar chart from JSON data)
+    # Bar heights: idealised cube-bias reference (3·I²·100), residual, simulated gain.
+    # Vertical spread (std) is temporal variability across seeds, not a confidence interval.
     ax = axes[2]
-    # Idealised cube-bias reference: E[U^3]/(E[U])^3 for Gaussian turbulence
-    # Under Gaussian assumption: E[U^3]/(E[U])^3 = 1 + 3*I^2 (no clipping, no limits)
     I = data['turbulence']['I']
-    idealised_gain = (1.0 + 3.0 * I**2 - 1.0) * 100.0  # percent
-    ax.text(0.5, 0.5,
-            f"Turbulence effect: {gain:+.1f}% on AEP "
-            f"({('gain' if gain >= 0 else 'loss')}).\n"
-            f"Idealised reference (E[U^3]/E[U]^3, I={I:.2f}, no clipping/limits): "
-            f"+{idealised_gain:.1f}%.\n"
-            "Possible mechanisms (not established causation):\n"
-            "1. Cube bias: E[U^3] > (E[U])^3 (Jensen)\n"
-            "2. Cp(U) convexity: E[Cp(U)] > Cp(E[U])\n"
-            "Vertical bars: seed-to-seed std (temporal variability), "
-            "not a confidence interval.",
-            ha='center', va='center', transform=ax.transAxes, fontsize=FONT_SIZE)
-    ax.set_title("Turbulence effect (conditional on results)")
-    ax.axis('off')
+    sim_gain = data['turbulence_effect_pct']
+    cube_bias = 3.0 * I * I * 100.0
+    residual = sim_gain - cube_bias
+
+    labels = ["Idealised\ncube bias\n(3·I²·100)", "Residual\n(Cp convexity\n+ induction)",
+              "Simulated\nAEP gain"]
+    heights = [cube_bias, residual, sim_gain]
+    colors = [COL_RIGID, COL_PASSIVE_KLOAD, COL_HIGH_BRANCH]
+    bars = ax.bar(range(3), heights, color=colors, edgecolor='k', lw=0.5, width=0.6)
+    for bar, h in zip(bars, heights):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
+                f"{h:+.1f}%", ha='center', va='bottom', fontsize=FONT_SIZE - 1)
+    ax.axhline(0, color='k', lw=0.8, ls='--')
+    ax.set_xticks(range(3))
+    ax.set_xticklabels(labels, fontsize=FONT_SIZE - 1)
+    ax.set_ylabel("AEP gain over steady wind [%]")
+    ax.set_title("Gain decomposition")
+    ax.text(0.02, 0.97, "Idealised reference (E[U^3]/E[U]^3 = 3·I²·100)", transform=ax.transAxes,
+            ha='left', va='top', fontsize=FONT_SIZE - 1)
+    ax.set_ylim(bottom=min(0, min(heights)) - 1.0, top=max(heights) * 1.25)
+    ax.grid(True, alpha=GRID_ALPHA, axis='y')
 
     title = f"AEP - Turbulent Wind (I = {data['turbulence']['I']*100:.0f}%, L = {data['turbulence']['L_m']:.0f} m)"
     finalize_figure(fig, suptitle=title)
@@ -638,17 +645,28 @@ def plot_aep_counter_rotating(data: dict[str, Any], out_path: str):
                                 f"Nearest evaluated\n(factor = {factors[nominal_idx]:.1f}%)",
                                 xytext=(25, -15))
 
-    # Panel 3: Model caveat
+    # Panel 3: Marginal gain vs interaction factor
+    # SPECULATIVE SCENARIO: heuristic interaction model; NOT A VALIDATED ARRAY PREDICTION.
     ax = axes[2]
-    ax.text(0.5, 0.5,
-            "SPECULATIVE SCENARIO.\n"
-            "Interaction model: heuristic momentum/wake/channeling.\n"
-            "2D BEM cannot resolve 3D wake at 0.37D spacing.\n"
-            f"Gain over two independent rotors: {gain_vs_two:+.1f}%\n"
-            "NOT A VALIDATED ARRAY PREDICTION.",
-            ha='center', va='center', transform=ax.transAxes, fontsize=FONT_SIZE)
-    ax.set_title("Model caveat")
-    ax.axis('off')
+    factors = [row['interaction_factor'] * 100 for row in sensitivity]
+    marginal = [row['gain_vs_single_percent'] - 100.0 for row in sensitivity]
+    nominal_gain = data['counter_rotating']['vs_two_independent_rotors_improvement_percent']
+
+    nominal_idx = next((i for i, s in enumerate(sensitivity) if s.get('is_nominal')), None)
+    bars = ax.bar(factors, marginal, color=COL_PASSIVE_KLOAD, edgecolor='none',
+                  width=0.8)
+    if nominal_idx is not None:
+        bars[nominal_idx].set_edgecolor('k')
+        bars[nominal_idx].set_linewidth(1.5)
+    ax.axhline(0, color='k', lw=0.8, ls='--')
+    ax.axhline(nominal_gain, color='k', lw=1.0, ls='--',
+               label="wind-speed-dependent\nnominal gain")
+    ax.set_xlabel("Fixed downstream interaction factor [%]")
+    ax.set_ylabel("Gain over two independent rotors [%]")
+    ax.set_title("Marginal gain vs interaction factor")
+    ax.set_ylim(bottom=min(0, min(marginal)) - 1.0, top=max(marginal) * 1.25)
+    ax.grid(True, alpha=GRID_ALPHA, axis='y')
+    ax.legend(fontsize=FONT_SIZE - 1)
 
     title = "AEP - Counter-Rotating Pair (speculative, 0.37D spacing)"
     finalize_figure(fig, suptitle=title, rect=[0.06, 0.05, 0.98, 0.93])

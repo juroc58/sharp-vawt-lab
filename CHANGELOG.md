@@ -97,6 +97,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   because cycle only reached 56 % of stall; now uses cycle extremes.
 - **diag_qa figure regeneration**: `make_all_figures.py` now runs `--check`
   first and fails on non-zero exit code before producing figure.
+- **AEP figure text-only panels**: replaced the third panel in
+  `docs/aep_turbulent.png` and `docs/aep_counter_rotating.png`
+  with data-bearing charts drawn from the same JSON already
+  loaded by the plotting functions. Turbulent: bar decomposition
+  of the simulated AEP gain into the idealised cube-bias
+  reference (3·I²·100) and the residual. Counter-rotating:
+  marginal gain over two independent rotors at each fixed
+  interaction factor, with the wind-speed-dependent nominal
+  gain overlaid as a reference line. No result JSON was
+  regenerated; the figure manifest was rewritten by
+  `scripts/make_all_figures.py --only`. Added
+  `tests/test_figures.py::test_no_aep_panel_is_text_only` as a
+  regression guard.
+- **Repo hygiene pass**: restored
+  `tests/test_figures.py::test_readme_figure_references` (which
+  was missing; its tail was stranded inside
+  `test_bounding_boxes_no_overlap`). Removed a no-op line in
+  `tests/test_ds_sensitivity.py::test_ds_constants_ranking`.
+  Renumbered duplicate `## 6.` in
+  `docs/prototype_validation_plan.md`. Deleted two unused
+  inline generators (`iv_ham_2_0_cp`, `iv_ham_2_5_cp`) from
+  `scripts/build_readme.py`. Added `.uq_dev/` to `.gitignore`
+  (exploratory UQ output was previously untracked). No producer,
+  result JSON, or stamp was touched; all result JSONs remain
+  bit-identical and fresh.
 
 ### Fixed (figure round)
 - **Counter-rotating AEP figure**: "Two independent" baseline is now 2× the

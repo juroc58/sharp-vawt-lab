@@ -529,10 +529,29 @@ def test_bounding_boxes_no_overlap():
                         pytest.fail(f"{fname}: legend overlaps with text '{label.get_text()[:30]}'")
 
 
-    # Also check no hardcoded aep.png (deleted)
-    readme = (ROOT / "README.md").read_text()
-    assert "aep.png" not in readme, "README must not reference deleted aep.png"
-    assert "aep_results.json" not in readme, "README must not reference deleted aep_results.json"
+def test_readme_figure_references():
+    """Every docs/<name>.png reference in README.md must point to an
+    existing, manifest-registered figure (forward direction only).
+
+    The reverse direction is intentionally NOT checked: several committed
+    figures (diag_qa.png, finite_span_ablation.png,
+    finite_span_validation.png, spearman.png, aep_counter_rotating.png)
+    are reproducibility artifacts not referenced from README.
+    """
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    registered = set(manifest.get("figures", {}))
+
+    import re
+
+    referenced = {
+        m.group(1)
+        for m in re.finditer(r"docs/([\w.-]+\.png)", readme)
+    }
+    for name in sorted(referenced):
+        png = DOCS / name
+        assert png.is_file(), f"README references {png} but it does not exist"
+        assert name in registered, f"README references {name} but it is not in figure_manifest.json"
 
 
 def test_scaleup_legend_no_overlap_branch_traced_tick():
@@ -588,6 +607,38 @@ def test_scaleup_legend_no_overlap_branch_traced_tick():
         assert bbox.y0 >= 0 and bbox.y1 <= canvas.height, (
             f"{name} bbox outside canvas vertically: {bbox} vs {canvas}"
         )
+
+
+def test_no_aep_panel_is_text_only():
+    """Every data-bearing panel must have at least one plotted artist.
+
+    Skips the dedicated legend axis and any explicitly-disabled
+    axis (ax.axison == False); those are text-only by design.
+    """
+    for fname, plot_fn in (
+        ("aep_turbulent.json", pa.plot_aep_turbulent),
+        ("aep_counter_rotating.json", pa.plot_aep_counter_rotating),
+    ):
+        data = _load_json(fname)
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td) / "out.png"
+            captured = _capture_plot(plot_fn, data, out)
+        fig = captured["fig"]
+        legend_ax = captured["legend_ax"]
+        for ax in fig.axes:
+            if ax is legend_ax:
+                continue
+            if not ax.axison:
+                continue
+            artists = (
+                list(ax.lines)
+                + list(ax.patches)
+                + list(ax.collections)
+            )
+            assert artists, (
+                f"{fname}: axis {ax.get_title()!r} has no data "
+                f"artists (lines/patches/collections)"
+            )
 
 
 def test_small_machine_rating_label_in_watts():
