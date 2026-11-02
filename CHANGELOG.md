@@ -55,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plotly).
 - **Measurement Protocol**: Created `docs/measurement_protocol.md` and
   `data/measured_template.csv` to unblock physical validation.
+- **Passive Calibration Tool**: Added `scripts/calibrate_passive.py` to fit
+  `cd_add` and `tip_loss_multiplier` to measured `Power_W` vs `Wind_Speed`
+  data. Explicitly refuses to claim calibration on synthetic data.
+- **Energy Ledger Test**: Added `test_energy_ledger_closure` to
+  `tests/test_analytic.py`.
 
 ### Changed
 - **diag_qa.py** thresholds use achieved |α|_max (EXTREME_MARGIN=0.75,

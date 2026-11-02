@@ -661,10 +661,10 @@ No tested finite-span variant reproduces the Ham band (0.42–0.45). The 2D mode
 <!-- BEGIN GENERATED: uq_reading -->
 **Reading the table.** Values are model output from the committed Saltelli run.
 
-- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.29) and `cd_add` (S1 = 0.20 ± 0.12) have overlapping 95 % intervals.
-- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.26) and `ind_drag_scale` (S1 = 0.30 ± 0.21) have overlapping 95 % intervals.
-- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.24) and `tip_loss_multiplier` (S1 = 0.41 ± 0.42) have overlapping 95 % intervals.
-- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.42) and `cd_add` (S1 = 0.09 ± 0.08) have overlapping 95 % intervals.
+- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.26) and `cd_add` (S1 = 0.20 ± 0.13) have overlapping 95 % intervals.
+- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.26) and `ind_drag_scale` (S1 = 0.30 ± 0.23) have overlapping 95 % intervals.
+- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.24) and `tip_loss_multiplier` (S1 = 0.41 ± 0.38) have overlapping 95 % intervals.
+- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.34) and `cd_add` (S1 = 0.09 ± 0.06) have overlapping 95 % intervals.
 <!-- END GENERATED: uq_reading -->
 
 

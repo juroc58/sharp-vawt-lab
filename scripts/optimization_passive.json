@@ -4,9 +4,9 @@
     "code_hash": "2eb1c800d9aaffb1080c54a80f0c46be0e9d47c29728cd0b52691da77a276a80",
     "script": "scripts/optimize_passive.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-02T16:41:54.276174+00:00",
+    "created_utc": "2026-11-02T20:31:03.019168+00:00",
     "python_version": "3.14.4",
-    "git_commit": "5ccc9104945d94bfcc5798ac6a2b5976da8ba302",
+    "git_commit": "221ce55f56a705cc692eee97d9ab386dbd67f5d5",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -147,8 +147,8 @@
     "bias_deg": 0.4970547601587716
   },
   "best_cp": 0.2644991852996763,
-  "de_time_s": 298.2050925370004,
-  "local_time_s": 28.488325230000555,
+  "de_time_s": 307.51951553399977,
+  "local_time_s": 28.5034159060001,
   "history": [
     {
       "stage": "DE",

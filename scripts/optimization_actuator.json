@@ -4,9 +4,9 @@
     "code_hash": "ddb2f3e2b86b767fa8363112d8c253adb023b0d8e14e09698d54f4684cf2871c",
     "script": "scripts/optimize_actuator.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-02T16:36:24.982673+00:00",
+    "created_utc": "2026-11-02T20:25:24.356339+00:00",
     "python_version": "3.14.4",
-    "git_commit": "5ccc9104945d94bfcc5798ac6a2b5976da8ba302",
+    "git_commit": "221ce55f56a705cc692eee97d9ab386dbd67f5d5",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -164,8 +164,8 @@
     "k_load": 0.0014999772491221114
   },
   "best_cp": 0.4969482961863245,
-  "de_time_s": 487.59200142199916,
-  "local_time_s": 31.80158377400039,
+  "de_time_s": 507.5637516749998,
+  "local_time_s": 31.8349171079999,
   "history": [
     {
       "stage": "DE",
