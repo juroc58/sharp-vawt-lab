@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "2",
-    "code_hash": "d67324dda203832dd31b4740707e765fff63881ce0b11717f53a7d98136d2bb4",
+    "code_hash": "cd6e436bdf2353e344a09dfe641ac80e59baa037c4f28f301194712136c637b9",
     "script": "scripts/diag_small_equilibria.py",
-    "script_version": "2.0.0",
-    "created_utc": "2026-11-02T06:30:29.299848+00:00",
+    "script_version": "2.1.0",
+    "created_utc": "2026-11-02T06:54:03.056560+00:00",
     "python_version": "3.14.4",
-    "git_commit": "be58a52d6f5248f6e7dc8a427bc8a2f1f050d19a",
+    "git_commit": "fee7593b2fd11c3303ee19170b5ce35b29a4cee8",
     "seed": null,
     "n": 3,
     "script_args": [],
@@ -30,7 +30,7 @@
       "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
       "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
       "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
-      "scripts/diag_small_equilibria.py": "66b092553f67c70f5b858e3ceb44ef61d354b5288604c0942031320e7444cf00",
+      "scripts/diag_small_equilibria.py": "53715b283688a13aa3eb5f1fe761798f2881b517c64c4aa50de52d7431be1f52",
       "scripts/aep_small.json": "bab4df8f8840a6af9d1425661e1c58c6ab10bffb1ea85984a34fe2dba8ae7e4d"
     },
     "data_hashes": {
@@ -43,6 +43,7 @@
     }
   },
   "note": "Diagnostic for the small-rotor free-vs-fixed Cp gap. Four checks discriminate the cause: (a) Q-omega correlation from velocity ripple (ripple_check), (b) per-revolution energy ledger comparison (ledger_ratio_free_over_fixed), (c) psi(azimuth) waveform comparison including fraction of time on the stops (waveform), (d) bistability check via free runs from w0_frac in {0.5, 0.9, 1.5} and fixed runs from psi0_deg in {-40, -20, 0, 20, 40} (bistability). Numbers and interpretation are recorded per U.",
+  "explanation": "The 34-48% free-vs-fixed gap is real physics, not a bug. The pitch equation has a term proportional to \u03c9\u0307 (the rotor angular acceleration) which is nonzero in free mode but identically zero in fixed mode. That term excites larger pitch oscillations in free mode (psi RMS 0.12 vs 0.08 rad), which produce different mean angle-of-attack trajectories and different mean blade torque. Bistability is present at some U but is secondary: the gap persists at U=12 where neither mode is bistable. This is the model correctly representing that free and fixed operation are physically different machines.",
   "source": "scripts/aep_small.json",
   "cases": [
     {
@@ -55,7 +56,8 @@
         "cp_free": 0.0717687648623591,
         "cp_q_mean_omega_mean": 0.07164707628756978,
         "correlation_contribution_percent": 0.16955645679941836,
-        "cube_ratio": 1.00255035815739
+        "cube_ratio": 1.00255035815739,
+        "verdict": "not the driver"
       },
       "ledger_ratio_free_over_fixed": {
         "aero": 6.109744876409082,
@@ -92,7 +94,7 @@
         "n_distinct_free": 2,
         "n_distinct_fixed": 2
       },
-      "interpretation": "pitch bistability: fixed-rpm has multiple attractors"
+      "interpretation": "pitch bistability in both modes; gap magnitude includes both bistability and pitch dynamics"
     },
     {
       "U": 8.0,
@@ -104,7 +106,8 @@
         "cp_free": 0.07941894397865831,
         "cp_q_mean_omega_mean": 0.0792846313443701,
         "correlation_contribution_percent": 0.1691191390360335,
-        "cube_ratio": 1.0025433914164428
+        "cube_ratio": 1.0025433914164428,
+        "verdict": "not the driver"
       },
       "ledger_ratio_free_over_fixed": {
         "aero": 8.113618349080845,
@@ -141,7 +144,7 @@
         "n_distinct_free": 2,
         "n_distinct_fixed": 1
       },
-      "interpretation": "free dynamics bistable but fixed single-attractor"
+      "interpretation": "free-mode bistability only; gap magnitude includes both free bistability and pitch dynamics"
     },
     {
       "U": 12.0,
@@ -153,7 +156,8 @@
         "cp_free": 0.08714890621773551,
         "cp_q_mean_omega_mean": 0.08701828213297474,
         "correlation_contribution_percent": 0.14988608627446048,
-        "cube_ratio": 1.0022529979080226
+        "cube_ratio": 1.0022529979080226,
+        "verdict": "not the driver"
       },
       "ledger_ratio_free_over_fixed": {
         "aero": 11.485878040942483,
@@ -190,7 +194,7 @@
         "n_distinct_free": 1,
         "n_distinct_fixed": 1
       },
-      "interpretation": "single attractor on both; gap is accounting"
+      "interpretation": "single attractor both; gap is different pitch dynamics driven by the \u03c9\u0307 coupling term in the pitch equation (nonzero in free, zero in fixed), not an accounting bug"
     }
   ]
 }

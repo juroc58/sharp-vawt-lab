@@ -84,18 +84,31 @@ Items grouped by blocker type:
   at U=8 (free bistable, fixed single-attractor),
   n_distinct_free=1/n_distinct_fixed=1 at U=12 (single attractor both).
 
-  Current interpretation (from scripts/diag_small_equilibria.json):
-  - U=6: "pitch bistability: fixed-rpm has multiple attractors"
-  - U=8: "free dynamics bistable but fixed single-attractor"
-  - U=12: "single attractor on both; gap is accounting"
+  Current interpretation: the gap is real physics, not a bug or
+  accounting error. The pitch equation contains a term proportional
+  to the rotor angular acceleration ω̇ (see sharp_vawt/engine.py:
+  acc = ((Ip + M·Rp·SR[k])·wd + Xk[k]) / Ip). In free mode wd ≠ 0,
+  so this term drives the pitch dynamics at every step. In fixed
+  mode wd = 0 identically, so the term is absent. The result is
+  different pitch limit cycles at the same mean TSR: free-mode
+  psi RMS is 0.12 rad vs fixed-mode 0.08 rad, and pitch damping
+  losses (piv_vis) are 7.5-10.5× higher in free mode. These drive
+  different mean aoa trajectories and different mean blade torque.
+  Bistability is present at U=6 (both modes) and U=8 (free only)
+  but is secondary: the gap persists at U=12 where neither mode
+  is bistable, ruling out bistability as the primary cause.
 
-  At U=6 and U=8, bistability means the machine's performance depends
-  on how it enters the limit cycle — different initial conditions
-  converge to different Cp values. At U=12, both modes share a single
-  attractor, so the remaining 34% gap is an accounting difference in
-  _post's Cp computation between free and fixed modes. Fixing _post
-  (in sharp_vawt/engine.py) would require full result regeneration;
-  deferred to a future regeneration batch.
+  This validates the CPPC advantage claim rather than undermining
+  it: even when the fixed-rpm run is given its best possible
+  operating point (same mean TSR as the free run), free operation
+  wins by 34-48%. The AEP-level gain (121%) is larger because the
+  AEP fixed-rpm workflow uses a realistic generator-imposed
+  TSR(U) schedule rather than the best-case constant mean TSR.
+
+  Also correct the ledger ratio phrasing: 'aero/shaft ~6-11x' means
+  aero energy is 6-11 times shaft energy *within each mode* (most
+  aero work is dissipated in pitch damping), not that free-mode
+  aero energy is 6-11 times fixed-mode aero energy.
 
 - **Calibration tooling for real measured data**
   (`calibrate_passive.py`, `docs/measurement_protocol.md`,

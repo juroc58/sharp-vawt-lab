@@ -46,7 +46,7 @@ SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/compute_aep_small.py": "1.0.1",
     "scripts/compute_aep_turbulent.py": "2.0.0",
     "scripts/diag_aep_branches.py": "2.0.0",
-    "scripts/diag_small_equilibria.py": "2.0.0",
+    "scripts/diag_small_equilibria.py": "2.1.0",
     "scripts/finite_span_ablation.py": "3.0.0",
     "scripts/ham_finite_span_check.py": "2.0.0",
     "scripts/optimize_actuator.py": "2.0.0",

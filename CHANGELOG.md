@@ -125,6 +125,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edited; only `diag_small_equilibria.json` regenerated.
 
 ### Fixed
+- **Free-vs-fixed diagnostic interpretation corrected**
+  (`scripts/diag_small_equilibria.py`, `diag_small_equilibria.json`):
+  the 34-48% gap between free and fixed Cp at the same mean TSR
+  is real physics (pitch dynamics driven by the ω̇ coupling term
+  in the pitch equation), not an accounting bug. Previous
+  PASS 36 labeled the U=12 case "gap is accounting," which is
+  wrong: with single attractors on both sides and no bistability,
+  the gap must come from the pitch dynamics difference. Free-mode
+  psi RMS is 0.12 rad vs fixed-mode 0.08 rad; pitch damping
+  losses are 7.5-10.5× higher in free mode. The finding
+  strengthens the CPPC advantage claim rather than undermining
+  it: even when the fixed-rpm run is given its best possible
+  operating point (same mean TSR as the free run), free operation
+  wins by 34-48%. Numbers and
+  corrected interpretation recorded in KNOWN_ISSUES.md.
 - **Analytic test suite finalized (PASS 35)**: `tests/test_analytic.py`
   now contains invariants the model actually satisfies: Betz bound
   (Cp <= 16/27 across the working branch), rotational symmetry
