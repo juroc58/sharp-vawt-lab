@@ -76,18 +76,6 @@ Items grouped by blocker type:
   aero work is dissipated in pitch damping), not that free-mode
   aero energy is 6-11 times fixed-mode aero energy.
 
-- **Calibration tooling for real measured data**
-  (`calibrate_passive.py`, `docs/measurement_protocol.md`,
-  `data/measured_template.csv`): deferred. The proposed CSV schema
-  (`azimuth_deg, pitch_deg, torque_Nm, U, rpm`) overlaps partially with
-  the dynamic-stall calibration schema in
-  `docs/dynamic_stall_calibration_plan.md` and the per-measurement
-  schema in `data/prototype/README.md`. Adding a third schema without
-  first reconciling the three would repeat the multiple-configurations
-  problem that KNOWN_ISSUES.md documents for the optimised_passive
-  preset. Decision needed: consolidate to one measurement schema before
-  implementing the fitting code.
-
 - **Negative-TSR mirror symmetry not testable without a kernel change**:
   `test_mirror_symmetry_prescribed` covers pitch-coefficient reversal at
   positive TSR. The negative-rotation case (mirror symmetry of the full

@@ -1,0 +1,22 @@
+{
+  "generator": "scripts/gen_real_polars.py",
+  "method": "CL/CD: NeuralFoil (XFOIL-trained) for |alpha|<=20 deg (attached); clamped slope at 1.15*2pi, monotone Cl enforced. Smoothstep to flat-plate deep-stall model for 20<|alpha|<45 deg; flat-plate model beyond. CD(90 deg)~1.66, CD(150 deg)~0.4, CL(120-150 deg)~-0.56, anchored to Sheldahl & Klimas (1981). Deep-stall amplitudes are provisional/unverified.",
+  "cm_method": "Default variant: Cm=0 for |alpha|<=20 deg (physical symmetric section); post-stall Cm from centre-of-pressure shift x_cp: 0.25c -> 0.5c, Cm = -CN*(x_cp - 0.25). Variant 'neuralfoil_cm': raw NeuralFoil CM for |alpha|<=20 deg (not the default, sensitivity only), blended to synthetic deep-stall trend. Not measured.",
+  "cm_convention": "Positive Cm is nose-up about the quarter chord, matching the solver's Qa_cm = q*Cm*c term. Negative alpha uses odd symmetry.",
+  "neuralfoil_version": "0.3.3",
+  "n_crit": 9.0,
+  "n_crit_note": "n_crit=9 is a clean-tunnel e^9 transition value. Rotor blades in atmospheric turbulence usually have a lower effective n_crit, so these attached-flow polars are optimistic for field operation.",
+  "model_size": "xlarge",
+  "aerosandbox_shim": false,
+  "cst_fit_max_error_chord": 0.0002052521823973849,
+  "reynolds": [
+    100000,
+    200000,
+    400000,
+    1000000
+  ],
+  "attached_limit_deg": 20.0,
+  "airfoil": "naca0018",
+  "thickness": 0.18,
+  "note": "These tables are not raw experimental data. The attached-flow Cl, Cd come from an XFOIL-trained surrogate with clamped slope and enforced monotonicity; deep-stall Cl/Cd and Cm are analytic trends. Default Cm is physically derived for a symmetric section; NeuralFoil CM is available as a variant."
+}

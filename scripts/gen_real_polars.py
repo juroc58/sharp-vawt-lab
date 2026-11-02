@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Generate NACA 0012 polar tables for the VAWT solver.
+"""Generate NACA 4-digit polar tables for the VAWT solver.
+
+By default generates NACA 0012 polars. Use --thickness to generate a
+different thickness (e.g. 0.18 for NACA 0018) and --out-dir to write
+to a different directory (e.g. sharp_vawt/airfoil_polars/naca0018).
 
 Method
 -----
@@ -48,12 +52,13 @@ import json
 import math
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_HERE)
-_OUT_DIR = os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "naca0012")
+_DEFAULT_OUT_DIR = os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "naca0012")
 
 RE_LIST = [100_000, 200_000, 400_000, 1_000_000]
 ALPHA_DEEP_STALL = 45.0
@@ -132,10 +137,15 @@ def _load_neuralfoil():
 # ---------------------------------------------------------------------------
 # NACA 0012 geometry -> Kulfan (CST) weights
 # ---------------------------------------------------------------------------
-def naca0012_half_thickness(x):
-    """Closed-trailing-edge NACA 0012 half-thickness distribution."""
+def naca4_half_thickness(x, thickness: float = 0.12):
+    """Closed-trailing-edge NACA 4-digit half-thickness distribution.
+
+    NACA 4-digit thickness = 5 * thickness * (0.2969*sqrt(x) - ...),
+    where thickness is the fraction (e.g. 0.12 for NACA 0012, 0.18 for
+    NACA 0018).
+    """
     x = np.asarray(x, dtype=float)
-    return 0.6 * (
+    return 5.0 * thickness * (
         0.2969 * np.sqrt(x)
         - 0.1260 * x
         - 0.3516 * x**2
@@ -154,12 +164,12 @@ def _bernstein(x, n=8):
     )
 
 
-def kulfan_parameters():
-    """Least-squares CST fit of the NACA 0012 thickness distribution."""
+def kulfan_parameters(thickness: float = 0.12):
+    """Least-squares CST fit of the NACA 4-digit thickness distribution."""
     x = np.linspace(1e-6, 1.0, 4000)
     basis = np.sqrt(x)[:, None] * (1.0 - x)[:, None] * _bernstein(x, 8)
-    weights, *_ = np.linalg.lstsq(basis, naca0012_half_thickness(x), rcond=None)
-    fit_err = float(np.max(np.abs(basis @ weights - naca0012_half_thickness(x))))
+    weights, *_ = np.linalg.lstsq(basis, naca4_half_thickness(x, thickness), rcond=None)
+    fit_err = float(np.max(np.abs(basis @ weights - naca4_half_thickness(x, thickness))))
     return {
         "upper_weights": weights,
         "lower_weights": -weights,
@@ -326,11 +336,13 @@ def make_polar(Re, nf, kulfan):
     return rows
 
 
-def write_csv(Re, rows):
-    path = os.path.join(_OUT_DIR, f"polars_naca0012_Re_{int(Re)}.csv")
+def write_csv(Re, rows, out_dir, thickness: float = 0.12):
+    """Write a polar CSV. ``out_dir`` is the directory (e.g. naca0012 or naca0018)."""
+    naca_name = f"naca{int(thickness * 100):04d}"
+    path = os.path.join(out_dir, f"polars_{naca_name}_Re_{int(Re)}.csv")
     with open(path, "w") as fh:
         fh.write(
-            f"# NACA 0012, Re = {Re:.1e}\n"
+            f"# NACA {naca_name}, Re = {Re:.1e}\n"
             f"# Cl/Cd: NeuralFoil (XFOIL-trained) for |alpha|<=stall; "
             f"flat-plate deep stall beyond\n"
             f"# Cm (col 4): default variant, attached Cm=0, post-stall from x_cp shift\n"
@@ -342,23 +354,47 @@ def write_csv(Re, rows):
 
 
 def main():
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Generate NACA 4-digit polar tables.")
+    ap.add_argument(
+        "--thickness",
+        type=float,
+        default=0.12,
+        help="Airfoil thickness fraction (e.g. 0.12 for NACA 0012, 0.18 for NACA 0018)",
+    )
+    ap.add_argument(
+        "--out-dir",
+        type=str,
+        default=None,
+        help="Output directory (default: sharp_vawt/airfoil_polars/naca00XX)",
+    )
+    args = ap.parse_args()
+
+    thickness = args.thickness
+    out_dir = args.out_dir or os.path.join(
+        _ROOT, "sharp_vawt", "airfoil_polars", f"naca0{int(thickness * 100):02d}"
+    )
+
     shimmed = _install_aerosandbox_shim()
     nf = _load_neuralfoil()
-    kulfan, fit_err = kulfan_parameters()
+    kulfan, fit_err = kulfan_parameters(thickness)
     try:
         nf_version = importlib.metadata.version("neuralfoil")
     except importlib.metadata.PackageNotFoundError:
         nf_version = "unknown"
 
-    print("Generating NACA 0012 polars with NeuralFoil")
+    naca_name = f"naca{int(thickness * 100):04d}"
+    print(f"Generating NACA {naca_name} polars with NeuralFoil")
     print(f"  NeuralFoil {nf_version}, n_crit={N_CRIT}, model={MODEL_SIZE}")
     print(f"  CST fit max error: {fit_err:.2e} chord")
     print(f"  aerosandbox shim installed: {shimmed}")
+    print(f"  output directory: {out_dir}")
 
-    os.makedirs(_OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     for Re in RE_LIST:
         rows = make_polar(Re, nf, kulfan)
-        write_csv(Re, rows)
+        write_csv(Re, rows, out_dir, thickness)
 
     provenance = {
         "generator": "scripts/gen_real_polars.py",
@@ -393,6 +429,8 @@ def main():
         "cst_fit_max_error_chord": fit_err,
         "reynolds": RE_LIST,
         "attached_limit_deg": 20.0,
+        "airfoil": f"naca{int(thickness * 100):04d}",
+        "thickness": thickness,
         "note": (
             "These tables are not raw experimental data. The attached-flow "
             "Cl, Cd come from an XFOIL-trained surrogate with clamped slope "
@@ -401,10 +439,12 @@ def main():
             "NeuralFoil CM is available as a variant."
         ),
     }
-    with open(os.path.join(_ROOT, "sharp_vawt", "airfoil_polars", "provenance.json"), "w") as fh:
+    out_dir_path = Path(out_dir)
+    out_dir_path.mkdir(parents=True, exist_ok=True)
+    with open(out_dir_path / "provenance.json", "w") as fh:
         json.dump(provenance, fh, indent=2)
         fh.write("\n")
-    print("  wrote sharp_vawt/airfoil_polars/provenance.json")
+    print(f"  wrote {out_dir_path / 'provenance.json'}")
 
 
 if __name__ == "__main__":

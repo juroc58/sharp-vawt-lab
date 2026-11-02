@@ -45,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mirror symmetry in prescribed-pitch mode (reversed rotation + negated
   pitch preserves Cp), and Helmbold lift-slope match at AR in {2, 3, 4,
   6, 10} (pure math check on the finite-span correction).
+- **NACA 0018 Polars**: Parameterized `scripts/gen_real_polars.py` to
+  generate NACA 4-digit airfoils via `--thickness` and `--out-dir`.
+  Committed `naca0018` polars for low-Re prototype testing.
+- **Prototype Preset**: Added `prototype_1_3` (R = 0.906, H = 1.353) to
+  `vawt_presets.py` for the physical test rig.
+- **Streamlit Dashboard**: Moved time-series visualization to
+  `tools/dashboard.py`. Created `requirements-tools.txt` (streamlit,
+  plotly).
+- **Measurement Protocol**: Created `docs/measurement_protocol.md` and
+  `data/measured_template.csv` to unblock physical validation.
 
 ### Changed
 - **diag_qa.py** thresholds use achieved |α|_max (EXTREME_MARGIN=0.75,
