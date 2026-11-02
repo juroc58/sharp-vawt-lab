@@ -381,7 +381,8 @@ def _cli():
             "optimization_actuator.json").read_text(encoding="utf-8"))
         best = stored["best_params"]
         params = dict(best)
-        params["T_max"] = 30.0
+        # Use the T_max that matches the stored best_params.
+        params["T_max"] = float(best.get("T_max", 20.0))
         sim = create_sim_from_params(params)
         res = sim.run(store_history=True)
         verified_cp = float(res["cp"])

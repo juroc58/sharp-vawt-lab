@@ -428,10 +428,10 @@ def main():
     calc_second_order = args.saltelli_second_order
     lhs_n = args.samples if args.samples is not None else N_SAMPLES
 
-    # Canonical study (committed at HEAD): Saltelli, base_n = 64.  Any other
-    # configuration is noncanonical and must not write to the canonical
-    # output path unless the user explicitly requests it with --out.
-    canonical = use_saltelli and saltelli_n == CANONICAL_SALTELLI_N
+    # Canonical study (committed at HEAD): Saltelli, base_n = 64.
+    # Any base N >= the canonical N may write the canonical JSON.
+    # Smaller runs must use --out for a non-canonical path.
+    canonical = use_saltelli and saltelli_n >= CANONICAL_SALTELLI_N
     canonical_out = os.path.join(_HERE, "uncertainty_results.json")
     dev_out = os.path.join(_HERE, DEV_OUTPUT_DIR, "uncertainty_results.json")
 

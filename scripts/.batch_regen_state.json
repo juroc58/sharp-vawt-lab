@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "started_utc": "2026-11-02T08:36:31Z",
+  "started_from_commit": "af51f18e968ddb8e5761ade4f89d961f45be68b2",
+  "source_edits_applied": true,
+  "producers_done": [],
+  "producers_failed": [],
+  "producers_remaining": [
+    "ham_finite_span_check.py",
+    "finite_span_ablation.py",
+    "validate_ds_off.py",
+    "diag_small_equilibria.py",
+    "scan_tip_loss.py",
+    "scan_cm_scale.py",
+    "check_branch_points.py",
+    "diag_aep_branches.py",
+    "compute_aep_small.py",
+    "compute_aep_counter_rotating.py",
+    "robust_reopt.py",
+    "optimize_actuator.py",
+    "optimize_passive.py",
+    "optimize_scaleup.py",
+    "spearman_sensitivity.py",
+    "aep_rigid_fair.py",
+    "compute_aep.py",
+    "compute_aep_scaleup.py",
+    "compute_aep_turbulent.py",
+    "uncertainty.py --saltelli --saltelli-n 64"
+  ]
+}

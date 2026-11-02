@@ -64,8 +64,11 @@ PRESETS: dict[str, dict[str, Any]] = {
         "k_load": 0.0025,
         "arm_cd": 1.0,
     },
-    # Optimised passive (mass-balanced) at R = 0.60 m.  Values mirror
-    # scripts/optimization_passive.json.
+    # Optimised passive anchor used by the UQ study (earlier snapshot
+    # from optimize_passive.py; values differ from the final
+    # optimization_passive.json). See docs/KNOWN_ISSUES.md for the
+    # reconciliation note. Do not treat this preset as the stored
+    # optimizer output.
     "optimised_passive": {
         "R": 0.60, "c": 0.070077, "H": 0.40, "N": 3,
         "ar": 0.260419, "sp": 0.209523,

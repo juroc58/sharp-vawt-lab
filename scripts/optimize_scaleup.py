@@ -17,8 +17,9 @@ Dimensional reference values at R=0.6 m: mb_ref, mc_ref, k_load_ref
 Reynolds number at fixed TSR·U scales as Re ∝ R, so the tip Re grows from
 ~1.4e5 at R=0.6 to ~7e5 at R=3.
 
-Runtime: ~30-60 min on 4 cores (the DE budget was raised from the
-initial popsize=6/maxiter=8, which did not converge).
+Runtime: ~30-60 min on 4 cores. DE_POPSIZE=6 and DE_MAXITER=8
+match the initial run; the stored result is a local refinement,
+not a converged global optimum. See docs/KNOWN_ISSUES.md.
 """
 from __future__ import annotations
 

@@ -279,8 +279,26 @@ class PolarDatabase:
             if not m:
                 continue
             Re = float(m.group(1))
-            d = np.genfromtxt(f, delimiter=",", comments="#")
-            d = d[~np.isnan(d).any(axis=1)] if d.ndim == 2 else d
+            raw = np.genfromtxt(f, delimiter=",", comments="#")
+            if raw.ndim != 2:
+                raise ValueError(
+                    f"PolarDatabase: {f}: expected a 2D table, got shape {raw.shape}")
+            if raw.shape[1] < 3:
+                raise ValueError(
+                    f"PolarDatabase: {f}: expected >=3 columns "
+                    f"(alpha_deg, Cl, Cd), got {raw.shape[1]}")
+            valid = ~np.isnan(raw).any(axis=1)
+            dropped = int(raw.shape[0] - valid.sum())
+            if dropped > 0:
+                import warnings as _warnings
+                frac = dropped / raw.shape[0]
+                msg = (f"PolarDatabase: {f}: dropped {dropped}/{raw.shape[0]} "
+                       f"({frac:.1%}) rows with non-finite values")
+                if frac > 0.10:
+                    raise ValueError(msg + " — refusing to load a polar with "
+                                    f">10% corrupted rows")
+                _warnings.warn(msg, RuntimeWarning, stacklevel=2)
+            d = raw[valid]
             a, cl, cd = d[:, 0], d[:, 1], d[:, 2]
             # Column 3 is the default (physical, Cm=0 attached) table;
             # column 4 is the raw NeuralFoil Cm used by the sensitivity variant.

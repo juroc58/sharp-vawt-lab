@@ -33,7 +33,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-STAMP_SCHEMA_VERSION = "2"
+STAMP_SCHEMA_VERSION = "3"
 
 # Per-script semantic versions.  Bump the relevant entry whenever a change can
 # move that script's output.  Generic placeholders such as "v1.0" are rejected.
@@ -76,7 +76,58 @@ def _sha256_bytes(data: bytes) -> str:
 
 
 def _sha256_file(path: Path) -> str:
-    return _sha256_bytes(path.read_bytes())
+    """Hash file with docstrings stripped for AST-normalized hashing.
+
+    Raw-byte hashing makes docstring edits stale every result (this
+    happened on PASS 30-37). This version parses .py files with ast,
+    strips module/function/class docstrings, and hashes a canonical
+    Python-version-independent serialization. Comments, whitespace,
+    and docstrings are ignored. Behavior-bearing code (assignments,
+    calls, imports, control flow) is captured.
+
+    Non-Python files fall back to raw-byte hashing.
+    """
+    import ast as _ast
+    if path.suffix != ".py":
+        return _sha256_bytes(path.read_bytes())
+    try:
+        tree = _ast.parse(path.read_bytes())
+    except SyntaxError as exc:
+        raise ValueError(f"Stamp: cannot parse {path}: {exc}") from exc
+    for node in _ast.walk(tree):
+        if isinstance(node, (_ast.Module, _ast.FunctionDef,
+                             _ast.AsyncFunctionDef, _ast.ClassDef)):
+            body = node.body
+            if (body and isinstance(body[0], _ast.Expr)
+                    and isinstance(body[0].value, _ast.Constant)
+                    and isinstance(body[0].value.value, str)):
+                node.body = body[1:] or [_ast.Pass()]
+    canonical = _ast_canonical(tree)
+    return _sha256_bytes(canonical.encode("utf-8"))
+
+
+def _ast_canonical(node) -> str:
+    """Version-independent canonical string from an AST.
+
+    ast.dump varies across Python versions (type_params added in 3.12,
+    etc.). This walker emits only fields that affect runtime behavior
+    across all supported versions (>=3.11).
+    """
+    import ast as _ast
+    if isinstance(node, _ast.AST):
+        parts = [type(node).__name__, "("]
+        for field in node._fields:
+            if field in ("type_params", "type_comment", "kind"):
+                continue
+            value = getattr(node, field, None)
+            parts.append(field + "=")
+            parts.append(_ast_canonical(value))
+            parts.append(",")
+        parts.append(")")
+        return "".join(parts)
+    if isinstance(node, list):
+        return "[" + ",".join(_ast_canonical(x) for x in node) + "]"
+    return repr(node)
 
 
 def _git_commit(root: Path) -> str | None:

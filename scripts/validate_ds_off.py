@@ -13,10 +13,14 @@ Also computes DS sensitivity for the two passive headline anchors.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+_HERE = Path(__file__).resolve().parent
 
 from scripts.stamp import write_json_with_stamp
 from sharp_vawt import create_sim_from_params
@@ -150,6 +154,23 @@ def main():
         },
         "passive_anchors": passive_results,
     }
+    # Also report DS sensitivity at the stored actuator best_params,
+    # so the two configurations are unambiguously documented in the
+    # JSON rather than being confused.
+    try:
+        stored = json.loads((_HERE.parent / "scripts" /
+                             "optimization_actuator.json").read_text())
+        bp = stored["best_params"]
+        ds_best_params = compute_ds_sensitivity(bp)
+        output["actuator_best_params_config"] = {
+            "source": "optimization_actuator.json::best_params",
+            "cp_ds_on": ds_best_params["cp_ds_on"],
+            "cp_ds_off": ds_best_params["cp_ds_off"],
+            "delta_abs": ds_best_params["delta_abs"],
+            "delta_rel": ds_best_params["delta_rel"],
+        }
+    except (FileNotFoundError, KeyError) as exc:
+        output["actuator_best_params_config"] = {"error": str(exc)}
 
     write_json_with_stamp(
         path="scripts/validate_ds_off.json",
