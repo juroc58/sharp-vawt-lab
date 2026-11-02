@@ -103,8 +103,8 @@ PRESETS: dict[str, dict[str, Any]] = {
     # 1/3 scale prototype: R = 0.906 m (1.81 m diameter), H = 1.353 m.
     "prototype_1_3": {
         "R": 0.906, "c": 0.1479, "H": 1.353, "N": 3,
-        "ar": 0.2930, "sp": 0.2162,
-        "mb": 0.045, "xbcg": 0.20, "mc": 0.1243, "dcw": -0.1996,
+        "ar": 0.2930, "sp": 0.2000,
+        "mb": 0.045, "xbcg": 0.20, "mc": 0.1243, "dcw": -0.1970,
         "balance": 0, "bias_deg": 0.0,
         "prescribe_pitch": False,
         "free": True, "tsr": 2.5, "T_max": 15.0, "stride": 5,

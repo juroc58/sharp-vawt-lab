@@ -9,7 +9,7 @@
   `scan_tip_loss.py`, `spearman_sensitivity.py`, `diag_qa.py`,
   `diag_active_lift.py`, `passive_sweeps.py`, `passive_sharp.py`,
   `plot_validation.py`, `plot_ham_curve.py`, `render_animation.py`,
-  `build_readme.py`.
+  `build_readme.py`, `experiment_pivot.py`.
 
 - **Optimisers** — `optimize_passive.py`, `optimize_actuator.py`,
   `optimize_scaleup.py`.
@@ -101,6 +101,25 @@ the freshness dependency hash when present.
 Consumers such as `scripts/build_readme.py` read only
 `optimization_actuator.json["best_cp"]` for the prescribed-pitch upper
 bound; the verified Cp belongs to the deterministic check above.
+
+## Parametric experiment tool: `scripts/experiment_pivot.py`
+
+`scripts/experiment_pivot.py` runs a parametric sweep of a single mechanical
+parameter (e.g. pivot position ``sp``, aspect ratio ``ar``, chord ``c``)
+against the `prototype_1_3` preset from `vawt_presets.py`.  It uses
+``balance=1`` so the engine automatically solves the counterweight offset
+``dcw`` for each parameter value.  For each value it runs a normal-speed
+simulation (at ``--U``) and a startup simulation (at ``--startup-U`` with
+``w0_frac=0.1``) to check self-starting behaviour.
+
+Example:
+
+```bash
+python3 scripts/experiment_pivot.py --param sp --values 0.15,0.20,0.25 --U 6.0
+```
+
+Results are printed as a table and written to `data/experiment_pivot_results.csv`
+(or the path given with ``--out``).
 
 ## Design points used across the scripts
 

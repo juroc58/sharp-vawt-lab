@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "9589939a58a95b3d44cba6df6e44ab9441cd36e8967d9f5178839d16c6b17697",
+    "code_hash": "d5a2896de0b7d138b50c944179be9f1dd684b75510728620a81c9a96db44b013",
     "script": "scripts/scan_tip_loss.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-02T14:34:12.647802+00:00",
+    "created_utc": "2026-11-02T16:22:45.676903+00:00",
     "python_version": "3.14.4",
-    "git_commit": "6ffa6956b331a643ef80d11a93081d3d87092a74",
+    "git_commit": "5ccc9104945d94bfcc5798ac6a2b5976da8ba302",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -16,14 +16,14 @@
     ],
     "extra_data": {},
     "uq_spec_hash": null,
-    "config_hash": "f002f7642d1e967d5f53d259a2ed209dd93f688dc839fa9ce97d5bbc80852f03",
+    "config_hash": "918f3e59746ccde4a3dcd438bb6a9b476365e8b3f7c2667e26762028b9468c88",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "2135045521aee749fd54af7b65d40994ce3f864e01e382a67ac5bf57d3e40e14",
+      "vawt_presets.py": "c6db0a07e5bd20ac1de56f5e37fd80b39cd5ca437831c2c816cc3b81bebe9e78",
       "scripts/scan_tip_loss.py": "979e6969556bef912f6d066dc95280b949cbcf7ac0a1803945af266c2b84fe1e",
       "scripts/uncertainty.py": "d078323b5a6aaf20a89fe56b3fc0a229c8f892822e7b8f2e32422a211b75dc19"
     },

@@ -65,6 +65,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **README finite-span language**: explicitly states no tested correction
   reproduces the Ham band; absolute Cp values are scenarios with model-form
   uncertainty.
+- **Prototype Pivot Optimization**: Manual sweep of the pivot position
+  revealed that `sp=0.20` yields a higher Cp (0.361) than the automated
+  optimizer's choice of `sp=0.216` (0.358), while maintaining 4 m/s self-start.
+  Updated the `prototype_1_3` preset and added `scripts/experiment_pivot.py`
+  as a permanent parametric sweep tool.
 - **pytest timeout removed** (not installable in system Python); CI timeout
   handled by GitHub Actions job timeout.
 - **Ruff config**: moved `per-file-ignores` to `[tool.ruff.lint.per-file-ignores]`.

@@ -84,7 +84,7 @@ try:
     else:
         df = load_data(DEFAULT_CSV)
         st.sidebar.info(f"Using default file: `{DEFAULT_CSV}`")
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     st.sidebar.warning(f"Could not load default file. Please upload one. ({e})")
     st.stop()
 
@@ -129,14 +129,14 @@ else:
 
     fig.update_layout(
         title="Time Series Plot (Zoom/Drag on graph to update statistics)",
-        xaxis=dict(title="Time"),
-        yaxis=dict(title=", ".join(primary_vars) if primary_vars else "Primary Axis", side="left"),
-        yaxis2=dict(
-            title=", ".join(secondary_vars) if secondary_vars else "Secondary Axis",
-            side="right", overlaying="y", showgrid=False,
-        ),
+        xaxis={"title": "Time"},
+        yaxis={"title": ", ".join(primary_vars) if primary_vars else "Primary Axis", "side": "left"},
+        yaxis2={
+            "title": ", ".join(secondary_vars) if secondary_vars else "Secondary Axis",
+            "side": "right", "overlaying": "y", "showgrid": False,
+        },
         hovermode="x unified",
-        legend=dict(x=0, y=1.1, orientation="h"),
+        legend={"x": 0, "y": 1.1, "orientation": "h"},
         template="plotly_white",
         height=520,
     )
@@ -152,7 +152,7 @@ else:
     if chart_event and "selection" in chart_event:
         selection_data = chart_event["selection"]
         if "points" in selection_data and len(selection_data["points"]) > 0:
-            selected_x_vals = pd.to_datetime(list(set(p["x"] for p in selection_data["points"] if "x" in p)))
+            selected_x_vals = pd.to_datetime(list({p["x"] for p in selection_data["points"] if "x" in p}))
             if len(selected_x_vals) > 0:
                 stats_df_source = df[df["Time"].isin(selected_x_vals)].sort_values("Time")
                 graph_subset_active = True
