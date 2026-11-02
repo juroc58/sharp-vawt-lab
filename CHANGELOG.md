@@ -123,6 +123,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and fixed runs from psi0 in {-40, -20, 0, 20, 40}. Numbers and
   interpretation recorded in KNOWN_ISSUES.md. No producer scripts
   edited; only `diag_small_equilibria.json` regenerated.
+- **Stamp schema v3: AST-normalized hashing** (`scripts/stamp.py`):
+  result code_hash now parses .py sources with ast, strips
+  module/function/class docstrings, and hashes a Python-version-
+  independent canonical serialization. Comments, whitespace, and
+  docstring edits no longer stale result JSONs; behavior-bearing edits
+  still do. Non-Python files (JSON, CSV, MD) retain raw-byte hashing.
+  STAMP_SCHEMA_VERSION bumped from "2" to "3"; all 20 result JSONs
+  regenerated in this commit.
+- **`optimize_actuator.py --verify-stored` reads T_max from the stored
+  best_params** instead of overriding to 30.0. The stored design uses
+  T_max=20.0; the previous override made verification test a different
+  configuration.
+- **`optimize_scaleup.py` docstring corrected**: the DE budget was not
+  raised; the stored result is a local refinement of the original
+  popsize=6/maxiter=8 search.
+- **`vawt_presets.py` docstring for optimised_passive corrected**: the
+  preset is an earlier UQ-anchor snapshot, not a mirror of
+  optimization_passive.json.
+- **`validate_ds_off.json`** now reports DS sensitivity for BOTH the
+  historical DESIGN config and the stored actuator best_params,
+  removing the ambiguity between the two configurations.
+- **`PolarDatabase._load_csv`** now raises ValueError on structurally
+  malformed CSVs (<3 columns, non-2D shape) and on polars with >10%
+  NaN-corrupted rows; warns for 0-10% corruption. No simulation
+  behavior changes for the committed polars.
+- **`uncertainty.py`** accepts any base N >= CANONICAL_SALTELLI_N (64)
+  for writing the canonical uncertainty_results.json. Production runs
+  (N>=512) can now update the committed JSON without a separate
+  --out path. Runs with base N < 64 still require --out.
 
 ### Fixed
 - **Free-vs-fixed diagnostic interpretation corrected**

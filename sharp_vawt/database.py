@@ -296,7 +296,7 @@ class PolarDatabase:
                        f"({frac:.1%}) rows with non-finite values")
                 if frac > 0.10:
                     raise ValueError(msg + " — refusing to load a polar with "
-                                    f">10% corrupted rows")
+                                    ">10% corrupted rows")
                 _warnings.warn(msg, RuntimeWarning, stacklevel=2)
             d = raw[valid]
             a, cl, cd = d[:, 0], d[:, 1], d[:, 2]

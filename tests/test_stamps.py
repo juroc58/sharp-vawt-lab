@@ -41,6 +41,8 @@ def test_every_result_json_is_mapped_exactly_once():
     on_disk = {p.name for p in SCRIPTS.glob("*.json")}
     # optimization_overrides.json is an input override, not a generated result.
     on_disk.discard("optimization_overrides.json")
+    # .batch_regen_state.json is a batch state file, not a result JSON.
+    on_disk.discard(".batch_regen_state.json")
     assert on_disk == mapped, f"unmapped: {on_disk - mapped}; missing: {mapped - on_disk}"
 
 

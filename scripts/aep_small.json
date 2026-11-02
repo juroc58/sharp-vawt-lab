@@ -1,12 +1,12 @@
 {
   "stamp": {
-    "schema_version": "2",
-    "code_hash": "36bf8a052a2e7ee3b89d87348707541ee170b5a324a7e7bac2b48efe1573df18",
+    "schema_version": "3",
+    "code_hash": "6a5a6d6616b6e89c6b0eaefd4e3b26daccd9e3e059dfa5adae98d12beb74ee30",
     "script": "scripts/compute_aep_small.py",
     "script_version": "1.0.1",
-    "created_utc": "2026-10-27T05:45:12.309972+00:00",
+    "created_utc": "2026-11-02T09:12:45.205626+00:00",
     "python_version": "3.14.4",
-    "git_commit": "ddfee9f41cebea8f5877db97bb54e30aa9ac3eec",
+    "git_commit": "63f46c0c42c6d3680100047dde7183e1c5f70214",
     "seed": 0,
     "n": 28,
     "script_args": [],
@@ -21,15 +21,15 @@
       "U_RATED": 12.0
     },
     "uq_spec_hash": null,
-    "config_hash": "9ad52a690740477ddd458bad57c7e0437ee941cb0665a4efb35b3b6089e4aace",
+    "config_hash": "4b8b5b5242a550728bd9ee4388040641de2353b4b11a09a8d8a22b019082dea0",
     "source_hashes": {
-      "sharp_vawt/__init__.py": "b668e8225f256b2949f1a392191345d98f98755e3479d6b3af67512fafdde6cf",
-      "sharp_vawt/config.py": "7521fd8730f5d527a60d1e3b8c345bf914e723e11d432c1f899003cc9d571c4e",
-      "sharp_vawt/database.py": "0ec30dff5f844e4ed7317c6b8f7afd6e45c88a6aca23e80239c10172ab64b5ed",
-      "sharp_vawt/engine.py": "11648c4c4e89928e00eb4ef711774df8046660e7510ea8f045c8ee295c8bfcd2",
-      "vawt_core.py": "25ecdb2a291811437f2b242381e1d8b222293dddf215f8cbb861808a61f37316",
-      "vawt_presets.py": "95386dfe31f560ad9910967964e8291b9a7c2c5e28a05aa7429ee6d731cdd801",
-      "scripts/compute_aep_small.py": "90dc8e7fd2efa2d1d0611956dfd5e57e3b547df19bdc9dadf666c403666cc5de"
+      "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
+      "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
+      "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
+      "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
+      "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
+      "vawt_presets.py": "ea67643a370a814e4029c644b928af402268171d148e97a67c0cbd99c1c7eb05",
+      "scripts/compute_aep_small.py": "7d55842ddf486f50252b2fa99535cc7ff733c81c31c03263c5f2e0df8fe8010d"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

@@ -48,6 +48,7 @@ def test_every_result_json_mapped_once():
     mapped = set(STAMP_CHECK_MAP.keys())
     on_disk = {p.name for p in __import__("pathlib").Path(scripts_dir).glob("*.json")}
     on_disk.discard("optimization_overrides.json")  # input override, not a result
+    on_disk.discard(".batch_regen_state.json")  # batch state file, not a result
     assert on_disk == mapped, (
         f"unmapped: {sorted(on_disk - mapped)}; missing from disk: {sorted(mapped - on_disk)}"
     )
