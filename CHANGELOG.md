@@ -111,6 +111,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the stored cp curves and matching the stored AEP values; it also confirms
   the fixed-rpm workflow has no well-defined rating at U_RATED, so the free-
   running design rating is the only defensible common cap.
+- **Free-vs-fixed gap diagnostic** (`scripts/diag_small_equilibria.py`,
+  `diag_small_equilibria.json`): replaced the terminal-state test
+  (which cannot work without per-blade pitch state injection in the
+  kernel) with four checks that do not require a kernel change:
+  (a) Q-omega correlation from velocity ripple,
+  (b) per-revolution energy ledger comparison,
+  (c) psi(azimuth) waveform comparison including fraction of time on
+  the stops,
+  (d) bistability check via free runs from w0_frac in {0.5, 0.9, 1.5}
+  and fixed runs from psi0 in {-40, -20, 0, 20, 40}. Numbers and
+  interpretation recorded in KNOWN_ISSUES.md. No producer scripts
+  edited; only `diag_small_equilibria.json` regenerated.
 
 ### Fixed
 - **Analytic test suite finalized (PASS 35)**: `tests/test_analytic.py`

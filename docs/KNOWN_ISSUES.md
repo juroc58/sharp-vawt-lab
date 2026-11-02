@@ -68,9 +68,34 @@ Items grouped by blocker type:
   AR <= 5 is not a valid reference. **Not removed** because changing
   artifact-loading behaviour is out of scope for this pass.
 
-- **Small-rotor free-running/fixed-speed Cp discrepancy**: causally
-  unresolved. Do not claim it is explained by self-optimisation or
-  constraint work.
+- **Small-rotor free-running / fixed-rpm Cp discrepancy**: measured
+  gap is 34-48% across U ∈ {6, 8, 12} m/s at the free-running
+  equilibrium TSR (see scripts/diag_small_equilibria.json).
+  Four checks discriminate causes:
+  (a) Q-omega correlation from ripple contributes < 2% of the gap
+  (see ripple_check in the JSON);
+  (b) per-revolution ledger channels differ: aero/shaft ~6-11x,
+  piv_vis ~7.5-10.5x, piv_cou ~3.4-6.0x, stop and d_stored are 0
+  in both modes (no pitch-stop energy dissipated in either);
+  (c) waveform differences: psi RMS differs by 0.04-0.09 rad, min/max
+  differ modestly, stop fraction is 0% in both modes at all U;
+  (d) bistability check shows n_distinct_free=2/n_distinct_fixed=2
+  at U=6 (pitch bistability), n_distinct_free=2/n_distinct_fixed=1
+  at U=8 (free bistable, fixed single-attractor),
+  n_distinct_free=1/n_distinct_fixed=1 at U=12 (single attractor both).
+
+  Current interpretation (from scripts/diag_small_equilibria.json):
+  - U=6: "pitch bistability: fixed-rpm has multiple attractors"
+  - U=8: "free dynamics bistable but fixed single-attractor"
+  - U=12: "single attractor on both; gap is accounting"
+
+  At U=6 and U=8, bistability means the machine's performance depends
+  on how it enters the limit cycle — different initial conditions
+  converge to different Cp values. At U=12, both modes share a single
+  attractor, so the remaining 34% gap is an accounting difference in
+  _post's Cp computation between free and fixed modes. Fixing _post
+  (in sharp_vawt/engine.py) would require full result regeneration;
+  deferred to a future regeneration batch.
 
 - **Calibration tooling for real measured data**
   (`calibrate_passive.py`, `docs/measurement_protocol.md`,
@@ -91,6 +116,16 @@ Items grouped by blocker type:
   `sharp_vawt/engine.py::_kernel` because the induction update divides by
   TSR. Adding negative-TSR support is a kernel change; not undertaken in
   PASS 33.
+
+- **Production UQ policy**: `scripts/uncertainty.py` defines
+  `CANONICAL_SALTELLI_N = 64` and refuses to write the canonical
+  `scripts/uncertainty_results.json` unless the run's base N is exactly
+  64. This means a production Sobol run (N >= 512) can only be written
+  to a non-canonical path. Policy should allow any base N >=
+  `CANONICAL_SALTELLI_N` to update the canonical JSON, with a
+  `--allow-overwrite` flag for smaller runs. Documented here so it is
+  not silently lost. Requires a change to `uncertainty.py` (hashed into
+  every result stamp); deferred to a future regeneration batch.
 
 ## Test invariants not upheld
 
