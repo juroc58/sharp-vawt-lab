@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "4a83b63b0a55035de543b89c18b304b07cd0370ef4f90af2ef1f07620baf6914",
+    "code_hash": "a4a8fbacc20d2860ac733f5cd2a1c1cca95887c1d60c2e58904e4438e0a930ae",
     "script": "scripts/validate_ds_off.py",
     "script_version": "1.1.0",
-    "created_utc": "2026-11-03T09:26:01.115678+00:00",
+    "created_utc": "2026-11-03T11:11:50.192906+00:00",
     "python_version": "3.14.4",
-    "git_commit": "bdbe15d209710426b86a1ceaa25fc80c45345384",
+    "git_commit": "b401c5929b239cacefdcdde5a8f0664811a01d60",
     "seed": null,
     "n": 1,
     "script_args": [],
@@ -15,14 +15,14 @@
     ],
     "extra_data": null,
     "uq_spec_hash": null,
-    "config_hash": "864e8abbfc3f1a8dfa1754e38ea279da386f0375fc20df111dc3921f20c7eba8",
+    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "7d83bba98ba55a3bb11017c9a1994075089c2f3b46b41265537d14f7da9ceb53",
+      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
       "scripts/validate_ds_off.py": "560f53bac329ee4cf133b4bf12d3a145ff29002d83f1075e9635c022b9acced7"
     },
     "data_hashes": {

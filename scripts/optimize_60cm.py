@@ -5,6 +5,7 @@ Optimizes chord, pivot, arm, counterweight, and electrical load (k_load)
 to maximize Cp while ensuring it self-starts in low wind.
 """
 from __future__ import annotations
+
 import multiprocessing
 import os
 import sys
@@ -13,8 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 from scipy.optimize import differential_evolution
-from sharp_vawt import create_sim_from_params
+
 from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 # FIXED GEOMETRY
 R = 0.60
@@ -57,7 +59,7 @@ def objective(x: np.ndarray) -> float:
         start_res = create_sim_from_params({**params, "U": 4.0, "w0_frac": 0.1, "T_max": 12, "stride": 10}).run()
         if start_res["tsr_eq"] < 1.8:
             return 1000.0
-    except Exception:
+    except (ValueError, RuntimeError):
         return 1000.0
 
     # 2. Power test at 6.0 m/s (typical wind speed)
@@ -66,7 +68,7 @@ def objective(x: np.ndarray) -> float:
         cp = float(power_res["cp"])
         if cp <= 0:
             return 1000.0
-    except Exception:
+    except Exception:  # noqa: BLE001 - simulator may fail for invalid params
         return 1000.0
 
     return -cp
