@@ -64,6 +64,7 @@ SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/calibrate_passive.py": "1.0.1",
     "scripts/optimize_prototype_v2.py": "1.0.1",
     "scripts/validate_ds_off.py": "1.1.0",
+    "scripts/optimize_60cm.py": "1.0.1",
 }
 
 _GENERIC_VERSIONS = {"", "v1.0", "1.0", "1.0.0", "v1"}
@@ -422,6 +423,7 @@ STAMP_CHECK_MAP: dict[str, str] = {
     "tip_loss_scan.json": "scripts/scan_tip_loss.py",
     "uncertainty_results.json": "scripts/uncertainty.py",
     "validate_ds_off.json": "scripts/validate_ds_off.py",
+    "optimization_60cm.json": "scripts/optimize_60cm.py",
 }
 
 

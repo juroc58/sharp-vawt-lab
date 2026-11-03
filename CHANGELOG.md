@@ -81,14 +81,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   optimizer's choice of `sp=0.216` (0.358), while maintaining 4 m/s self-start.
   Updated the `prototype_1_3` preset and added `scripts/experiment_pivot.py`
   as a permanent parametric sweep tool.
-- **Prototype counterweight optimization**: Joint optimization of
-  (sp, ar, mc, dcw) for the 1/3 scale prototype found that the effective
-  counterweight offset from pivot (sp + dcw) converges to 0.0182 m —
-  essentially zero. The counterweight contributes negligibly to restoring
-  torque at this scale; the ar * sin(psi) term dominates. The current
-  `prototype_1_3` preset (sp=0.20, dcw=-0.197) is physically correct for
-  this scale. Larger machines may show different behavior. No new preset
-  added.
+- **Heavy Counterweight Prototype**: Joint optimization of
+  (sp, ar, mc, dcw) for the 1/3 scale prototype found Cp = 0.3845 with
+  c=0.1394 m, sp=0.2033, ar=0.2423, mc=0.3295 kg, dcw=-0.1851 m
+  (effective CW offset = 0.0182 m — counterweight near pivot).
+  Added `prototype_1_3_heavy` preset to `vawt_presets.py` with the
+  heavy 330g counterweight acting as a pitch flywheel, improving Cp
+  to 0.3845 at 7 m/s.
 - **pytest timeout removed** (not installable in system Python); CI timeout
   handled by GitHub Actions job timeout.
 - **Ruff config**: moved `per-file-ignores` to `[tool.ruff.lint.per-file-ignores]`.

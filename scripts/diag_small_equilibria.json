@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "9a0f41b9113e49bcb53ba257f471e81f1bb8a498047d8011524cda156b8878a6",
+    "code_hash": "f6298576a5d9a3b9762020269b4967b658329011d9ce63ba8b24014fbf079819",
     "script": "scripts/diag_small_equilibria.py",
     "script_version": "2.1.0",
-    "created_utc": "2026-11-03T09:09:01.137996+00:00",
+    "created_utc": "2026-11-03T10:30:13.332640+00:00",
     "python_version": "3.14.4",
-    "git_commit": "8e4b99a19a562512897cf450b672c78b04527ec6",
+    "git_commit": "bdbe15d209710426b86a1ceaa25fc80c45345384",
     "seed": null,
     "n": 3,
     "script_args": [],
@@ -22,16 +22,16 @@
       ]
     },
     "uq_spec_hash": null,
-    "config_hash": "918f3e59746ccde4a3dcd438bb6a9b476365e8b3f7c2667e26762028b9468c88",
+    "config_hash": "864e8abbfc3f1a8dfa1754e38ea279da386f0375fc20df111dc3921f20c7eba8",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "c6db0a07e5bd20ac1de56f5e37fd80b39cd5ca437831c2c816cc3b81bebe9e78",
+      "vawt_presets.py": "7d83bba98ba55a3bb11017c9a1994075089c2f3b46b41265537d14f7da9ceb53",
       "scripts/diag_small_equilibria.py": "6be6b45c55f941c830cae507d140b2972ea040785edf44f33ec931913308e510",
-      "scripts/aep_small.json": "3ce5b577ddd5d54734c80682c3fbc54545964fb2fc58c2d6c0440ecf347290c8"
+      "scripts/aep_small.json": "a43de1b3046e9a3ef6b98aa466a1b41446151df7d7eae4a4a042f8f98c10273f"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

@@ -116,6 +116,24 @@ PRESETS: dict[str, dict[str, Any]] = {
         "k_load": 0.0193,
         "arm_cd": 1.0,
     },
+    # 1/3 scale prototype: R = 0.906 m (1.81 m diameter), H = 1.353 m.
+    # Heavy 330g counterweight acts as a pitch flywheel, stabilizing
+    # angle of attack and increasing Cp to 0.3845 at 7 m/s.
+    "prototype_1_3_heavy": {
+        "R": 0.906, "c": 0.1394, "H": 1.353, "N": 3,
+        "ar": 0.2423, "sp": 0.2033,
+        "mb": 0.045, "xbcg": 0.20, "mc": 0.3295, "dcw": -0.1851,
+        "balance": 0, "bias_deg": 0.0,
+        "prescribe_pitch": False,
+        "free": True, "tsr": 2.5, "T_max": 15.0, "stride": 5,
+        "use_dynamic_stall": True,
+        "use_flow_curvature": True,
+        "use_tip_loss": True,
+        "use_dmst": True,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+        "k_load": 0.0193,
+        "arm_cd": 1.0,
+    },
 }
 
 __all__ = ["PRESETS", "SHARP_BASELINE"]
