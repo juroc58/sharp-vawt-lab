@@ -134,6 +134,24 @@ PRESETS: dict[str, dict[str, Any]] = {
         "k_load": 0.0193,
         "arm_cd": 1.0,
     },
+    # 60cm prototype: R = 0.60 m (0.60 m diameter), H = 0.60 m.
+    # Light 57g counterweight with forward pivot (sp=0.1521), chord c=0.0881m,
+    # achieving Cp=0.3071 despite high tip losses at this scale.
+    "prototype_60cm": {
+        "R": 0.60, "c": 0.0881, "H": 0.60, "N": 3,
+        "ar": 0.2584, "sp": 0.1521,
+        "mb": 0.025, "xbcg": 0.20, "mc": 0.0571, "dcw": -0.1069,
+        "balance": 0, "bias_deg": 0.0,
+        "prescribe_pitch": False,
+        "free": True, "tsr": 2.5, "T_max": 15.0, "stride": 5,
+        "use_dynamic_stall": True,
+        "use_flow_curvature": True,
+        "use_tip_loss": True,
+        "use_dmst": True,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+        "k_load": 0.0010,
+        "arm_cd": 1.0,
+    },
 }
 
 __all__ = ["PRESETS", "SHARP_BASELINE"]

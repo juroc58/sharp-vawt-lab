@@ -64,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (effective CW offset = 0.0182 m — counterweight near pivot, negligible
   restoring contribution at this scale). No new preset added; current
   `prototype_1_3` preset remains physically correct.
+- **60cm Prototype Preset**: Added `prototype_60cm` based on the
+  optimization that found moving the pivot forward (sp=0.1521) and
+  shrinking the chord (c=0.0881 m) increases aerodynamic leverage,
+  achieving Cp=0.3071 despite high tip losses at this scale.
 - **Energy Ledger Test**: Added `test_energy_ledger_closure` to
   `tests/test_analytic.py`.
 
