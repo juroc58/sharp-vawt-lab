@@ -17,8 +17,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 from scipy.optimize import differential_evolution
-from sharp_vawt import create_sim_from_params
+
 from scripts.stamp import write_json_with_stamp
+from sharp_vawt import create_sim_from_params
 
 # Fixed geometry
 R = 0.906
@@ -61,7 +62,7 @@ def objective(x: np.ndarray) -> float:
         start_res = create_sim_from_params({**params, "U": 4.0, "w0_frac": 0.1, "T_max": 12, "stride": 10}).run()
         if start_res["tsr_eq"] < 1.8:
             return 1000.0
-    except Exception:
+    except Exception:  # noqa: BLE001 - simulator may fail for invalid params
         return 1000.0
 
     # 2. Power test
@@ -70,7 +71,7 @@ def objective(x: np.ndarray) -> float:
         cp = float(power_res["cp"])
         if cp <= 0:
             return 1000.0
-    except Exception:
+    except Exception:  # noqa: BLE001 - simulator may fail for invalid params
         return 1000.0
 
     return -cp
@@ -79,7 +80,7 @@ def main():
     print("=" * 70)
     print("Optimization: Shifted Chord + Forward Heavy Counterweight")
     print("=" * 70)
-    print(f"Bounds:")
+    print("Bounds:")
     for name, (lo, hi) in zip(PARAM_NAMES, BOUNDS):
         print(f"  {name:6s} ∈ [{lo}, {hi}]")
     print()

@@ -58,6 +58,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Passive Calibration Tool**: Added `scripts/calibrate_passive.py` to fit
   `cd_add` and `tip_loss_multiplier` to measured `Power_W` vs `Wind_Speed`
   data. Explicitly refuses to claim calibration on synthetic data.
+- **Heavy Counterweight Prototype**: Joint optimization of
+  (sp, ar, mc, dcw) for the 1/3 scale prototype found Cp = 0.3845 with
+  c=0.1394 m, sp=0.2033, ar=0.2423, mc=0.3295 kg, dcw=-0.1851 m
+  (effective CW offset = 0.0182 m — counterweight near pivot, negligible
+  restoring contribution at this scale). No new preset added; current
+  `prototype_1_3` preset remains physically correct.
 - **Energy Ledger Test**: Added `test_energy_ledger_closure` to
   `tests/test_analytic.py`.
 
@@ -77,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as a permanent parametric sweep tool.
 - **Prototype counterweight optimization**: Joint optimization of
   (sp, ar, mc, dcw) for the 1/3 scale prototype found that the effective
-  counterweight offset from pivot (sp + dcw) converges to 0.0281 m —
+  counterweight offset from pivot (sp + dcw) converges to 0.0182 m —
   essentially zero. The counterweight contributes negligibly to restoring
   torque at this scale; the ar * sin(psi) term dominates. The current
   `prototype_1_3` preset (sp=0.20, dcw=-0.197) is physically correct for

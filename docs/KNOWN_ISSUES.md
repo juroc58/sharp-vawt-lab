@@ -86,15 +86,14 @@ Items grouped by blocker type:
 
 - **Prototype counterweight arm exploration**: joint optimization of
   (sp, ar, mc, dcw) found that the effective CW offset from pivot
-  (sp + dcw) converges to near zero (value = 0.0281) even when
-  allowed to vary freely. Interpretation: at the prototype's low
-  Reynolds numbers and low rotor inertia, the counterweight
-  contributes negligibly to restoring torque; the ar * sin(psi)
-  term dominates. The current prototype_1_3 preset (sp=0.20,
-  dcw=-0.197) is therefore not a degenerate solution but the
-  physically correct one for this scale. Larger machines may show
-  different behavior (see scaleup preset, where mc=2.69 kg is
-  comparable to blade mass).
+  (sp + dcw) converges to 0.0182 m even when allowed to vary freely.
+  Interpretation: at the prototype's low Reynolds numbers and low
+  rotor inertia, the counterweight contributes negligibly to
+  restoring torque; the ar * sin(psi) term dominates. The current
+  prototype_1_3 preset (sp=0.20, dcw=-0.197) is therefore not a
+  degenerate solution but the physically correct one for this scale.
+  Larger machines may show different behavior (see scaleup preset,
+  where mc=2.69 kg is comparable to blade mass).
 
 ## Test invariants not upheld
 

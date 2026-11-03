@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "80afa942068f098a4352a885b107b9f5a41da03bb29f93cf4e339b0b501f376a",
+    "code_hash": "6ed268bc62c42fbf4b20b08d4beb42b3fe3edafdaec4d3f5348c70a44f9e25df",
     "script": "scripts/optimize_prototype_v2.py",
     "script_version": "1.0.1",
-    "created_utc": "2026-11-03T07:56:16.976425+00:00",
+    "created_utc": "2026-11-03T09:15:54.735278+00:00",
     "python_version": "3.14.4",
-    "git_commit": "d864a5e7e6f3bdeaec9342a6ebeff07d6bb8343b",
+    "git_commit": "8e4b99a19a562512897cf450b672c78b04527ec6",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -53,7 +53,7 @@
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
       "vawt_presets.py": "c6db0a07e5bd20ac1de56f5e37fd80b39cd5ca437831c2c816cc3b81bebe9e78",
-      "scripts/optimize_prototype_v2.py": "56fc4f04c3a0a55ca15e8e06459cd17f3b7879a235ad91af3fcd0647adb990b0"
+      "scripts/optimize_prototype_v2.py": "b047329e1519e92c4abc0d5d4c44ebe70354f82d8fc0ea560a8dba8dabce1f55"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

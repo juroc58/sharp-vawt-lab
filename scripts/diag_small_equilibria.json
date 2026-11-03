@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "03d5de72ae4bd0f004f0f45fb3f295cc4cfe415d0d0c50084f6ee281619a5937",
+    "code_hash": "9a0f41b9113e49bcb53ba257f471e81f1bb8a498047d8011524cda156b8878a6",
     "script": "scripts/diag_small_equilibria.py",
     "script_version": "2.1.0",
-    "created_utc": "2026-11-02T20:45:46.147908+00:00",
+    "created_utc": "2026-11-03T09:09:01.137996+00:00",
     "python_version": "3.14.4",
-    "git_commit": "221ce55f56a705cc692eee97d9ab386dbd67f5d5",
+    "git_commit": "8e4b99a19a562512897cf450b672c78b04527ec6",
     "seed": null,
     "n": 3,
     "script_args": [],
@@ -31,7 +31,7 @@
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
       "vawt_presets.py": "c6db0a07e5bd20ac1de56f5e37fd80b39cd5ca437831c2c816cc3b81bebe9e78",
       "scripts/diag_small_equilibria.py": "6be6b45c55f941c830cae507d140b2972ea040785edf44f33ec931913308e510",
-      "scripts/aep_small.json": "d686285781abe3510c783be0a631ce7f20980ba61fe58351227d8f8a00f2878c"
+      "scripts/aep_small.json": "3ce5b577ddd5d54734c80682c3fbc54545964fb2fc58c2d6c0440ecf347290c8"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

@@ -249,7 +249,7 @@ def main() -> None:
     print()
 
     # Power curve
-    curve = power_curve(cd_add=0.002, tip_loss_multiplier=1.0)
+    curve = power_curve()
     print("Power curve (U ∈ [4, 5, 6, 7, 8, 10]):")
     for point in curve:
         print(f"  U={point['U']:4.1f} m/s: Cp={point['cp']:.4f}, "
