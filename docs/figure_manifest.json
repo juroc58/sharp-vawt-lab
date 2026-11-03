@@ -41,7 +41,7 @@
       "bytes": 144433,
       "sha256": "d400916d58b448ae0253ab0a12ed7066adf031c11b40176f5d81e2d9b5609ea6",
       "sources": {
-        "scripts/finite_span_ablation.json": "a88d72b3a96c0204bb64321282b1725e918682ddf2ecca3ea121400c2fae7458"
+        "scripts/finite_span_ablation.json": "357c937758e079db1ddb6bbd92836c5dec9a1b891e914c7e0a69f0ba135fbfa7"
       }
     },
     "finite_span_validation.png": {
@@ -74,6 +74,6 @@
       "sources": {}
     }
   },
-  "generated_utc": "2026-11-02T20:53:43.349378+00:00",
+  "generated_utc": "2026-11-03T07:57:13.295871+00:00",
   "schema": 1
 }
