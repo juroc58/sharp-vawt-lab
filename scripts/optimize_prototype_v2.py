@@ -125,7 +125,7 @@ def objective(x: np.ndarray) -> float:
     return -cp
 
 
-def power_curve(cd_add: float, tip_loss_multiplier: float) -> list[dict]:
+def power_curve() -> list[dict]:
     """Compute power curve at U in [4, 5, 6, 7, 8, 10]."""
     base = {
         "R": R,
