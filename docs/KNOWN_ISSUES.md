@@ -95,6 +95,14 @@ Items grouped by blocker type:
   Larger machines may show different behavior (see scaleup preset,
   where mc=2.69 kg is comparable to blade mass).
 
+## Data-blocked
+
+- **Counterweight Geometry (`dcw`)**: The optimizer consistently finds negative `dcw`
+  (e.g., -0.18) for the 1.8m prototypes. This means the counterweight sits behind
+  the leading edge. This is physically correct for a blade with `xbcg=0.20` and
+  `sp=0.15`, as the blade's own CG is already near the pivot. Do not assume Sharp's
+  original layout applies to this specific mass distribution.
+
 ## Test invariants not upheld
 
 - **Similarity in wind speed is not an invariant of this model**:

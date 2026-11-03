@@ -64,6 +64,43 @@ def load_measured_data(path: str) -> tuple[np.ndarray, np.ndarray]:
     return np.array(wind_speeds), np.array(powers)
 
 
+def load_or_generate_data(args: argparse.Namespace) -> tuple[np.ndarray, np.ndarray]:
+    """Load measured data from CSV or generate synthetic data from PRESETS."""
+    if args.generate_synthetic:
+        return _generate_synthetic_data()
+    return load_measured_data(args.data)
+
+
+def _generate_synthetic_data() -> tuple[np.ndarray, np.ndarray]:
+    """Generate synthetic data from PRESETS['prototype_1_3'].
+
+    Runs the simulator at U in [4, 5, 6, 7, 8, 9, 10] using the preset
+    parameters, computes power via P = Cp * 0.5 * rho * A * U^3 * 0.9,
+    and adds 5% random noise.
+    """
+    import random
+
+    random.seed(42)
+    np.random.seed(42)
+
+    wind_speeds = [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    powers = []
+    for U in wind_speeds:
+        params = {
+            **BASE_PRESET,
+            "free": True,
+            "U": U,
+            "w0_frac": 0.9,
+        }
+        result = create_sim_from_params(params).run()
+        cp = float(result["cp"])
+        power = cp * 0.5 * RHO * 2.0 * BASE_PRESET["R"] * BASE_PRESET["H"] * U**3 * 0.9
+        # Add 5% random noise
+        noise = 1.0 + np.random.uniform(-0.05, 0.05)
+        powers.append(power * noise)
+    return np.array(wind_speeds), np.array(powers)
+
+
 def _simulate_cp(cd_add: float, tip_loss_multiplier: float, U: float) -> float:
     """Run the simulator and return Cp at wind speed U."""
     params = {
@@ -105,7 +142,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(
         description="Calibrate cd_add and tip_loss_multiplier to measured power data."
     )
-    ap.add_argument("--data", type=str, required=True, help="Path to measured CSV")
+    ap.add_argument("--data", type=str, required=False, help="Path to measured CSV")
+    ap.add_argument(
+        "--generate-synthetic",
+        action="store_true",
+        help="Generate synthetic data from PRESETS['prototype_1_3'] instead of reading --data",
+    )
     ap.add_argument("--out", type=str, required=True, help="Path to output JSON")
     ap.add_argument(
         "--provenance",
@@ -116,7 +158,7 @@ def main() -> None:
     )
     args = ap.parse_args()
 
-    wind_speeds, measured_powers = load_measured_data(args.data)
+    wind_speeds, measured_powers = load_or_generate_data(args)
 
     if len(wind_speeds) == 0:
         print("No valid data points found after filtering.")

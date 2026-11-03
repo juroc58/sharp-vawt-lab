@@ -1079,6 +1079,10 @@ be made about it:
   compared. Until acceptance criteria are met on independent data,
   no validation is claimed.
 
+- Mirror-symmetry tests (reversing rotation direction) are omitted because
+  the 2D BEM kernel requires positive TSR and does not support negative
+  rotation without a `ZeroDivisionError`. See KNOWN_ISSUES.md.
+
 See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md) for known
 limitations and deferred work not covered above.
 

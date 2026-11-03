@@ -1,27 +1,24 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "f8afe7a9f12577c5f3db30eed0f8ad5f00446caf56ff7f6e6761fd2c66121029",
+    "code_hash": "ae69fc0329c8283fdec6eaac013fe4690f7105b11a2ef16002c3d2059c7a9246",
     "script": "scripts/calibrate_passive.py",
     "script_version": "1.0.1",
-    "created_utc": "2026-11-03T12:09:30.593851+00:00",
+    "created_utc": "2026-11-03T13:44:46.330346+00:00",
     "python_version": "3.14.4",
-    "git_commit": "b401c5929b239cacefdcdde5a8f0664811a01d60",
+    "git_commit": "8486f42c1834e78c16808b3467db680c31d379a0",
     "seed": null,
-    "n": 1,
+    "n": 7,
     "script_args": [
-      "--data",
-      "data/measured_template.csv",
+      "--generate-synthetic",
       "--out",
-      "scripts/calibrate_passive.json",
-      "--provenance",
-      "synthetic"
+      "scripts/calibrate_passive.json"
     ],
     "extra_files": [
       "vawt_presets.py"
     ],
     "extra_data": {
-      "data_path": "data/measured_template.csv",
+      "data_path": null,
       "provenance": "synthetic"
     },
     "uq_spec_hash": null,
@@ -33,7 +30,7 @@
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
       "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
-      "scripts/calibrate_passive.py": "540f84bb1fdf162540f020413869bdb00ed3983071904f9a2486b5734d4e6f55"
+      "scripts/calibrate_passive.py": "17e3ff5f882915aa28d7c48d9cd7174fea2b29ee2dc3e660ac9ed095916ca194"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
@@ -51,10 +48,10 @@
   "status": "not_calibrated",
   "provenance": "synthetic",
   "fitted_parameters": {
-    "cd_add": 0.0020000769303072765,
-    "tip_loss_multiplier": 1.0000000001233689
+    "cd_add": 0.0020233307332948153,
+    "tip_loss_multiplier": 0.999149368462409
   },
-  "rmse_initial": 0.67607676526994,
-  "rmse_final": 0.6759011423510799,
-  "improvement_percent": 0.02597677185222655
+  "rmse_initial": 10.549831492189853,
+  "rmse_final": 10.380704200419034,
+  "improvement_percent": 1.603127897313102
 }

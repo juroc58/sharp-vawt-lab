@@ -18,7 +18,18 @@
 - Reject rows where wind direction changes > 30° in 10 seconds
   (indicates turbulence / non-representative inflow)
 
-## Validation Steps
+## Calibration Scope
+
+The `scripts/calibrate_passive.py` tool fits `cd_add` and `tip_loss_multiplier`
+using only the Power vs. Wind Speed curve (`Power_W` vs `Wind_Speed_m_s`).
+
+To fit dynamic-stall constants (`ds_Tf`, `ds_Tv`, `ds_Ta`) or the induction
+lag (`tau_rev`), you **MUST** log per-blade pitch angle and torque at 10+
+Hz. A simple power curve is mathematically insufficient to identify those
+parameters because multiple parameter combinations can produce identical
+power curves at steady-state operating points.
+
+## Validation Steps (continued)
 
 1. Load the prototype preset:
 
