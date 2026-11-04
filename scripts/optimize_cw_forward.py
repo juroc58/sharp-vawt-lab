@@ -1,11 +1,22 @@
-"""Targeted optimization for shifted chord / forward counterweight geometry.
+"""Sweep counterweight position to find optimal restoring stiffness.
 
-This forces the optimizer to explore the regime where:
-- The pivot is far back (sp up to 0.28)
-- The counterweight is far forward (dcw down to -0.60)
-- The counterweight is heavy (mc up to 500g)
+The ``dcw`` parameter controls counterweight position relative to the LE in units
+of chord:
 
-We want to see if a heavy pendulum effect can stabilize a highly aft pivot point.
+* Larger ``dcw`` (e.g. +0.5) = CW far ahead of LE (Sharp's original design)
+* ``dcw = 0`` = CW at leading edge
+* Negative ``dcw`` (e.g. -0.175) = CW moves toward the pivot
+
+Because ``sp`` sits at 0.20c from LE, a ``dcw`` of -0.20 puts the CW exactly
+on the pitch pivot. Further negative ``dcw`` moves it behind the pivot
+(toward the trailing edge).
+
+The model finds that peak Cp requires the CW essentially at the pivot
+(``dcw ≈ -sp``), not far ahead of the LE. Sharp's forward-CW design
+over-stiffens the pitch mechanism at this scale and reduces Cp.
+
+This is NOT what the file name suggests. The file name is preserved
+for git history continuity. See docs/KNOWN_ISSUES.md for the finding.
 """
 from __future__ import annotations
 

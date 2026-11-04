@@ -103,6 +103,19 @@ Items grouped by blocker type:
   `sp=0.15`, as the blade's own CG is already near the pivot. Do not assume Sharp's
   original layout applies to this specific mass distribution.
 
+- **Critical CW sensitivity**: The optimum Cp (0.385) occurs when the counterweight
+  sits within 3-4 mm of the pitch pivot, on the LE side. Moving the CW ±7 mm drops
+  Cp by ~20%. Moving it 15 mm ahead of LE drops Cp to 0.22; moving it 44 mm behind
+  the pivot drops Cp to 0.018.
+
+  Build implication: the physical prototype MUST use an adjustable counterweight
+  mount (threaded rod through a slot with lock nuts) so the position can be tuned
+  on the running rotor. Do not weld the CW.
+
+- **Heavy counterweight scenario**: The "heavy" 330g CW preset works because the CW
+  is at the pivot, acting as a pitch flywheel (adds inertia, damps pitch oscillations).
+  The mass is large because it has near-zero mechanical advantage.
+
 ## Test invariants not upheld
 
 - **Similarity in wind speed is not an invariant of this model**:

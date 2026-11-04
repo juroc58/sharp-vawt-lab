@@ -61,9 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Heavy Counterweight Prototype**: Joint optimization of
   (sp, ar, mc, dcw) for the 1/3 scale prototype found Cp = 0.3845 with
   c=0.1394 m, sp=0.2033, ar=0.2423, mc=0.3295 kg, dcw=-0.1851 m
-  (effective CW offset = 0.0182 m — counterweight near pivot, negligible
-  restoring contribution at this scale). No new preset added; current
-  `prototype_1_3` preset remains physically correct.
+  (effective CW offset = 0.0182 m — counterweight near pivot). Added
+  `prototype_1_3_heavy` preset to `vawt_presets.py`.
+- **CW sign convention documentation fix**: The `dcw` parameter's sign
+  convention was under-documented. Negative `dcw` moves the CW toward
+  the pivot (not forward of the LE). The optimal position is within
+  ±4 mm of the pivot. Added sensitivity analysis and build notes to
+  `docs/KNOWN_ISSUES.md`.
 - **60cm Prototype Preset**: Added `prototype_60cm` based on the
   optimization that found moving the pivot forward (sp=0.1521) and
   shrinking the chord (c=0.0881 m) increases aerodynamic leverage,
