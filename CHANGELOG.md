@@ -246,6 +246,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `scripts/make_all_figures.py --only`. Added
   `tests/test_figures.py::test_no_aep_panel_is_text_only` as a
   regression guard.
+- **AEP figures regenerated**: `docs/aep_turbulent.png` and
+  `docs/aep_counter_rotating.png` regenerated via
+  `scripts/make_all_figures.py --only` to reflect updated plot
+  logic (layout change in `scripts/plot_aep.py` panel 1).
 - **Repo hygiene pass**: restored
   `tests/test_figures.py::test_readme_figure_references` (which
   was missing; its tail was stranded inside

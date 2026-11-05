@@ -138,6 +138,23 @@ def objective(
     return predicted - measured_powers
 
 
+def objective_single_param(
+    tip_loss_multiplier: float,
+    wind_speeds: np.ndarray,
+    measured_powers: np.ndarray,
+    cd_add: float,
+) -> np.ndarray:
+    """Return residuals for tip_loss_multiplier only, with cd_add fixed."""
+    cd_add = float(cd_add)
+    predicted = np.array(
+        [
+            compute_predicted_power(cd_add, tip_loss_multiplier, U)
+            for U in wind_speeds
+        ]
+    )
+    return predicted - measured_powers
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Calibrate cd_add and tip_loss_multiplier to measured power data."

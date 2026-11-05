@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "ae69fc0329c8283fdec6eaac013fe4690f7105b11a2ef16002c3d2059c7a9246",
+    "code_hash": "6e9ede18270d0f94155887c160ac119df362a667e95b51563cc41b0a5247c4a4",
     "script": "scripts/calibrate_passive.py",
     "script_version": "1.0.1",
-    "created_utc": "2026-11-03T13:44:46.330346+00:00",
+    "created_utc": "2026-11-05T09:58:10.160890+00:00",
     "python_version": "3.14.4",
-    "git_commit": "8486f42c1834e78c16808b3467db680c31d379a0",
+    "git_commit": "d2e1848a43049d8616ecd0ff1a071358eda73eeb",
     "seed": null,
     "n": 7,
     "script_args": [
@@ -30,7 +30,7 @@
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
       "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
-      "scripts/calibrate_passive.py": "17e3ff5f882915aa28d7c48d9cd7174fea2b29ee2dc3e660ac9ed095916ca194"
+      "scripts/calibrate_passive.py": "0943513e8699b7af332d7f219463e00043a5f5a029eac852b3ec7109f65d520d"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",

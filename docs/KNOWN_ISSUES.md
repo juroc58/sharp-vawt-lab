@@ -116,6 +116,21 @@ Items grouped by blocker type:
   is at the pivot, acting as a pitch flywheel (adds inertia, damps pitch oscillations).
   The mass is large because it has near-zero mechanical advantage.
 
+- **Similarity in wind speed is not testable at fixed TSR**:
+  test_similarity_in_wind_speed compared Cp at U=6 and U=12 at TSR=1.5.
+  The Cp changed from 0.0551 to 0.0740 (34% change), far exceeding
+  the 2% tolerance. This is a Reynolds-number effect: doubling U at
+  fixed TSR doubles Re, crossing polar-table boundaries. The invariant
+  does not hold for this Reynolds-dependent model. Test removed.
+
+- **Geometric scaling is not an invariant of this model**:
+  test_geometric_scaling compared Cp at TSR=1.5 before and after
+  uniform geometric scaling (k=2). The Cp changed from 0.0630 to
+  0.0817 (30% change), exceeding the 5% tolerance. Scaling R, H, c
+  by 2x at fixed U and TSR doubles Re, crossing a polar-table boundary.
+  The invariant does not hold for this Reynolds-dependent model.
+  Test removed.
+
 ## Test invariants not upheld
 
 - **Similarity in wind speed is not an invariant of this model**:
