@@ -3,6 +3,15 @@
 Fixed geometry: R=0.60m, H=0.60m (Swept area = 0.72 m^2).
 Optimizes chord, pivot, arm, counterweight, and electrical load (k_load) 
 to maximize Cp while ensuring it self-starts in low wind.
+
+The dcw parameter is the counterweight offset from the leading edge
+in units of chord:
+- Positive dcw = forward (toward LE)
+- Negative dcw = aft (toward TE)
+The spar is at sp (position from LE). The pivot is the origin.
+
+Optimizes chord, pivot, arm, counterweight, and electrical load (k_load) 
+to maximize Cp while ensuring it self-starts in low wind.
 """
 from __future__ import annotations
 
@@ -101,6 +110,19 @@ def main():
     print(f"  k_load:       {best_params['k_load']:.4f}")
     print(f"\nEffective CW offset (sp + dcw): {effective_cw:.4f} m")
     print(f"Cp @ 6 m/s: {best_cp:.4f}")
+    # Also print Cp at U=7 m/s for comparison with the 1.8m prototypes
+    params_7 = {
+        "R": R, "H": H, "N": N, "c": best_params["c"], "sp": best_params["sp"], "ar": best_params["ar"],
+        "mc": best_params["mc"], "dcw": best_params["dcw"], "mb": MB, "xbcg": XBCG,
+        "balance": 0, "bias_deg": 0.0, "prescribe_pitch": False,
+        "free": True, "k_load": best_params["k_load"],
+        "use_dynamic_stall": True, "use_flow_curvature": True,
+        "use_dmst": True, "use_tip_loss": True,
+        "win_deg": 45.0, "cb": 2e-5, "mu_c": 3e-4,
+    }
+    res_7 = create_sim_from_params({**params_7, "U": 7.0, "w0_frac": 0.9, "T_max": 12, "stride": 10}).run()
+    cp_7 = float(res_7["cp"])
+    print(f"Cp @ 7 m/s: {cp_7:.4f}")
 
     # Write to JSON
     output = {

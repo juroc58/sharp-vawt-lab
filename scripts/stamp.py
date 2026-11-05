@@ -408,8 +408,6 @@ STAMP_CHECK_MAP: dict[str, str] = {
     "aep_turbulent.json": "scripts/compute_aep_turbulent.py",
     "branch_point_checks.json": "scripts/check_branch_points.py",
     "calibrate_passive.json": "scripts/calibrate_passive.py",
-    "optimization_cw_forward.json": "scripts/optimize_cw_forward.py",
-    "optimization_prototype_v2.json": "scripts/optimize_prototype_v2.py",
     "cm_scale_scan.json": "scripts/scan_cm_scale.py",
     "diag_aep_branches.json": "scripts/diag_aep_branches.py",
     "diag_small_equilibria.json": "scripts/diag_small_equilibria.py",
