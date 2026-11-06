@@ -5,10 +5,14 @@ Handles both Weather Station data (Wind Speed, Solar) and VAWT Prototype data
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+ROOT = Path(__file__).resolve().parent.parent
 
 st.set_page_config(page_title="VAWT & Weather Dashboard", layout="wide")
 st.title("📈 Time Series Visualization & Analysis Dashboard")
@@ -220,3 +224,48 @@ else:
 
     st.subheader("Raw Data")
     st.dataframe(stats_df_source, use_container_width=True)
+
+    # --- Passive vs Fixed-Pitch Comparison ---
+    st.markdown("---")
+    st.subheader("🔬 Passive CPPC vs Fixed-Pitch AEP Comparison")
+    st.caption("Rigid fixed-pitch vs passive CPPC at same geometry "
+               "(R=0.906m, H=1.353m, N=3). Passive uses variable-pitch control; "
+               "fixed-pitch uses optimal fixed pitch at each TSR.")
+
+    import sys
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from compare_rigid_passive import run_sweep
+
+    tsr_vals, cp_passive, cp_rigid = run_sweep()
+
+    fig_pp = go.Figure()
+    fig_pp.add_trace(go.Scatter(
+        x=tsr_vals, y=cp_passive,
+        mode="lines+markers", name="Passive CPPC",
+        line={"color": "green", "width": 2},
+        marker={"size": 6},
+    ))
+    fig_pp.add_trace(go.Scatter(
+        x=tsr_vals, y=cp_rigid,
+        mode="lines+markers", name="Fixed-Pitch Rigid",
+        line={"color": "orange", "width": 2, "dash": "dash"},
+        marker={"size": 6},
+    ))
+    fig_pp.update_layout(
+        title="Cp vs Wind Speed: Passive CPPC vs Fixed-Pitch Rigid",
+        xaxis_title="Wind Speed U (m/s)",
+        yaxis_title="Power Coefficient Cp",
+        yaxis={"range": [0, max(max(cp_passive), max(cp_rigid)) * 1.1]},
+        hovermode="x unified",
+        template="plotly_white",
+        height=500,
+    )
+    st.plotly_chart(fig_pp, use_container_width=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Best Passive Cp", f"{max(cp_passive):.3f}",
+                  f"at TSR={tsr_vals[int(np.argmax(cp_passive))]:.2f}")
+    with col2:
+        st.metric("Best Fixed-Pitch Cp", f"{max(cp_rigid):.3f}",
+                  f"at TSR={tsr_vals[int(np.argmax(cp_rigid))]:.2f}")

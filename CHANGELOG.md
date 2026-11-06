@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Passive Calibration Tool**: Added `scripts/calibrate_passive.py` to fit
   `cd_add` and `tip_loss_multiplier` to measured `Power_W` vs `Wind_Speed`
   data. Explicitly refuses to claim calibration on synthetic data.
+- **Rigid vs Passive Cp Comparison**: Added `scripts/compare_rigid_passive.py`
+  and `docs/cp_rigid_vs_passive.png` to visually demonstrate the aerodynamic
+  advantage of CPPC vs fixed-pitch rigid at the same geometry.
 - **Heavy Counterweight Prototype**: Joint optimization of
   (sp, ar, mc, dcw) for the 1/3 scale prototype found Cp = 0.3845 with
   c=0.1394 m, sp=0.2033, ar=0.2423, mc=0.3295 kg, dcw=-0.1851 m
