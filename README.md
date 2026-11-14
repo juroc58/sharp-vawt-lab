@@ -179,7 +179,7 @@ re-optimisation, and the scenario set is a subset of the UQ ranges.
 | Design | Nominal Cp | UQ-scenario mean | UQ-scenario p10 | Bound-active parameters |
 |---|---|---|---|---|
 | Optimised passive (R = 0.60 m) | 0.265 | 0.258 | 0.250 | k_load (lower) |
-| Scale-up (R = 2.72 m) | 0.408 | 0.400 | 0.391 | none |
+| Scale-up (R = 2.72 m) | 0.406 | 0.399 | 0.389 | none |
 <!-- END GENERATED: robust_optimization -->
 
 At this design point the aerodynamic pitch moment dominates the
@@ -661,10 +661,10 @@ No tested finite-span variant reproduces the Ham band (0.42–0.45). The 2D mode
 <!-- BEGIN GENERATED: uq_reading -->
 **Reading the table.** Values are model output from the committed Saltelli run.
 
-- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.27) and `cd_add` (S1 = 0.20 ± 0.14) have overlapping 95 % intervals.
-- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.25) and `ind_drag_scale` (S1 = 0.30 ± 0.21) have overlapping 95 % intervals.
-- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.26) and `tip_loss_multiplier` (S1 = 0.41 ± 0.38) have overlapping 95 % intervals.
-- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.40) and `cd_add` (S1 = 0.09 ± 0.07) have overlapping 95 % intervals.
+- **`ham_1979`**: not resolved at base N = 64. `tau_rev` (S1 = 0.94 ± 0.28) and `cd_add` (S1 = 0.20 ± 0.12) have overlapping 95 % intervals.
+- **`sharp_cppc`**: not resolved at base N = 64. `tip_loss_multiplier` (S1 = 0.56 ± 0.28) and `ind_drag_scale` (S1 = 0.30 ± 0.22) have overlapping 95 % intervals.
+- **`optimised_passive`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.58 ± 0.26) and `tip_loss_multiplier` (S1 = 0.41 ± 0.42) have overlapping 95 % intervals.
+- **`scaleup`**: not resolved at base N = 64. `ind_drag_scale` (S1 = 0.55 ± 0.39) and `cd_add` (S1 = 0.09 ± 0.08) have overlapping 95 % intervals.
 <!-- END GENERATED: uq_reading -->
 
 

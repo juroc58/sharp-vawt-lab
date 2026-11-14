@@ -93,6 +93,7 @@ src = ["."]
 "tests/test_polars.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_regression.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510"]
 "tests/test_physics.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510", "RUF059"]
+"scripts/test_stinction.py" = ["BLE001", "EXE001", "EXE002", "F821", "SIM115", "PLW1510", "I001"]
 
 [tool.setuptools]
 packages = ["sharp_vawt"]

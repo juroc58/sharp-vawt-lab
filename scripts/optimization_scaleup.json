@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "5fd0a2932fd81bb866f1c13a2825c8f058bcc578d371488302f9f1290c7d7053",
+    "code_hash": "78e675509707981e4706e9015e1facf41763e3032b8cd96de9f4d455ce5222b7",
     "script": "scripts/optimize_scaleup.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-03T11:44:30.997299+00:00",
+    "created_utc": "2026-11-06T08:46:31.546824+00:00",
     "python_version": "3.14.4",
-    "git_commit": "b401c5929b239cacefdcdde5a8f0664811a01d60",
+    "git_commit": "24faf03ebc7a10d3187fc2bee5763735e58dd6b8",
     "seed": 1,
     "n": 1,
     "script_args": [],
@@ -60,14 +60,14 @@
       ]
     },
     "uq_spec_hash": null,
-    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
+    "config_hash": "df13c9c974e6f5b2913f3a020030d7d35756451520c60d9975cd04835f0716dc",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
+      "vawt_presets.py": "f47ba55c06148be718b282696f53e8042ab699ec42e9e3512d7d864edcd0b154",
       "scripts/optimize_scaleup.py": "0079d085398a2c14ae4c34bc5a497f4ae594ab43d9485cbf1228129942a37198"
     },
     "data_hashes": {

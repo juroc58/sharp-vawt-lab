@@ -91,7 +91,7 @@ PRESETS: dict[str, dict[str, Any]] = {
         "mb": 0.92954, "xbcg": 0.20, "mc": 2.69306, "dcw": -0.1935,
         "balance": 0, "bias_deg": 0.0,
         "prescribe_pitch": False,
-        "free": True, "tsr": 2.5, "T_max": 40.0, "stride": 8,
+        "free": True, "tsr": 2.75, "T_max": 40.0, "stride": 8,
         "use_dynamic_stall": True,
         "use_flow_curvature": True,
         "use_tip_loss": True,

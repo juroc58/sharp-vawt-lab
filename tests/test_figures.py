@@ -554,6 +554,37 @@ def test_readme_figure_references():
         assert name in registered, f"README references {name} but it is not in figure_manifest.json"
 
 
+        assert name in registered, f"README references {name} but it is not in figure_manifest.json"
+
+
+@pytest.mark.slow
+def test_scaleup_cp_at_tsr():
+    """Scale-up figure: Cp at TSR=2.75 must exceed 0.30 (passive CPPC active).
+
+    Tests that the passive free-running workflow reaches a Cp above 0.30
+    at TSR=2.75, which is the optimal operating region from optimize_scaleup.py.
+    """
+    data = _load_json("aep_scaleup.json")
+    branches = data["branches"]
+
+    cp_at_tsr_275 = None
+    for branch in branches.values():
+        if not isinstance(branch, dict):
+            continue
+        free = branch.get("free_results", [])
+        for f in free:
+            if abs(f["tsr_eq"] - 2.75) < 0.2:
+                cp_at_tsr_275 = float(f["cp"])
+                break
+        if cp_at_tsr_275 is not None:
+            break
+
+    assert cp_at_tsr_275 is not None, "No branch has free-result at TSR≈2.75"
+    assert cp_at_tsr_275 > 0.30, (
+        f"Cp at TSR=2.75 is {cp_at_tsr_275:.4f}, expected > 0.30"
+    )
+
+
 def test_scaleup_legend_no_overlap_branch_traced_tick():
     """Scale-up figure: the bottom legend row must clear the two-line
     'Branch-\\ntraced' x tick label of the strategy panel."""

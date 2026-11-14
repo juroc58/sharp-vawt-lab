@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "402933ccd9e97b71de54f256b5490cc24478091b13530ae654aa21eb0f7510dd",
+    "code_hash": "e2328923ba72bc8b8681091e7ce26cf9f31cd502f6fe87b68d5dbcab67724873",
     "script": "scripts/optimize_passive.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-03T11:38:15.174781+00:00",
+    "created_utc": "2026-11-06T08:16:37.788135+00:00",
     "python_version": "3.14.4",
-    "git_commit": "b401c5929b239cacefdcdde5a8f0664811a01d60",
+    "git_commit": "24faf03ebc7a10d3187fc2bee5763735e58dd6b8",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -55,14 +55,14 @@
       ]
     },
     "uq_spec_hash": null,
-    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
+    "config_hash": "df13c9c974e6f5b2913f3a020030d7d35756451520c60d9975cd04835f0716dc",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
+      "vawt_presets.py": "f47ba55c06148be718b282696f53e8042ab699ec42e9e3512d7d864edcd0b154",
       "scripts/optimize_passive.py": "66e6e66b477f5ebda0b4dade2fde5aba02879a9a6280397cdb401f37405d3ef0"
     },
     "data_hashes": {
@@ -147,8 +147,8 @@
     "bias_deg": 0.4970547601587716
   },
   "best_cp": 0.2644991852996763,
-  "de_time_s": 309.4433703520008,
-  "local_time_s": 29.31961686700015,
+  "de_time_s": 322.0622801260006,
+  "local_time_s": 29.547376325000187,
   "history": [
     {
       "stage": "DE",

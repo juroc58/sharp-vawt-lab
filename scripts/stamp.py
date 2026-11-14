@@ -58,13 +58,14 @@ SCRIPT_VERSIONS: dict[str, str] = {
     "scripts/scan_tip_loss.py": "2.0.0",
     "scripts/spearman_sensitivity.py": "2.0.0",
     "scripts/uncertainty.py": "2.0.0",
-    "scripts/import_prototype_data.py": "1.0.0",
+    "scripts/import_prototype_data.py": "1.0.1",
     "scripts/compare_prototype.py": "1.1.0",
     "scripts/calibrate_dynamic_stall.py": "1.1.0",
     "scripts/calibrate_passive.py": "1.0.1",
     "scripts/optimize_prototype_v2.py": "1.0.1",
     "scripts/validate_ds_off.py": "1.1.0",
     "scripts/optimize_60cm.py": "1.0.1",
+    "scripts/optimize_scaleup_v2.py": "1.0.1",
 }
 
 _GENERIC_VERSIONS = {"", "v1.0", "1.0", "1.0.0", "v1"}
@@ -413,7 +414,9 @@ STAMP_CHECK_MAP: dict[str, str] = {
     "diag_small_equilibria.json": "scripts/diag_small_equilibria.py",
     "finite_span_ablation.json": "scripts/finite_span_ablation.py",
     "ham_finite_span_check.json": "scripts/ham_finite_span_check.py",
+    "optimization_60cm.json": "scripts/optimize_60cm.py",
     "optimization_actuator.json": "scripts/optimize_actuator.py",
+    "optimization_cw_forward.json": "scripts/optimize_cw_forward.py",
     "optimization_passive.json": "scripts/optimize_passive.py",
     "optimization_scaleup.json": "scripts/optimize_scaleup.py",
     "robust_optimization.json": "scripts/robust_reopt.py",
@@ -421,7 +424,7 @@ STAMP_CHECK_MAP: dict[str, str] = {
     "tip_loss_scan.json": "scripts/scan_tip_loss.py",
     "uncertainty_results.json": "scripts/uncertainty.py",
     "validate_ds_off.json": "scripts/validate_ds_off.py",
-    "optimization_60cm.json": "scripts/optimize_60cm.py",
+    "optimization_scaleup_v2.json": "scripts/optimize_scaleup_v2.py",
 }
 
 

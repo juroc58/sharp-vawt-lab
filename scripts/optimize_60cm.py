@@ -31,7 +31,7 @@ from sharp_vawt import create_sim_from_params
 R = 0.60
 H = 0.60
 N = 3
-MB = 0.025  # lighter blades (e.g. 25g each) for a 60cm rotor
+MB = 0.045  # Realistic weight for foam + fiberglass + epoxy
 XBCG = 0.20
 
 # BOUNDS: [chord, sp, ar, mc, dcw, k_load]
@@ -99,18 +99,45 @@ def main():
     effective_cw = best_params["sp"] + best_params["dcw"]
 
     print("\n" + "=" * 70)
-    print("OPTIMIZATION COMPLETE")
+    print("OPTIMIZATION COMPLETE — PHYSICAL UNITS")
     print("=" * 70)
     print("Winning parameters:")
-    print(f"  Chord (c):    {best_params['c']:.4f} m ({best_params['c']*100:.1f} cm)")
-    print(f"  Pivot (sp):   {best_params['sp']:.4f}")
-    print(f"  Arm (ar):     {best_params['ar']:.4f}")
-    print(f"  CW mass:      {best_params['mc']:.4f} kg ({best_params['mc']*1000:.0f} g)")
-    print(f"  CW offset:    {best_params['dcw']:.4f}")
-    print(f"  k_load:       {best_params['k_load']:.4f}")
-    print(f"\nEffective CW offset (sp + dcw): {effective_cw:.4f} m")
-    print(f"Cp @ 6 m/s: {best_cp:.4f}")
-    # Also print Cp at U=7 m/s for comparison with the 1.8m prototypes
+    c_mm = best_params["c"] * 1000
+    sp_mm = best_params["sp"] * best_params["c"] * 1000
+    ar_mm = best_params["ar"] * best_params["c"] * 1000
+    dcw_mm = best_params["dcw"] * best_params["c"] * 1000
+    cw_pos_le_mm = (best_params["sp"] + best_params["dcw"]) * best_params["c"] * 1000
+    cw_pos_pivot_mm = best_params["dcw"] * best_params["c"] * 1000
+    mc_g = best_params["mc"] * 1000
+
+    # --- Moment of inertia about pitch pivot ---
+    c_m = best_params["c"]
+    ar_m = best_params["ar"] * c_m
+    mb = MB
+    mc = best_params["mc"]
+    xb = (XBCG * c_m) - sp_mm / 1000.0
+    xcw = -sp_mm / 1000.0 - dcw_mm / 1000.0
+    I_blade = mb * (c_m**2 / 12.0 + xb**2 + ar_m**2)
+    I_cw = mc * xcw**2
+    I_total = I_blade + I_cw
+    k_blade = np.sqrt(I_blade / mb)
+    k_total = np.sqrt(I_total / (mb + mc))
+    print(f"  Chord (c):              {c_mm:.2f} mm")
+    print(f"  Pivot (sp):             {sp_mm:.2f} mm from LE")
+    print(f"  Arm (ar):               {ar_mm:.2f} mm")
+    print(f"  CW mass (mc):           {mc_g:.0f} g")
+    print(f"  CW offset (dcw):        {dcw_mm:.2f} mm")
+    print(f"  CW from LE:             {cw_pos_le_mm:.2f} mm")
+    print(f"  CW from pivot:          {cw_pos_pivot_mm:.2f} mm")
+    print(f"  k_load:                 {best_params['k_load']:.4f} N·m·s²")
+    print(f"  Blade inertia I_blade:  {I_blade:.6f} kg·m²  (k_blade = {k_blade*1000:.1f} mm)")
+    print(f"  CW inertia I_cw:        {I_cw:.6f} kg·m²")
+    print(f"  Total inertia I_total:  {I_total:.6f} kg·m²  (k_total = {k_total*1000:.1f} mm)")
+    print(f"  CW inertia I_cw:        {I_cw:.6f} kg·m²")
+    print(f"  Total inertia I_total:  {I_total:.6f} kg·m²  (k_total = {k_total*1000:.1f} mm)")
+    print(f"\nCp @ 6 m/s:   {best_cp:.4f}")
+
+    # Also compute Cp at U=7 m/s for comparison with the 1.8m prototypes
     params_7 = {
         "R": R, "H": H, "N": N, "c": best_params["c"], "sp": best_params["sp"], "ar": best_params["ar"],
         "mc": best_params["mc"], "dcw": best_params["dcw"], "mb": MB, "xbcg": XBCG,
@@ -129,13 +156,26 @@ def main():
         "schema": "optimization_60cm",
         "winning_params": best_params,
         "cp_at_6mps": best_cp,
+        "cp_at_7mps": cp_7,
         "effective_cw_offset": effective_cw,
+        "c_mm": c_mm,
+        "sp_mm": sp_mm,
+        "ar_mm": ar_mm,
+        "dcw_mm": dcw_mm,
+        "cw_pos_le_mm": cw_pos_le_mm,
+        "cw_pos_pivot_mm": cw_pos_pivot_mm,
+        "mc_g": mc_g,
+        "I_blade_kgm2": I_blade,
+        "I_cw_kgm2": I_cw,
+        "I_total_kgm2": I_total,
+        "k_blade_mm": k_blade * 1000,
+        "k_total_mm": k_total * 1000,
     }
     write_json_with_stamp(
         path="scripts/optimization_60cm.json",
         data=output,
         script="scripts/optimize_60cm.py",
-        version="1.0.0",
+        version="1.0.1",
         n=1, seed=42,
         extra_files=["vawt_presets.py"],
         extra_data={"bounds": BOUNDS},

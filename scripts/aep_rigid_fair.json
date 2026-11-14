@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "5f1ae9c69759866c8eb4e3c92e6f8c50d4065a6453e2c686d4c349da39e20312",
+    "code_hash": "7229aa7104e72b24e117f0a05181488bf160daa17cd34d812c3303d5c7dba973",
     "script": "scripts/compute_aep_rigid_fair.py",
     "script_version": "2.0.0",
-    "created_utc": "2026-11-03T11:43:45.339976+00:00",
+    "created_utc": "2026-11-06T07:50:09.782395+00:00",
     "python_version": "3.14.4",
-    "git_commit": "b401c5929b239cacefdcdde5a8f0664811a01d60",
+    "git_commit": "24faf03ebc7a10d3187fc2bee5763735e58dd6b8",
     "seed": 0,
     "n": 100,
     "script_args": [],
@@ -22,14 +22,14 @@
       "U_DESIGN": 6.0
     },
     "uq_spec_hash": null,
-    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
+    "config_hash": "df13c9c974e6f5b2913f3a020030d7d35756451520c60d9975cd04835f0716dc",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
+      "vawt_presets.py": "f47ba55c06148be718b282696f53e8042ab699ec42e9e3512d7d864edcd0b154",
       "scripts/compute_aep_rigid_fair.py": "4008f1e5b94c8d82cfaba2f8c8241f41fbc703b55bb0dd30449e91e8944e97ba",
       "scripts/compute_aep.py": "d9576c97ea27e586e899ae4d760566986d28ed0ee8efef6d6539d5b81753c58a"
     },
@@ -79,21 +79,21 @@
       "best_rigid": {
         "psi0_deg": 5.0,
         "k_load": 6.0,
-        "cp_design": 0.3792163939930443,
-        "tsr": 2.575457748422995,
+        "cp_design": 0.37921153857216816,
+        "tsr": 2.5754469297553295,
         "viable": true,
-        "aep_kWh": 13280.297765699232,
-        "cf": 0.20792524611521718,
-        "rated_power_W": 7291.157543408307,
-        "cp_at_rated": 0.34710196706330415
+        "aep_kWh": 13280.279988053111,
+        "cf": 0.2079247461947659,
+        "rated_power_W": 7291.1653134652215,
+        "cp_at_rated": 0.34710233696369697
       },
       "best_passive": {
         "k_load": 4.0,
-        "cp_design": 0.4130528090334442,
-        "aep_kWh": 16669.152252793112,
-        "cf": 0.21106426844316803
+        "cp_design": 0.4130513628477229,
+        "aep_kWh": 16669.162542297265,
+        "cf": 0.21106451818501598
       },
-      "gain_percent": 25.517910417993185
+      "gain_percent": 25.51815592210993
     }
   }
 }

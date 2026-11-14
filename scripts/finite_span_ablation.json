@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "93e9fd6f22600748f3b13839f8bff7925c293dc7ea1ac10f23707a37252343ba",
+    "code_hash": "1f567d70a4e211eb2744acd688c79b1c35f96dd4c3945b6f31acd818548fddc4",
     "script": "scripts/finite_span_ablation.py",
     "script_version": "3.0.0",
-    "created_utc": "2026-11-05T09:33:01.403636+00:00",
+    "created_utc": "2026-11-06T08:53:33.696240+00:00",
     "python_version": "3.14.4",
-    "git_commit": "d2e1848a43049d8616ecd0ff1a071358eda73eeb",
+    "git_commit": "24faf03ebc7a10d3187fc2bee5763735e58dd6b8",
     "seed": 0,
     "n": 1,
     "script_args": [],
@@ -15,14 +15,14 @@
     ],
     "extra_data": {},
     "uq_spec_hash": null,
-    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
+    "config_hash": "df13c9c974e6f5b2913f3a020030d7d35756451520c60d9975cd04835f0716dc",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
+      "vawt_presets.py": "f47ba55c06148be718b282696f53e8042ab699ec42e9e3512d7d864edcd0b154",
       "scripts/finite_span_ablation.py": "9117c988678245604209d4efb8d6b8da68a598102f603929f1daf501261a97bc"
     },
     "data_hashes": {

@@ -1,12 +1,12 @@
 {
   "stamp": {
     "schema_version": "3",
-    "code_hash": "15a76596f1903707b5d72ad1f752aa3a281b7357db4328da544b63e8b76de013",
+    "code_hash": "967700f470903759baae2d4cd8910deffa7046a98c2665308edc583b10723b44",
     "script": "scripts/optimize_60cm.py",
     "script_version": "1.0.1",
-    "created_utc": "2026-11-05T08:21:43.789781+00:00",
+    "created_utc": "2026-11-14T11:53:03.249378+00:00",
     "python_version": "3.14.4",
-    "git_commit": "2e34dfa2884c2e97ee64e427795132bee8a4a9f4",
+    "git_commit": "24faf03ebc7a10d3187fc2bee5763735e58dd6b8",
     "seed": 42,
     "n": 1,
     "script_args": [],
@@ -42,15 +42,15 @@
       ]
     },
     "uq_spec_hash": null,
-    "config_hash": "e49ef90e84a21b2864b0f497e687083e926b253ce5b15405a5f926e7e544e87f",
+    "config_hash": "df13c9c974e6f5b2913f3a020030d7d35756451520c60d9975cd04835f0716dc",
     "source_hashes": {
       "sharp_vawt/__init__.py": "eca7d63414cae5141b1a1525097ed00e17c2dcb61c63952de8a5c62dcbbe5600",
       "sharp_vawt/config.py": "733c6d95781978c8b4c3277ef4b29275bf9d19931f6476528cb07430ed2b27c0",
       "sharp_vawt/database.py": "c1ad38b66bca65ee16395518828f872660dc96fd2d33f9f595ea559bb56e7d41",
       "sharp_vawt/engine.py": "60b1dde8043ff932ad7d941d6658e0111939e5ec19e2980e13ef6e19b6ff86f1",
       "vawt_core.py": "ebbeb32911b71347adb71a16668e0b0f7c5b92b87a1ec04062e97e4941492929",
-      "vawt_presets.py": "b769d11c5b0f56d7a229c837cbfbeddf0f2611d7d91026d9f82f5f5076717900",
-      "scripts/optimize_60cm.py": "2b8674ae3bff39fcf0c32d5641f402a5af9f0b88d2c478166022995ef484533d"
+      "vawt_presets.py": "f47ba55c06148be718b282696f53e8042ab699ec42e9e3512d7d864edcd0b154",
+      "scripts/optimize_60cm.py": "3cac584a749c0e80221d7f4f1d5fbf95e031f75a8c434df06b900469b7de42d9"
     },
     "data_hashes": {
       "sharp_vawt/airfoil_polars/naca0012/polars_naca0012_Re_100000.csv": "d97a7785277d63c4b49214c4e4bda3e01219715ab8a28ad3a2cf05bd6a065ca4",
@@ -67,13 +67,26 @@
   },
   "schema": "optimization_60cm",
   "winning_params": {
-    "c": 0.08806959619231869,
-    "sp": 0.15212482369679836,
-    "ar": 0.25839291499233985,
-    "mc": 0.05709282198723273,
-    "dcw": -0.10686400015766613,
-    "k_load": 0.0010111592025833496
+    "c": 0.08470203037554894,
+    "sp": 0.17240259725875173,
+    "ar": 0.2174032794717486,
+    "mc": 0.04790742034542638,
+    "dcw": -0.11283526417711125,
+    "k_load": 0.0012196888671964605
   },
-  "cp_at_6mps": 0.30705682462870365,
-  "effective_cw_offset": 0.04526082353913223
+  "cp_at_6mps": 0.309474904913336,
+  "cp_at_7mps": 0.31601387051565416,
+  "effective_cw_offset": 0.059567333081640486,
+  "c_mm": 84.70203037554894,
+  "sp_mm": 14.60285002983432,
+  "ar_mm": 18.414499181560004,
+  "dcw_mm": -9.557375973762767,
+  "cw_pos_le_mm": 5.045474056071553,
+  "cw_pos_pivot_mm": -9.557375973762767,
+  "mc_g": 47.90742034542638,
+  "I_blade_kgm2": 4.240923498828806e-05,
+  "I_cw_kgm2": 1.219570023090681e-06,
+  "I_total_kgm2": 4.362880501137874e-05,
+  "k_blade_mm": 30.698981158731947,
+  "k_total_mm": 21.670127076706535
 }
